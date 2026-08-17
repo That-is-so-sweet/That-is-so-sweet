@@ -1,0 +1,55 @@
+:root {
+  /* Brand Primary — Orange */
+  --color-primary: #E04B28;
+  --color-primary-dark: #C23B1A;
+  --color-primary-light: #F07050;
+  --color-primary-subtle: #FDEEE9;
+
+  /* Brand Secondary — Golden Yellow */
+  --color-secondary: #F5C200;
+  --color-secondary-dark: #C9A000;
+  --color-secondary-light: #FFD84A;
+  --color-secondary-subtle: #FFFBE0;
+
+  /* Hot / Urgent — Red-Orange */
+  --color-hot: #C23B1A;
+  --color-hot-dark: #9E2C10;
+  --color-hot-subtle: #FDEEE9;
+
+  /* Ink — Near Black (warm) */
+  --color-ink: #1A0C04;
+  --color-ink-60: rgba(26,12,4,0.60);
+  --color-ink-30: rgba(26,12,4,0.30);
+  --color-ink-10: rgba(26,12,4,0.10);
+
+  /* Neutrals */
+  --color-cream: #FFF8ED;
+  --color-muted: #9B8870;
+  --color-border: #F0E8D8;
+  --color-border-strong: #D9CCBA;
+  --color-surface: #FFFFFF;
+
+  /* Semantic */
+  --color-success: #5A9E5A;
+  --color-success-subtle: #EDF6ED;
+  --color-warning: #F59E0B;
+  --color-warning-subtle: #FFFBEB;
+  --color-error: #E8361A;
+  --color-error-subtle: #FFEEEB;
+  --color-info: #3B82F6;
+  --color-info-subtle: #EFF6FF;
+
+  /* Text roles */
+  --text-primary: var(--color-ink);
+  --text-secondary: var(--color-muted);
+  --text-on-primary: #FFFFFF;
+  --text-on-secondary: var(--color-ink);
+  --text-on-hot: #FFFFFF;
+  --text-inverse: #FFFFFF;
+
+  /* Background roles */
+  --bg-app: var(--color-cream);
+  --bg-card: var(--color-surface);
+  --bg-section-primary: var(--color-primary);
+  --bg-section-secondary: var(--color-secondary);
+}

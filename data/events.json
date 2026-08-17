@@ -1,0 +1,166 @@
+[
+  {
+    "id": "demo-gathering",
+    "hostToken": "demo-host-token-123",
+    "title": "八月好友暑期歡聚小酌隊",
+    "description": "很久沒聚聚囉！挑個週末大家有空的時間吃頓好的 🍻",
+    "hostName": "阿傑",
+    "slots": [
+      {
+        "id": "slot_1",
+        "date": "2026-08-15",
+        "time": "12:00 - 14:00 (午餐)",
+        "label": "燒肉店聚餐"
+      },
+      {
+        "id": "slot_2",
+        "date": "2026-08-15",
+        "time": "18:00 - 21:00 (晚餐)",
+        "label": "餐酒館小酌"
+      },
+      {
+        "id": "slot_3",
+        "date": "2026-08-16",
+        "time": "14:00 - 17:00 (下午茶)",
+        "label": "甜點咖啡廳"
+      },
+      {
+        "id": "slot_4",
+        "date": "2026-08-16",
+        "time": "18:00 - 21:00 (晚餐)",
+        "label": "火鍋吃到飽"
+      },
+      {
+        "id": "slot_5",
+        "date": "2026-08-22",
+        "time": "18:00 - 21:00 (晚餐)",
+        "label": "週末熱炒夜"
+      }
+    ],
+    "responses": [
+      {
+        "id": "p_1",
+        "nickname": "主揪阿傑",
+        "email": "ajai@example.com",
+        "availability": {
+          "slot_1": "available",
+          "slot_2": "available",
+          "slot_3": "if_needed",
+          "slot_4": "available",
+          "slot_5": "available"
+        },
+        "comment": "大家快來選時間！我這幾天都算方便～",
+        "updatedAt": "2026-08-14T15:25:39.668Z"
+      },
+      {
+        "id": "p_2",
+        "nickname": "小明",
+        "availability": {
+          "slot_1": "available",
+          "slot_2": "available",
+          "slot_3": "unavailable",
+          "slot_4": "available",
+          "slot_5": "if_needed"
+        },
+        "comment": "週六整天都可以，週日下午不行要加班",
+        "updatedAt": "2026-08-15T15:25:39.668Z"
+      },
+      {
+        "id": "p_3",
+        "nickname": "Lily 莉莉",
+        "email": "lily@example.com",
+        "availability": {
+          "slot_1": "if_needed",
+          "slot_2": "available",
+          "slot_3": "available",
+          "slot_4": "available",
+          "slot_5": "unavailable"
+        },
+        "comment": "最想吃晚餐！",
+        "updatedAt": "2026-08-16T10:25:39.668Z"
+      },
+      {
+        "id": "p_4",
+        "nickname": "陳大華",
+        "availability": {
+          "slot_1": "unavailable",
+          "slot_2": "available",
+          "slot_3": "if_needed",
+          "slot_4": "available",
+          "slot_5": "available"
+        },
+        "updatedAt": "2026-08-16T13:25:39.668Z"
+      },
+      {
+        "id": "p_msvyyx5veajwtiar",
+        "nickname": "1",
+        "email": "",
+        "availability": {
+          "slot_1": "available",
+          "slot_2": "available",
+          "slot_3": "available",
+          "slot_4": "available",
+          "slot_5": "available"
+        },
+        "comment": "",
+        "updatedAt": "2026-08-16T15:38:23.203Z"
+      }
+    ],
+    "status": "active",
+    "createdAt": "2026-08-13T15:25:39.668Z",
+    "updatedAt": "2026-08-16T15:38:23.203Z"
+  },
+  {
+    "id": "event_msvyrgitl1rk1mw2",
+    "hostToken": "token_msvyrgit32cc0qxp",
+    "title": "產品專案週對齊會議",
+    "description": "",
+    "hostName": "",
+    "hostEmail": "",
+    "slots": [
+      {
+        "id": "slot_1_42jk",
+        "date": "2026-08-22",
+        "time": "10:00 - 11:00",
+        "label": "上午會議"
+      },
+      {
+        "id": "slot_2_vvj9",
+        "date": "2026-08-22",
+        "time": "14:00 - 15:00",
+        "label": "下午討論"
+      },
+      {
+        "id": "slot_3_6ay9",
+        "date": "2026-08-23",
+        "time": "10:00 - 11:00",
+        "label": "上午會議"
+      },
+      {
+        "id": "slot_4_4xq5",
+        "date": "2026-08-23",
+        "time": "14:00 - 15:00",
+        "label": "下午討論"
+      }
+    ],
+    "responses": [
+      {
+        "id": "p_msvysf17fgma3opw",
+        "nickname": "小美",
+        "email": "",
+        "availability": {
+          "slot_1_42jk": "available",
+          "slot_2_vvj9": "available",
+          "slot_3_6ay9": "available",
+          "slot_4_4xq5": "available"
+        },
+        "comment": "",
+        "updatedAt": "2026-08-16T15:33:19.771Z"
+      }
+    ],
+    "status": "active",
+    "createdAt": "2026-08-16T15:32:35.045Z",
+    "updatedAt": "2026-08-16T15:34:01.879Z",
+    "finalNote": ""
+  }
+]
