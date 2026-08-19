@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Ban } from "lucide-react";
 import { EventData } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats } from "../lib/slots";
@@ -7,19 +7,23 @@ import { getLifecycleStatus, formatDeadline } from "../lib/eventStatus";
 import { Button, Input } from "../design-system/components";
 import { cardStyle, SectionLabel } from "./mobileStyles";
 import { ReopenModal } from "./ReopenModal";
+import { CancelEventModal } from "./CancelEventModal";
 
 interface HostTabProps {
   event: EventData;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
   onReopen?: (newDeadline?: string) => Promise<void>;
+  onCancelEvent?: () => Promise<void>;
   isLoading: boolean;
 }
 
-export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, isLoading }) => {
+export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, onCancelEvent, isLoading }) => {
   const [selected, setSelected] = useState<string | undefined>(event.slots[0]?.id);
   const [note, setNote] = useState(event.description ? `地點/備註：${event.description}` : "");
   const [confirming, setConfirming] = useState(false);
   const [reopening, setReopening] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const notifyCount = event.responses.filter((r) => r.email && r.email.trim()).length;
   const stats = computeSlotStats(event.slots, event.responses);
   const isDateOnly = event.mode === "date_only";
   const lifecycle = getLifecycleStatus(event);
@@ -91,6 +95,18 @@ export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, i
           </Button>
         </div>
       </div>
+      {onCancelEvent && (
+        <div style={{ ...cardStyle, marginTop: 12, background: "var(--color-error-subtle)", borderColor: "rgba(232,54,26,0.25)" }}>
+          <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 2 }}>危險操作</div>
+          <div style={{ fontSize: 11, color: "var(--color-muted)", marginBottom: 10 }}>取消後活動將無法復原，所有人都會看到取消狀態。</div>
+          <Button variant="hot" fullWidth disabled={isLoading} onClick={() => setCancelling(true)}>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <Ban size={13} />
+              取消活動
+            </span>
+          </Button>
+        </div>
+      )}
       {reopening && onReopen && (
         <ReopenModal
           currentDeadline={event.responseDeadline}
@@ -98,6 +114,18 @@ export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, i
           onConfirm={(newDeadline) => {
             setReopening(false);
             onReopen(newDeadline);
+          }}
+        />
+      )}
+      {cancelling && onCancelEvent && (
+        <CancelEventModal
+          eventTitle={event.title}
+          notifyCount={notifyCount}
+          isLoading={isLoading}
+          onCancel={() => setCancelling(false)}
+          onConfirm={() => {
+            setCancelling(false);
+            onCancelEvent();
           }}
         />
       )}

@@ -3,6 +3,7 @@ import {
   CreateEventInput,
   SubmitResponseInput,
   FinalizeEventInput,
+  SubmitCommentInput,
   EventMode,
 } from "../types.js";
 
@@ -77,6 +78,41 @@ export async function finalizeEvent(eventId: string, input: FinalizeEventInput):
   if (!res.ok) {
     const errData = await res.json().catch(() => ({}));
     throw new Error(errData.error || "拍板定案失敗");
+  }
+
+  const data = await res.json();
+  saveVisitedEvent(data.event);
+  return data.event;
+}
+
+export async function submitComment(eventId: string, input: SubmitCommentInput): Promise<EventData> {
+  const res = await fetch(`/api/events/${eventId}/comments`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || "送出留言失敗");
+  }
+
+  const data = await res.json();
+  if (input.nickname) saveUserNickname(input.nickname);
+  saveVisitedEvent(data.event);
+  return data.event;
+}
+
+export async function cancelEvent(eventId: string, hostToken: string): Promise<EventData> {
+  const res = await fetch(`/api/events/${eventId}/cancel`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ hostToken }),
+  });
+
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.error || "取消活動失敗");
   }
 
   const data = await res.json();

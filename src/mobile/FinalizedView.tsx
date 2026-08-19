@@ -1,21 +1,26 @@
 import React, { useState } from "react";
-import { CheckCircle2, MessageCircle, RotateCcw, Archive } from "lucide-react";
+import { CheckCircle2, MessageCircle, RotateCcw, Archive, Ban } from "lucide-react";
 import { EventData } from "../types";
 import { formatChineseWeekday, generateGoogleCalendarUrl, downloadIcsFile } from "../lib/calendar";
 import { getMeetupEndInfo } from "../lib/eventStatus";
 import { Button } from "../design-system/components";
 import { cardStyle, SectionLabel } from "./mobileStyles";
 import { ReopenModal } from "./ReopenModal";
+import { CancelEventModal } from "./CancelEventModal";
 
 interface FinalizedViewProps {
   event: EventData;
   isHost?: boolean;
   onReopen?: (newDeadline?: string) => Promise<void>;
+  onCancelEvent?: () => Promise<void>;
+  isLoading?: boolean;
   onCopySuccess: () => void;
 }
 
-export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onReopen, onCopySuccess }) => {
+export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onReopen, onCancelEvent, isLoading, onCopySuccess }) => {
   const [reopening, setReopening] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const notifyCount = event.responses.filter((r) => r.email && r.email.trim()).length;
   const slot = event.slots.find((s) => s.id === event.finalSlotId) || event.slots[0];
   const attending = event.responses.filter((r) => r.availability[slot.id] === "available").map((r) => r.nickname);
   const isDateOnly = event.mode === "date_only";
@@ -137,13 +142,25 @@ ${isDateOnly ? "" : `⏰ 時間：${slot.time}\n`}${event.finalNote ? `💬 備�
         <Button variant="dark" fullWidth onClick={handleCopy}>一鍵複製定案通知</Button>
       </div>
 
-      {isHost && onReopen && (
-        <Button variant="muted" onClick={() => setReopening(true)}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <RotateCcw size={13} />
-            重新開放投票
-          </span>
-        </Button>
+      {isHost && (onReopen || onCancelEvent) && (
+        <div style={{ display: "flex", gap: 8 }}>
+          {onReopen && (
+            <Button variant="muted" fullWidth onClick={() => setReopening(true)}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <RotateCcw size={13} />
+                重新開放投票
+              </span>
+            </Button>
+          )}
+          {onCancelEvent && (
+            <Button variant="hot" fullWidth disabled={isLoading} onClick={() => setCancelling(true)}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <Ban size={13} />
+                取消活動
+              </span>
+            </Button>
+          )}
+        </div>
       )}
       {reopening && onReopen && (
         <ReopenModal
@@ -152,6 +169,18 @@ ${isDateOnly ? "" : `⏰ 時間：${slot.time}\n`}${event.finalNote ? `💬 備�
           onConfirm={(newDeadline) => {
             setReopening(false);
             onReopen(newDeadline);
+          }}
+        />
+      )}
+      {cancelling && onCancelEvent && (
+        <CancelEventModal
+          eventTitle={event.title}
+          notifyCount={notifyCount}
+          isLoading={isLoading}
+          onCancel={() => setCancelling(false)}
+          onConfirm={() => {
+            setCancelling(false);
+            onCancelEvent();
           }}
         />
       )}

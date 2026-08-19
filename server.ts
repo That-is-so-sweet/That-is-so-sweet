@@ -7,10 +7,13 @@ import {
   CreateEventInput,
   SubmitResponseInput,
   FinalizeEventInput,
+  SubmitCommentInput,
   ParticipantResponse,
+  EventComment,
   TimeSlot
 } from "./src/types.js";
-import { isVotingOpen, isLinkExpired } from "./src/lib/eventStatus.js";
+import { isVotingOpen, isLinkExpired, canComment } from "./src/lib/eventStatus.js";
+import { sendCancellationEmail } from "./src/lib/mailer.server.js";
 
 const app = express();
 const PORT = 3000;
@@ -106,12 +109,17 @@ function seedDemoEvent() {
       updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
     },
   ];
+  const gatheringComments: EventComment[] = [
+    { id: "cmt_1", nickname: "主揪阿傑", message: "大家記得先看一下熱點圖再投票喔～", createdAt: new Date(Date.now() - 86400000 * 2 + 3600000).toISOString() },
+    { id: "cmt_2", nickname: "小明", message: "推燒肉店那個時段！", createdAt: new Date(Date.now() - 86400000).toISOString() },
+    { id: "cmt_3", nickname: "Lily 莉莉", message: "+1 燒肉，晚餐時段也可以", createdAt: new Date(Date.now() - 3600000 * 5).toISOString() },
+  ];
   eventsMap.set("demo-gathering", {
     id: "demo-gathering", hostToken: "demo-host-token-123",
     title: "八月好友暑期歡聚小酌隊",
     description: "很久沒聚聚囉！挑個週末大家有空的時間吃頓好的 🍻",
     hostName: "阿傑", mode: "time_slots", responseDeadline: addDaysIso(4),
-    slots, responses, status: "active",
+    slots, responses, comments: gatheringComments, status: "active",
     createdAt: new Date(Date.now() - 86400000 * 3).toISOString(), updatedAt: new Date().toISOString(),
   });
 
@@ -131,6 +139,7 @@ function seedDemoEvent() {
       { id: "dp_1", nickname: "Sandy", availability: { d_1: "available", d_2: "available", d_3: "if_needed" }, comment: "我這三天都可以喬", updatedAt: new Date(Date.now() - 86400000).toISOString() },
       { id: "dp_2", nickname: "Marco", availability: { d_1: "if_needed", d_2: "available", d_3: "unavailable" }, updatedAt: new Date(Date.now() - 3600000 * 6).toISOString() },
     ],
+    comments: [],
     status: "active",
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), updatedAt: new Date().toISOString(),
   });
@@ -150,6 +159,7 @@ function seedDemoEvent() {
       { id: "cp_2", nickname: "小玉", availability: { c_1: "available", c_2: "available" }, updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
       { id: "cp_3", nickname: "阿宏", availability: { c_1: "unavailable", c_2: "available" }, updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
     ],
+    comments: [],
     status: "active",
     createdAt: new Date(Date.now() - 86400000 * 9).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
   });
@@ -168,6 +178,9 @@ function seedDemoEvent() {
       { id: "up_1", nickname: "小雨", availability: { u_1: "available", u_2: "if_needed" }, updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
       { id: "up_2", nickname: "阿福", availability: { u_1: "available", u_2: "available" }, updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
       { id: "up_3", nickname: "美美", availability: { u_1: "available", u_2: "unavailable" }, updatedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
+    ],
+    comments: [
+      { id: "cmt_u1", nickname: "小雨", message: "麻辣鍋不吃辣的可以點鴛鴦喔！", createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
     ],
     status: "finalized", finalSlotId: "u_1", finalNote: "訂位小雨，18:00 準時集合",
     createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
@@ -188,6 +201,7 @@ function seedDemoEvent() {
       { id: "ep_2", nickname: "婷婷", availability: { e_1: "available", e_2: "available" }, updatedAt: new Date(Date.now() - 86400000 * 11).toISOString() },
       { id: "ep_3", nickname: "老王", availability: { e_1: "available", e_2: "unavailable" }, updatedAt: new Date(Date.now() - 86400000 * 11).toISOString() },
     ],
+    comments: [],
     status: "finalized", finalSlotId: "e_1", finalNote: "營地入口見，記得帶睡袋！",
     createdAt: new Date(Date.now() - 86400000 * 14).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
   });
@@ -203,8 +217,27 @@ function seedDemoEvent() {
       { id: "xp_1", nickname: "書僮", availability: { x_1: "available" }, updatedAt: new Date(Date.now() - 86400000 * 19).toISOString() },
       { id: "xp_2", nickname: "小安", availability: { x_1: "available" }, updatedAt: new Date(Date.now() - 86400000 * 18).toISOString() },
     ],
+    comments: [],
     status: "finalized", finalSlotId: "x_1", finalNote: "",
     createdAt: new Date(Date.now() - 86400000 * 21).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+  });
+
+  // 7. 主揪已取消範例 — cancelled by the host before the meetup happened.
+  eventsMap.set("demo-cancelled", {
+    id: "demo-cancelled", hostToken: "demo-host-token-cancelled",
+    title: "颱風天爬山團",
+    description: "臨時取消，改期再約",
+    hostName: "阿凱", mode: "time_slots", responseDeadline: addDaysIso(-1),
+    slots: [{ id: "y_1", date: addDays(5), time: "08:00 - 12:00 (早上)", label: "象山步道" }],
+    responses: [
+      { id: "yp_1", nickname: "阿凱", email: "kai@example.com", availability: { y_1: "available" }, updatedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
+      { id: "yp_2", nickname: "小玉", email: "yuyu@example.com", availability: { y_1: "available" }, updatedAt: new Date(Date.now() - 86400000).toISOString() },
+    ],
+    comments: [
+      { id: "cmt_y1", nickname: "阿凱", message: "颱風要來了，這週先取消，之後再約新時間！", createdAt: new Date(Date.now() - 3600000 * 3).toISOString() },
+    ],
+    status: "cancelled", cancelledAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+    createdAt: new Date(Date.now() - 86400000 * 6).toISOString(), updatedAt: new Date(Date.now() - 3600000 * 3).toISOString(),
   });
 
   saveEvents();
@@ -251,6 +284,7 @@ app.post("/api/events", (req, res) => {
     responseDeadline: responseDeadline ? new Date(responseDeadline).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString(),
     slots: formattedSlots,
     responses: [],
+    comments: [],
     status: "active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -300,6 +334,10 @@ app.post("/api/events/:id/respond", (req, res) => {
   const event = eventsMap.get(id);
   if (!event) {
     return res.status(404).json({ error: "找不到此活動" });
+  }
+
+  if (event.status === "cancelled") {
+    return res.status(400).json({ error: "此活動已由主揪取消，暫停接受新投票" });
   }
 
   if (event.status === "finalized") {
@@ -395,6 +433,10 @@ app.post("/api/events/:id/finalize", (req, res) => {
     return res.status(403).json({ error: "主揪驗證失敗，您沒有此活動的管理權限" });
   }
 
+  if (event.status === "cancelled") {
+    return res.status(400).json({ error: "此活動已取消，無法拍板定案" });
+  }
+
   const targetSlot = event.slots.find((s) => s.id === finalSlotId);
   if (!targetSlot) {
     return res.status(400).json({ error: "選擇的最終時段無效" });
@@ -445,6 +487,102 @@ app.post("/api/events/:id/reopen", (req, res) => {
   return res.json({
     message: "活動已重新開放投票統計",
     event,
+  });
+});
+
+// 06. Post a comment (open to anyone as long as the link isn't expired)
+app.post("/api/events/:id/comments", (req, res) => {
+  const { id } = req.params;
+  const { nickname, message } = req.body as SubmitCommentInput;
+
+  const event = eventsMap.get(id);
+  if (!event) {
+    return res.status(404).json({ error: "找不到此活動" });
+  }
+
+  if (isLinkExpired(event)) {
+    return res.status(404).json({ error: "此活動連結已失效（活動結束超過 7 天）" });
+  }
+
+  if (!canComment(event)) {
+    return res.status(400).json({ error: "此活動目前無法留言" });
+  }
+
+  if (!nickname || !nickname.trim()) {
+    return res.status(400).json({ error: "請輸入您的暱稱" });
+  }
+
+  if (!message || !message.trim()) {
+    return res.status(400).json({ error: "請輸入留言內容" });
+  }
+
+  if (message.trim().length > 300) {
+    return res.status(400).json({ error: "留言內容不可超過 300 字" });
+  }
+
+  const comment: EventComment = {
+    id: generateId("cmt"),
+    nickname: nickname.trim(),
+    message: message.trim(),
+    createdAt: new Date().toISOString(),
+  };
+
+  if (!event.comments) event.comments = [];
+  event.comments.push(comment);
+  event.updatedAt = comment.createdAt;
+
+  eventsMap.set(id, event);
+  saveEvents();
+
+  return res.json({
+    message: "留言已送出",
+    comment,
+    event,
+  });
+});
+
+// 07. Host cancels the event at any stage — notifies everyone who left an email
+app.post("/api/events/:id/cancel", async (req, res) => {
+  const { id } = req.params;
+  const { hostToken } = req.body;
+
+  const event = eventsMap.get(id);
+  if (!event) {
+    return res.status(404).json({ error: "找不到此活動" });
+  }
+
+  if (event.hostToken !== hostToken) {
+    return res.status(403).json({ error: "主揪驗證失敗，您沒有此活動的管理權限" });
+  }
+
+  if (event.status === "cancelled") {
+    return res.status(400).json({ error: "此活動已經取消" });
+  }
+
+  const now = new Date().toISOString();
+  event.status = "cancelled";
+  event.cancelledAt = now;
+  event.updatedAt = now;
+
+  eventsMap.set(id, event);
+  saveEvents();
+
+  const recipients = event.responses.filter((r) => r.email && r.email.trim());
+  await Promise.all(
+    recipients.map((r) =>
+      sendCancellationEmail({
+        to: r.email!.trim(),
+        nickname: r.nickname,
+        eventTitle: event.title,
+        hostName: event.hostName,
+      })
+    )
+  );
+
+  return res.json({
+    message: "活動已取消，通知已發送給留下 Email 的參與者",
+    event,
+    notifiedCount: recipients.length,
   });
 });
 

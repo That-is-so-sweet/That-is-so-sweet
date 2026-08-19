@@ -35,6 +35,12 @@ export function isVotingOpen(event: Pick<EventData, "status" | "responseDeadline
   return Date.now() <= new Date(event.responseDeadline).getTime();
 }
 
+// Comments stay open for the whole lifetime of the link — active, voting
+// closed, or finalized — they only stop once the link itself expires.
+export function canComment(event: Pick<EventData, "status" | "finalSlotId" | "slots">): boolean {
+  return !isLinkExpired(event);
+}
+
 function dateOnlyDiffDays(dateStr: string): number {
   // Whole calendar days between "today" and dateStr (positive = dateStr is in the past).
   const today = new Date();
@@ -62,16 +68,19 @@ export function isLinkExpired(event: Pick<EventData, "status" | "finalSlotId" | 
   return !!info && info.daysSinceEnded > EXPIRE_AFTER_DAYS;
 }
 
-export type LifecycleKey = "collecting" | "voting_closed" | "finalized_upcoming" | "finalized_ended";
+export type LifecycleKey = "collecting" | "voting_closed" | "finalized_upcoming" | "finalized_ended" | "cancelled";
 
 export interface LifecycleStatus {
   key: LifecycleKey;
   label: string;
-  sublabel: "尚未投完" | "已投完";
+  sublabel: "尚未投完" | "已投完" | "已取消";
   color: string;
 }
 
 export function getLifecycleStatusCore(status: EventData["status"] | undefined, responseDeadline: string | undefined, finalSlotDate: string | undefined): LifecycleStatus {
+  if (status === "cancelled") {
+    return { key: "cancelled", label: "活動已取消", sublabel: "已取消", color: "var(--color-error)" };
+  }
   if (status === "finalized") {
     const info = getMeetupEndInfoFromDate(status, finalSlotDate);
     if (info?.hasEnded) {
@@ -101,6 +110,12 @@ export function formatDeadline(iso: string): string {
   const d = new Date(iso);
   const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
   return `${d.getMonth() + 1}/${d.getDate()} (週${weekdays[d.getDay()]}) ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+export function formatCommentDate(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 export function formatRemaining(iso: string): string {

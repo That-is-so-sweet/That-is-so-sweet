@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Users, Share2, History, Plus, Clock, CalendarDays } from "lucide-react";
-import { EventData, SubmitResponseInput } from "../types";
+import { EventData, SubmitResponseInput, SubmitCommentInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
 import { getLifecycleStatus } from "../lib/eventStatus";
 import { Badge, Tag } from "../design-system/components";
@@ -9,6 +9,8 @@ import { VoteTab } from "../mobile/VoteTab";
 import { HeatmapTab } from "../mobile/HeatmapTab";
 import { HostTab } from "../mobile/HostTab";
 import { FinalizedView } from "../mobile/FinalizedView";
+import { CancelledView } from "../mobile/CancelledView";
+import { CommentBoard } from "../mobile/CommentBoard";
 import { iconBtnStyle } from "../mobile/mobileStyles";
 
 interface EventViewProps {
@@ -17,6 +19,8 @@ interface EventViewProps {
   onRespond: (input: SubmitResponseInput) => Promise<void>;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
   onReopen: (newDeadline?: string) => Promise<void>;
+  onCancelEvent: () => Promise<void>;
+  onSubmitComment: (input: SubmitCommentInput) => Promise<void>;
   onNewEvent: () => void;
   onOpenShareModal: () => void;
   onOpenHistory: () => void;
@@ -36,6 +40,8 @@ export const EventView: React.FC<EventViewProps> = ({
   onRespond,
   onFinalize,
   onReopen,
+  onCancelEvent,
+  onSubmitComment,
   onNewEvent,
   onOpenShareModal,
   onOpenHistory,
@@ -70,7 +76,7 @@ export const EventView: React.FC<EventViewProps> = ({
           }
         />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "0 20px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", overflowX: "auto" }}>
-          {event.status !== "finalized" && (
+          {event.status === "active" && (
             <div style={{ display: "flex", gap: 20, flexShrink: 0 }}>
               {visibleTabs.map((t) => (
                 <button
@@ -100,7 +106,7 @@ export const EventView: React.FC<EventViewProps> = ({
           <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 0", flexShrink: 0, marginLeft: "auto" }}>
             <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
             <span style={{ fontSize: 11, fontWeight: 800, color: lifecycle.color, whiteSpace: "nowrap" }}>{lifecycle.label}</span>
-            <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
+            <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
             <Tag size="sm" emoji={event.mode === "date_only" ? <CalendarDays size={12} /> : <Clock size={12} />}>
               {event.mode === "date_only" ? "僅選日期" : "含時段"}
             </Tag>
@@ -108,15 +114,30 @@ export const EventView: React.FC<EventViewProps> = ({
           </div>
         </div>
 
-        {event.status === "finalized" ? (
-          <FinalizedView event={event} isHost={isHost} onReopen={onReopen} onCopySuccess={onCopySuccess} />
+        {event.status === "cancelled" ? (
+          <>
+            <CancelledView event={event} />
+            <div style={{ padding: "0 20px 20px" }}>
+              <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
+            </div>
+          </>
+        ) : event.status === "finalized" ? (
+          <>
+            <FinalizedView event={event} isHost={isHost} onReopen={onReopen} onCancelEvent={isHost ? onCancelEvent : undefined} isLoading={isLoading} onCopySuccess={onCopySuccess} />
+            <div style={{ padding: "0 20px 20px" }}>
+              <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
+            </div>
+          </>
         ) : (
           <>
             {tab === "vote" && (
               <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} />
             )}
             {tab === "heatmap" && <HeatmapTab event={event} userNickname={nickname} onGoToVote={() => setTab("vote")} />}
-            {tab === "host" && isHost && <HostTab event={event} onFinalize={onFinalize} onReopen={onReopen} isLoading={isLoading} />}
+            {tab === "host" && isHost && <HostTab event={event} onFinalize={onFinalize} onReopen={onReopen} onCancelEvent={onCancelEvent} isLoading={isLoading} />}
+            <div style={{ padding: "0 20px 20px" }}>
+              <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
+            </div>
           </>
         )}
       </div>

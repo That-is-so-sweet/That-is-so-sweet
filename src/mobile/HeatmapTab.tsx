@@ -112,7 +112,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
           <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)", flexWrap: "wrap" }}>
             <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
             狀態：{lifecycle.label}
-            <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
+            <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
             <Tag size="sm" emoji={isDateOnly ? <CalendarDays size={12} /> : <Clock size={12} />}>{isDateOnly ? "僅選日期" : "含時段"}</Tag>
           </div>
           {event.responseDeadline && (

@@ -13,4 +13,5 @@ export const DEMO_EVENTS: DemoEventInfo[] = [
   { id: "demo-finalized-upcoming", label: "已敲定・尚未舉辦", desc: "時間已定案，活動尚未開始" },
   { id: "demo-finalized-ended", label: "活動已結束（3 天前）", desc: "活動已結束，連結 4 天後將失效" },
   { id: "demo-expired-link", label: "連結已失效範例", desc: "活動結束超過 7 天，示範失效畫面" },
+  { id: "demo-cancelled", label: "主揪已取消範例", desc: "主揪臨時取消活動，示範取消畫面" },
 ];

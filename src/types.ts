@@ -18,6 +18,13 @@ export interface ParticipantResponse {
   updatedAt: string;
 }
 
+export interface EventComment {
+  id: string;
+  nickname: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface EventData {
   id: string;
   hostToken: string; // Secret key generated for creator
@@ -29,9 +36,11 @@ export interface EventData {
   responseDeadline: string; // ISO datetime string — voting closes after this
   slots: TimeSlot[];
   responses: ParticipantResponse[];
-  status: 'active' | 'finalized';
+  comments: EventComment[];
+  status: 'active' | 'finalized' | 'cancelled';
   finalSlotId?: string;
   finalNote?: string;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -58,6 +67,15 @@ export interface FinalizeEventInput {
   hostToken: string;
   finalSlotId: string;
   finalNote?: string;
+}
+
+export interface SubmitCommentInput {
+  nickname: string;
+  message: string;
+}
+
+export interface CancelEventInput {
+  hostToken: string;
 }
 
 export interface ToastMessage {

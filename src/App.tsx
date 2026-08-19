@@ -11,6 +11,7 @@ import {
   EventData,
   CreateEventInput,
   SubmitResponseInput,
+  SubmitCommentInput,
   ToastMessage,
 } from "./types";
 import {
@@ -19,6 +20,8 @@ import {
   submitResponse,
   finalizeEvent,
   reopenEvent,
+  cancelEvent,
+  submitComment,
   getHostToken,
   getVisitedEvents,
   VisitedEventItem
@@ -188,6 +191,30 @@ export default function App() {
     }
   };
 
+  const handleCancelEvent = async () => {
+    if (!currentEventId || !currentHostToken) return;
+    setIsLoading(true);
+    try {
+      const updated = await cancelEvent(currentEventId, currentHostToken);
+      setEventData(updated);
+      addToast("info", "活動已取消，通知信已發送給留下 Email 的參與者");
+    } catch (err: any) {
+      addToast("error", err.message || "取消活動失敗");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmitComment = async (input: SubmitCommentInput) => {
+    if (!currentEventId) return;
+    try {
+      const updated = await submitComment(currentEventId, input);
+      setEventData(updated);
+    } catch (err: any) {
+      addToast("error", err.message || "送出留言失敗");
+    }
+  };
+
   const handleGoHome = () => {
     window.location.hash = "";
     setPageError(null);
@@ -212,6 +239,8 @@ export default function App() {
         onRespond={handleRespond}
         onFinalize={handleFinalize}
         onReopen={handleReopen}
+        onCancelEvent={handleCancelEvent}
+        onSubmitComment={handleSubmitComment}
         isShareModalOpen={isShareModalOpen}
         setIsShareModalOpen={setIsShareModalOpen}
         isHistoryOpen={isHistoryOpen}
@@ -273,6 +302,8 @@ export default function App() {
             onRespond={handleRespond}
             onFinalize={handleFinalize}
             onReopen={handleReopen}
+            onCancelEvent={handleCancelEvent}
+            onSubmitComment={handleSubmitComment}
             onNewEvent={handleGoHome}
             onOpenShareModal={() => setIsShareModalOpen(true)}
             onOpenHistory={() => setIsHistoryOpen(true)}

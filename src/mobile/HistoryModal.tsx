@@ -36,7 +36,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, eventsList,
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 13, fontWeight: 800 }}>{h.title}</span>
                     {h.isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
-                    <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : "muted"} size="sm">{lifecycle.label}</Badge>
+                    <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.label}</Badge>
                   </div>
                   <div style={{ fontSize: 10, color: "var(--color-muted)", marginTop: 4 }}>
                     上次查看：{new Date(h.updatedAt).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}

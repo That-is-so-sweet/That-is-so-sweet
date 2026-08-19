@@ -1,5 +1,5 @@
 import React from "react";
-import { EventData, CreateEventInput, SubmitResponseInput, ToastMessage } from "../types";
+import { EventData, CreateEventInput, SubmitResponseInput, SubmitCommentInput, ToastMessage } from "../types";
 import { VisitedEventItem } from "../lib/api";
 import { CreateWizard } from "./CreateWizard";
 import { EventScreen } from "./EventScreen";
@@ -18,6 +18,8 @@ interface MobileAppProps {
   onRespond: (input: SubmitResponseInput) => Promise<void>;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
   onReopen: (newDeadline?: string) => Promise<void>;
+  onCancelEvent: () => Promise<void>;
+  onSubmitComment: (input: SubmitCommentInput) => Promise<void>;
   isShareModalOpen: boolean;
   setIsShareModalOpen: (open: boolean) => void;
   isHistoryOpen: boolean;
@@ -40,6 +42,8 @@ export const MobileApp: React.FC<MobileAppProps> = ({
   onRespond,
   onFinalize,
   onReopen,
+  onCancelEvent,
+  onSubmitComment,
   isShareModalOpen,
   setIsShareModalOpen,
   isHistoryOpen,
@@ -97,6 +101,8 @@ export const MobileApp: React.FC<MobileAppProps> = ({
             onRespond={onRespond}
             onFinalize={onFinalize}
             onReopen={onReopen}
+            onCancelEvent={onCancelEvent}
+            onSubmitComment={onSubmitComment}
             onNewEvent={onGoHome}
             onOpenShare={() => setIsShareModalOpen(true)}
             onOpenHistory={() => setIsHistoryOpen(true)}
