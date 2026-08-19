@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Lightbulb, Flag, Zap, ChevronUp, ChevronDown } from "lucide-react";
-import { navBtnStyle, quickBtnStyle } from "./mobileStyles";
+import { Lightbulb, Flag } from "lucide-react";
+import { navBtnStyle } from "./mobileStyles";
 import { HOLIDAYS_2026 } from "./holidays";
 import { TimeSlot } from "../types";
 
@@ -15,11 +15,6 @@ interface MonthCalendarProps {
 }
 
 const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
-const RANGE_OPTS: { k: "month" | "2weeks" | "3months"; label: string }[] = [
-  { k: "month", label: "本月" },
-  { k: "2weeks", label: "近兩週" },
-  { k: "3months", label: "近三個月" },
-];
 
 export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   selectedDates,
@@ -30,39 +25,16 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   activeDate,
   onActiveDateChange,
 }) => {
-  const [bulkRange, setBulkRange] = useState<"month" | "2weeks" | "3months">("month");
-  const [toolsOpen, setToolsOpen] = useState(false);
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startDay = new Date(year, month, 1).getDay();
   const todayStr = new Date().toISOString().slice(0, 10);
   const dateStr = (d: number) => `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  const fmtDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
   const monthHolidays = Object.entries(HOLIDAYS_2026).filter(([k]) => k.startsWith(monthPrefix));
   const set = new Set(selectedDates);
   const countFor = (ds: string) => (slots ? slots.filter((s) => s.date === ds).length : 0);
-
-  const rangeDates = (): Date[] => {
-    if (bulkRange === "month") return Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
-    const days = bulkRange === "2weeks" ? 14 : 90;
-    return Array.from({ length: days }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      return d;
-    });
-  };
-
-  const bulkAdd = (pred: (dow: number) => boolean) => {
-    const next = new Set(selectedDates);
-    rangeDates().forEach((d) => {
-      const ds = fmtDate(d);
-      if (ds < todayStr) return;
-      if (pred(d.getDay())) next.add(ds);
-    });
-    onChange(Array.from(next).sort());
-  };
 
   // Click-and-drag multi-select: dragging across cells adds/removes them in bulk (decided by the
   // first cell's state), same for mouse drag and touch swipe. A plain tap (no drag movement)
@@ -316,97 +288,6 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
           ))}
         </div>
       )}
-
-      <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-        <button
-          onClick={() => setToolsOpen((v) => !v)}
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 5,
-            fontSize: 11,
-            fontWeight: 700,
-            padding: "7px 0",
-            borderRadius: "var(--radius-md)",
-            border: "1px dashed var(--color-border-strong)",
-            background: toolsOpen ? "var(--color-cream)" : "#fff",
-            color: "var(--color-muted)",
-            cursor: "pointer",
-          }}
-        >
-          <Zap size={12} />
-          批次快速勾選
-          {toolsOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        </button>
-
-        {toolsOpen && (
-          <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>套用範圍</div>
-            <div
-              style={{
-                display: "flex",
-                gap: 2,
-                marginBottom: 10,
-                background: "var(--color-cream)",
-                border: "1px solid var(--color-border)",
-                borderRadius: "var(--radius-md)",
-                padding: 3,
-              }}
-            >
-              {RANGE_OPTS.map((r) => (
-                <button
-                  key={r.k}
-                  onClick={() => setBulkRange(r.k)}
-                  style={{
-                    flex: 1,
-                    fontSize: 11,
-                    fontWeight: 700,
-                    padding: "7px 4px",
-                    borderRadius: "var(--radius-sm)",
-                    border: "none",
-                    background: bulkRange === r.k ? "var(--color-primary)" : "transparent",
-                    color: bulkRange === r.k ? "#fff" : "var(--color-ink)",
-                    cursor: "pointer",
-                    transition: "background 150ms ease, color 150ms ease",
-                  }}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>勾選目標</div>
-            <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
-              <button onClick={() => bulkAdd(() => true)} style={{ ...quickBtnStyle, flex: 1 }}>
-                全部
-              </button>
-              <button onClick={() => bulkAdd((dow) => dow >= 1 && dow <= 5)} style={{ ...quickBtnStyle, flex: 1 }}>
-                平日
-              </button>
-              <button onClick={() => bulkAdd((dow) => dow === 0 || dow === 6)} style={{ ...quickBtnStyle, flex: 1 }}>
-                週末
-              </button>
-            </div>
-            <div style={{ display: "flex", gap: 4 }}>
-              {WEEK.map((w, dow) => (
-                <button
-                  key={dow}
-                  onClick={() => bulkAdd((x) => x === dow)}
-                  style={{
-                    ...quickBtnStyle,
-                    flex: 1,
-                    color: dow === 0 || dow === 6 ? "var(--color-hot)" : "var(--color-ink)",
-                  }}
-                >
-                  {w}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

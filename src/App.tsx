@@ -40,6 +40,10 @@ export default function App() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [historyList, setHistoryList] = useState<VisitedEventItem[]>([]);
 
+  // Tracks an eventId whose data was just set directly in state (e.g. right
+  // after creation), so the hashchange this triggers doesn't re-fetch it.
+  const skipNextHashLoadRef = React.useRef<string | null>(null);
+
   const addToast = (type: "success" | "error" | "info", text: string) => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, type, text }]);
@@ -86,9 +90,18 @@ export default function App() {
     const handleHashChange = () => {
       const { eventId, token } = parseHashParams();
       if (eventId) {
+        // Skip re-fetching an event whose data we just set locally
+        // (e.g. right after creating it) — the hash update below still
+        // fires this listener, and a redundant fetch that happens to
+        // fail would otherwise wipe out the data we already have.
+        if (skipNextHashLoadRef.current === eventId) {
+          skipNextHashLoadRef.current = null;
+          return;
+        }
         loadEvent(eventId, token || undefined);
       } else {
         // No event in hash -> show create event form
+        setPageError(null);
         setCurrentEventId(null);
         setEventData(null);
       }
@@ -115,7 +128,9 @@ export default function App() {
       setCurrentEventId(result.event.id);
       setCurrentHostToken(result.hostToken);
 
-      // Update URL hash without full reload
+      // Update URL hash without full reload. We already have the event data
+      // in state, so tell the hashchange listener to skip its redundant fetch.
+      skipNextHashLoadRef.current = result.event.id;
       window.location.hash = `event=${result.event.id}&hostToken=${result.hostToken}`;
 
       addToast("success", "活動成功建立！專屬連結已產生");
@@ -175,6 +190,7 @@ export default function App() {
 
   const handleGoHome = () => {
     window.location.hash = "";
+    setPageError(null);
     setCurrentEventId(null);
     setEventData(null);
   };

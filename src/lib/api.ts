@@ -9,6 +9,7 @@ const LOCAL_HOST_TOKENS_KEY = "gathertime_host_tokens"; // { [eventId]: hostToke
 const LOCAL_USER_NICKNAME_KEY = "gathertime_user_nickname";
 const LOCAL_USER_EMAIL_KEY = "gathertime_user_email";
 const LOCAL_MY_EVENTS_KEY = "gathertime_my_events"; // Array of event IDs visited or created
+const LOCAL_RECENT_SLOT_PRESETS_KEY = "gathertime_recent_slot_presets"; // Array of { start, label } from the last created event
 
 export async function fetchEvent(id: string, hostToken?: string): Promise<EventData & { isHost?: boolean }> {
   const url = hostToken
@@ -184,4 +185,32 @@ export function getVisitedEvents(): VisitedEventItem[] {
   } catch {
     return [];
   }
+}
+
+export interface RecentSlotPreset {
+  start: string;
+  label: string;
+}
+
+export function getRecentSlotPresets(): RecentSlotPreset[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_RECENT_SLOT_PRESETS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveRecentSlotPresets(slots: { time: string; label?: string }[]) {
+  try {
+    const seen = new Set<string>();
+    const presets: RecentSlotPreset[] = [];
+    slots.forEach((s) => {
+      const key = `${s.time}__${s.label || ""}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      presets.push({ start: s.time, label: s.label || "" });
+    });
+    localStorage.setItem(LOCAL_RECENT_SLOT_PRESETS_KEY, JSON.stringify(presets.slice(0, 10)));
+  } catch {}
 }

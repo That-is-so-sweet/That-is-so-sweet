@@ -7,6 +7,7 @@ import { Button, Input, Tag } from "../design-system/components";
 import { MonthCalendar } from "../mobile/MonthCalendar";
 import { MiniMonthPicker } from "../mobile/MiniMonthPicker";
 import { cardStyle, SectionLabel } from "../mobile/mobileStyles";
+import { getRecentSlotPresets, saveRecentSlotPresets } from "../lib/api";
 
 interface CreateEventProps {
   onSubmit: (input: CreateEventInput) => Promise<void>;
@@ -23,16 +24,6 @@ const DEFAULT_SLOTS: Omit<TimeSlot, "id">[] = [
   { date: SUN, time: "14:00", label: "下午討論" },
 ];
 
-const QUICK_PRESETS = [
-  { start: "10:00", label: "上午對齊" },
-  { start: "12:00", label: "午餐" },
-  { start: "14:00", label: "下午討論" },
-  { start: "14:00", label: "下午茶" },
-  { start: "18:00", label: "晚餐" },
-  { start: "20:00", label: "晚間線上會" },
-  { start: "21:00", label: "續攤" },
-];
-
 export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const [title, setTitle] = useState("");
@@ -45,6 +36,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
   const [label, setLabel] = useState("");
   const [applyToAllDates, setApplyToAllDates] = useState(false);
   const [activeDate, setActiveDate] = useState<string | null>(selectedDates[0] || null);
+  const [quickPresets] = useState(() => getRecentSlotPresets());
 
   useEffect(() => {
     if (!activeDate || !selectedDates.includes(activeDate)) setActiveDate(selectedDates[0] || null);
@@ -87,6 +79,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
   const handleSubmit = () => {
     if (!canSubmit) return;
+    saveRecentSlotPresets(slots);
     onSubmit({
       title: title.trim(),
       hostName: hostName.trim(),
@@ -171,20 +164,22 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
                   <Button variant="primary" size="sm" fullWidth onClick={addCustom}>+ 加入此時段</Button>
 
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>一鍵常用時段</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                      {QUICK_PRESETS.map((p, i) => (
-                        <button
-                          key={i}
-                          onClick={() => addPreset(p)}
-                          style={{ padding: "7px 10px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", background: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                        >
-                          {p.start} · {p.label}
-                        </button>
-                      ))}
+                  {quickPresets.length > 0 && (
+                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>一鍵常用時段（上次使用）</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                        {quickPresets.map((p, i) => (
+                          <button
+                            key={i}
+                            onClick={() => addPreset(p)}
+                            style={{ padding: "7px 10px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", background: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                          >
+                            {p.start}{p.label ? ` · ${p.label}` : ""}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 10 }}>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Medal, MessageCircle, LayoutGrid, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Medal, MessageCircle, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp } from "lucide-react";
 import { EventData, SlotStats } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats } from "../lib/slots";
-import { Avatar, Badge, Button, ProgressBar } from "../design-system/components";
+import { Avatar, Badge, Button } from "../design-system/components";
 import { cardStyle, navBtnStyle, SectionLabel, STATUS_META } from "./mobileStyles";
 
 interface HeatmapTabProps {
@@ -22,15 +22,15 @@ const BreakdownIcons: React.FC<{ s: SlotStats; color?: string; size?: number }> 
   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
     <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: color || STATUS_META.available.color }}>
       <STATUS_META.available.icon size={size} color={color || STATUS_META.available.color} />
-      {s.availableCount} 確定有空
+      {s.availableCount}
     </span>
     <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: color || STATUS_META.if_needed.color }}>
       <STATUS_META.if_needed.icon size={size} color={color || STATUS_META.if_needed.color} />
-      {s.ifNeededCount} 可能
+      {s.ifNeededCount}
     </span>
     <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: color || STATUS_META.unavailable.color }}>
       <STATUS_META.unavailable.icon size={size} color={color || STATUS_META.unavailable.color} />
-      {s.unavailableCount} 不行
+      {s.unavailableCount}
     </span>
   </div>
 );
@@ -59,7 +59,7 @@ const NamesPanel: React.FC<{ s: SlotStats }> = ({ s }) => (
 );
 
 export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onGoToVote }) => {
-  const [distMode, setDistMode] = useState<"grid" | "bar" | "calendar">("grid");
+  const [distMode, setDistMode] = useState<"bar" | "calendar">("bar");
   const [calViewDate, setCalViewDate] = useState(new Date());
   const [calActiveDate, setCalActiveDate] = useState<string | null>(null);
   const [showAllTop, setShowAllTop] = useState(false);
@@ -145,65 +145,9 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
       ) : (
         <>
           <div style={cardStyle}>
-            <SectionLabel title="交集時段" />
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {top.map((s, i) => (
-                <div key={s.slot.id} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 900, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      {i === 0 ? (
-                        <Trophy size={13} color={medalColors[0]} />
-                      ) : (
-                        <Medal size={13} color={medalColors[i] || medalColors[2]} />
-                      )}
-                      {s.slot.date} ({formatChineseWeekday(s.slot.date)}) {s.slot.time}
-                    </span>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-success)" }}>
-                      {s.availableCount}/{event.responses.length}
-                    </span>
-                  </div>
-                  <ProgressBar value={s.availableCount} max={event.responses.length} variant={i === 0 ? "hot" : "primary"} size="sm" />
-                </div>
-              ))}
-            </div>
-            {moreCount > 0 && (
-              <button
-                onClick={() => setShowAllTop((v) => !v)}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 4,
-                  marginTop: 8,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: "7px 0",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px dashed var(--color-border-strong)",
-                  background: "#fff",
-                  color: "var(--color-muted)",
-                  cursor: "pointer",
-                }}
-              >
-                {showAllTop ? (
-                  <>
-                    收合
-                    <ChevronUp size={12} />
-                  </>
-                ) : (
-                  <>
-                    還有 {moreCount} 個交集時段
-                    <ChevronDown size={12} />
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-          <div style={cardStyle}>
-            <SectionLabel title="時間熱點分佈" />
+            <SectionLabel title="交集時段與熱點分佈" />
             <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3, marginBottom: 10 }}>
-              {[{ k: "grid" as const, label: "色塊檢視", icon: LayoutGrid }, { k: "bar" as const, label: "長條圖檢視", icon: BarChart3 }, { k: "calendar" as const, label: "月曆檢視", icon: CalendarDays }].map((m) => (
+              {[{ k: "bar" as const, label: "長條圖檢視", icon: BarChart3 }, { k: "calendar" as const, label: "月曆檢視", icon: CalendarDays }].map((m) => (
                 <button
                   key={m.k}
                   onClick={() => setDistMode(m.k)}
@@ -246,97 +190,89 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
                 </span>
               </div>
               <div style={{ fontSize: 9, color: "var(--color-muted)", marginTop: 4, lineHeight: 1.5 }}>
-                色塊與月曆的顏色深淺僅以「確定有空」人數計算，「可能」不算在內；點選時段可展開查看名單
+                月曆的顏色深淺僅以「確定有空」人數計算，「可能」不算在內；點選時段可展開查看名單
               </div>
             </div>
 
-            {distMode === "grid" &&
-              (Object.entries(grouped) as [string, SlotStats[]][]).map(([date, list]) => {
-                const expandedInDate = list.find((s) => s.slotId === expandedSlotId);
-                return (
-                  <div key={date} style={{ marginBottom: 8 }}>
-                    <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)" }}>
-                      {date} ({formatChineseWeekday(date)})
-                    </span>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 4 }}>
-                      {list.map((s) => {
-                        const ratio = total ? s.availableCount / total : 0;
-                        const bg = heatColor(ratio);
-                        const fg = ratio >= 0.75 ? "#fff" : "var(--color-ink)";
-                        const isExpanded = expandedSlotId === s.slotId;
-                        return (
-                          <button
-                            key={s.slot.id}
-                            onClick={() => toggleExpand(s.slotId)}
-                            style={{
-                              textAlign: "left",
-                              borderRadius: "var(--radius-md)",
-                              padding: 8,
-                              background: bg,
-                              color: fg,
-                              border: isExpanded ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
-                              cursor: "pointer",
-                            }}
-                          >
-                            <div style={{ fontSize: 11, fontWeight: 800 }}>{s.slot.time}</div>
-                            <div style={{ fontSize: 10, marginTop: 2, fontWeight: 700, opacity: 0.9 }}>{s.availableCount}/{total} 確定有空</div>
-                            <div style={{ marginTop: 4 }}>
-                              <BreakdownIcons s={s} color="currentColor" size={9} />
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {expandedInDate && <NamesPanel s={expandedInDate} />}
-                  </div>
-                );
-              })}
-
-            {distMode === "bar" &&
-              (Object.entries(grouped) as [string, SlotStats[]][]).map(([date, list]) => (
-                <div key={date} style={{ marginBottom: 12 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)" }}>
-                    {date} ({formatChineseWeekday(date)})
-                  </span>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
-                    {list.map((s) => {
-                      const availPct = total ? (s.availableCount / total) * 100 : 0;
-                      const ifNeededPct = total ? (s.ifNeededCount / total) * 100 : 0;
-                      const unavailPct = total ? (s.unavailableCount / total) * 100 : 0;
-                      const isExpanded = expandedSlotId === s.slotId;
-                      return (
-                        <div key={s.slot.id}>
-                          <button
-                            onClick={() => toggleExpand(s.slotId)}
-                            style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
-                              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-ink)" }}>
-                                {s.slot.time}
-                                {s.slot.label && <span style={{ fontWeight: 500, color: "var(--color-muted)" }}> · {s.slot.label}</span>}
-                              </span>
-                              <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-success)" }}>{s.availableCount}/{total} 確定有空</span>
-                            </div>
-                            <div style={{ width: "100%", height: 14, borderRadius: 999, background: "var(--color-cream)", overflow: "hidden", display: "flex" }}>
-                              {availPct > 0 && <div style={{ width: `${availPct}%`, background: "var(--color-success)", transition: "width 600ms var(--ease-spring)" }} />}
-                              {ifNeededPct > 0 && <div style={{ width: `${ifNeededPct}%`, background: "var(--color-secondary)", transition: "width 600ms var(--ease-spring)" }} />}
-                              {unavailPct > 0 && <div style={{ width: `${unavailPct}%`, background: "var(--color-border-strong)", transition: "width 600ms var(--ease-spring)" }} />}
-                            </div>
-                            <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                              <BreakdownIcons s={s} size={9} />
-                              <span style={{ fontSize: 9, fontWeight: 700, color: "var(--color-muted)", display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
-                                {isExpanded ? "收合" : "查看名單"}
-                                {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                              </span>
-                            </div>
-                          </button>
-                          {isExpanded && <NamesPanel s={s} />}
-                        </div>
-                      );
-                    })}
-                  </div>
+            {distMode === "bar" && (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {top.map((s, i) => {
+                    const availPct = total ? (s.availableCount / total) * 100 : 0;
+                    const ifNeededPct = total ? (s.ifNeededCount / total) * 100 : 0;
+                    const unavailPct = total ? (s.unavailableCount / total) * 100 : 0;
+                    const isExpanded = expandedSlotId === s.slotId;
+                    return (
+                      <div key={s.slot.id}>
+                        <button
+                          onClick={() => toggleExpand(s.slotId)}
+                          style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-ink)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                              {i === 0 ? (
+                                <Trophy size={13} color={medalColors[0]} />
+                              ) : (
+                                <Medal size={13} color={medalColors[i] || medalColors[2]} />
+                              )}
+                              {s.slot.date} ({formatChineseWeekday(s.slot.date)}) {s.slot.time}
+                              {s.slot.label && <span style={{ fontWeight: 500, color: "var(--color-muted)" }}> · {s.slot.label}</span>}
+                            </span>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-success)" }}>{s.availableCount}/{total} 確定有空</span>
+                          </div>
+                          <div style={{ width: "100%", height: 14, borderRadius: 999, background: "var(--color-cream)", overflow: "hidden", display: "flex" }}>
+                            {availPct > 0 && <div style={{ width: `${availPct}%`, background: "var(--color-success)", transition: "width 600ms var(--ease-spring)" }} />}
+                            {ifNeededPct > 0 && <div style={{ width: `${ifNeededPct}%`, background: "var(--color-secondary)", transition: "width 600ms var(--ease-spring)" }} />}
+                            {unavailPct > 0 && <div style={{ width: `${unavailPct}%`, background: "var(--color-border-strong)", transition: "width 600ms var(--ease-spring)" }} />}
+                          </div>
+                          <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <BreakdownIcons s={s} size={9} />
+                            <span style={{ fontSize: 9, fontWeight: 700, color: "var(--color-muted)", display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                              {isExpanded ? "收合" : "查看名單"}
+                              {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                            </span>
+                          </div>
+                        </button>
+                        {isExpanded && <NamesPanel s={s} />}
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+                {moreCount > 0 && (
+                  <button
+                    onClick={() => setShowAllTop((v) => !v)}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 4,
+                      marginTop: 10,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "7px 0",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px dashed var(--color-border-strong)",
+                      background: "#fff",
+                      color: "var(--color-muted)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {showAllTop ? (
+                      <>
+                        收合
+                        <ChevronUp size={12} />
+                      </>
+                    ) : (
+                      <>
+                        還有 {moreCount} 個交集時段
+                        <ChevronDown size={12} />
+                      </>
+                    )}
+                  </button>
+                )}
+              </>
+            )}
 
             {distMode === "calendar" && (
               <div>

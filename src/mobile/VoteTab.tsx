@@ -120,12 +120,6 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event.id]);
 
-  const setAll = (status: AvailabilityStatus) => {
-    const m: Record<string, AvailabilityStatus> = {};
-    event.slots.forEach((s) => (m[s.id] = status));
-    setAvailability(m);
-  };
-
   const applyBulk = (status: AvailabilityStatus) => {
     const target = BULK_TARGETS.find((t) => t.key === bulkTargetKey) || BULK_TARGETS[0];
     setAvailability((prev) => {
@@ -167,15 +161,6 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
       <Input size="sm" label="您的暱稱" required placeholder="例如：小明" value={nickname} onChange={(e) => setNickname(e.target.value)} />
       <Input size="sm" label="聯絡 Email" placeholder="例如：name@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <div style={{ display: "flex", gap: 6 }}>
-        <Button variant="ghost" size="sm" onClick={() => setAll("available")}>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <Zap size={12} />
-            全部有空
-          </span>
-        </Button>
-        <Button variant="muted" size="sm" onClick={() => setAll("unavailable")}>全選不行</Button>
-      </div>
 
       <div>
         <button
