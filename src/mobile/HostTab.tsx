@@ -1,24 +1,45 @@
 import React, { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { EventData } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats } from "../lib/slots";
+import { getLifecycleStatus, formatDeadline } from "../lib/eventStatus";
 import { Button, Input } from "../design-system/components";
 import { cardStyle, SectionLabel } from "./mobileStyles";
+import { ReopenModal } from "./ReopenModal";
 
 interface HostTabProps {
   event: EventData;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
+  onReopen?: (newDeadline?: string) => Promise<void>;
   isLoading: boolean;
 }
 
-export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, isLoading }) => {
+export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, isLoading }) => {
   const [selected, setSelected] = useState<string | undefined>(event.slots[0]?.id);
   const [note, setNote] = useState(event.description ? `地點/備註：${event.description}` : "");
   const [confirming, setConfirming] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const stats = computeSlotStats(event.slots, event.responses);
+  const isDateOnly = event.mode === "date_only";
+  const lifecycle = getLifecycleStatus(event);
 
   return (
     <div style={{ padding: 14 }}>
+      {lifecycle.key === "voting_closed" && onReopen && (
+        <div style={{ ...cardStyle, marginBottom: 12, background: "var(--color-hot-subtle)", borderColor: "rgba(194,67,26,0.25)" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+            <AlertTriangle size={16} color="var(--color-hot)" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)" }}>投票已於 {formatDeadline(event.responseDeadline)} 截止</div>
+              <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 2 }}>參與者暫時無法再送出新的時間，可以重新開放投票或直接拍板定案。</div>
+            </div>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <Button variant="hot" size="sm" fullWidth onClick={() => setReopening(true)}>重新開放投票</Button>
+          </div>
+        </div>
+      )}
       <div style={cardStyle}>
         <SectionLabel title="主揪拍板定案" hint="參考統計選擇最佳時間並發布結果" />
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
@@ -43,7 +64,7 @@ export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, isLoading }
               >
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 800 }}>
-                    {s.date} ({formatChineseWeekday(s.date)}) · {s.time}
+                    {s.date} ({formatChineseWeekday(s.date)}){!isDateOnly && ` · ${s.time}`}
                   </div>
                   {s.label && <div style={{ fontSize: 10, opacity: 0.8 }}>{s.label}</div>}
                 </div>
@@ -70,6 +91,16 @@ export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, isLoading }
           </Button>
         </div>
       </div>
+      {reopening && onReopen && (
+        <ReopenModal
+          currentDeadline={event.responseDeadline}
+          onCancel={() => setReopening(false)}
+          onConfirm={(newDeadline) => {
+            setReopening(false);
+            onReopen(newDeadline);
+          }}
+        />
+      )}
       {confirming && (
         <div style={{ position: "absolute", inset: 0, background: "rgba(26,18,8,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 200 }}>
           <div style={{ background: "#fff", borderRadius: "var(--radius-modal)", padding: 18, width: "100%" }}>

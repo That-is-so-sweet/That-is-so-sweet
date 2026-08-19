@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Medal, MessageCircle, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Trophy, Medal, MessageCircle, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { EventData, SlotStats } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats } from "../lib/slots";
-import { Avatar, Badge, Button } from "../design-system/components";
+import { getLifecycleStatus, formatDeadline, formatRemaining } from "../lib/eventStatus";
+import { Avatar, Badge, Button, Tag } from "../design-system/components";
 import { cardStyle, navBtnStyle, SectionLabel, STATUS_META } from "./mobileStyles";
 
 interface HeatmapTabProps {
@@ -75,6 +76,8 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
   }, {} as Record<string, typeof stats>);
   const total = event.responses.length;
   const hasResponded = !!userNickname.trim() && event.responses.some((r) => r.nickname.toLowerCase() === userNickname.trim().toLowerCase());
+  const isDateOnly = event.mode === "date_only";
+  const lifecycle = getLifecycleStatus(event);
 
   const allDates: string[] = event.slots
     .map((s) => s.date)
@@ -106,10 +109,19 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
       <div style={cardStyle}>
         <SectionLabel title="活動資訊" />
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)" }}>
-            <span style={{ width: 7, height: 7, borderRadius: 999, background: event.status === "finalized" ? "var(--color-muted)" : "var(--color-success)", flexShrink: 0 }} />
-            狀態：{event.status === "finalized" ? "已敲定，投票已結束" : "投票統計中"}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)", flexWrap: "wrap" }}>
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
+            狀態：{lifecycle.label}
+            <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
+            <Tag size="sm" emoji={isDateOnly ? <CalendarDays size={12} /> : <Clock size={12} />}>{isDateOnly ? "僅選日期" : "含時段"}</Tag>
           </div>
+          {event.responseDeadline && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)" }}>
+              <Clock size={12} color="var(--color-muted)" style={{ flexShrink: 0 }} />
+              投票截止：{formatDeadline(event.responseDeadline)}
+              <span style={{ color: "var(--color-muted)" }}>（{formatRemaining(event.responseDeadline)}）</span>
+            </div>
+          )}
           {event.hostName && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)" }}>
               <User size={12} color="var(--color-muted)" style={{ flexShrink: 0 }} />
@@ -215,7 +227,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
                               ) : (
                                 <Medal size={13} color={medalColors[i] || medalColors[2]} />
                               )}
-                              {s.slot.date} ({formatChineseWeekday(s.slot.date)}) {s.slot.time}
+                              {s.slot.date} ({formatChineseWeekday(s.slot.date)}){!isDateOnly && ` ${s.slot.time}`}
                               {s.slot.label && <span style={{ fontWeight: 500, color: "var(--color-muted)" }}> · {s.slot.label}</span>}
                             </span>
                             <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-success)" }}>{s.availableCount}/{total} 確定有空</span>
@@ -355,7 +367,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
                             >
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span style={{ fontSize: 11, fontWeight: 800 }}>
-                                  {s.slot.time}
+                                  {isDateOnly ? "本日是否有空" : s.slot.time}
                                   {s.slot.label && <span style={{ fontWeight: 500, opacity: 0.85 }}> · {s.slot.label}</span>}
                                 </span>
                                 <span style={{ fontSize: 10, fontWeight: 800, opacity: 0.9 }}>{s.availableCount}/{total} 確定有空</span>

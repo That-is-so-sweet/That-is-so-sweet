@@ -79,7 +79,7 @@ export const Header: React.FC<HeaderProps> = ({ onNewEvent, onOpenHistory, onLoa
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <button
-            onClick={onLoadDemo}
+            onClick={() => onLoadDemo()}
             style={pillBtnStyle}
             title="查看範例活動體驗功能"
           >

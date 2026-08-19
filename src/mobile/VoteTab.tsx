@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Zap, RotateCw, ChevronUp, ChevronDown, List, CalendarDays } from "lucide-react";
+import { Zap, RotateCw, ChevronUp, ChevronDown, List, CalendarDays, AlertTriangle } from "lucide-react";
 import { EventData, AvailabilityStatus, SubmitResponseInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
+import { isVotingOpen, formatDeadline } from "../lib/eventStatus";
 import { Button, Input } from "../design-system/components";
 import { cardStyle, navBtnStyle, quickBtnStyle, STATUS_META } from "./mobileStyles";
 
@@ -19,6 +20,8 @@ interface VoteRowProps {
   slot: EventData["slots"][number];
   status: AvailabilityStatus;
   onChange: (id: string, status: AvailabilityStatus) => void;
+  hideTime?: boolean;
+  disabled?: boolean;
 }
 
 const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
@@ -38,11 +41,11 @@ const BULK_TARGETS: BulkTarget[] = [
 ];
 
 const VoteRow: React.FC<VoteRowProps> = (props) => {
-  const { slot, status, onChange } = props;
+  const { slot, status, onChange, hideTime, disabled } = props;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--color-border)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--color-border)", opacity: disabled ? 0.55 : 1 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>{slot.time}</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>{hideTime ? "是否有空？" : slot.time}</div>
         {slot.label && <div style={{ fontSize: 10, color: "var(--color-muted)" }}>{slot.label}</div>}
       </div>
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
@@ -52,6 +55,7 @@ const VoteRow: React.FC<VoteRowProps> = (props) => {
           return (
             <button
               key={k}
+              disabled={disabled}
               onClick={() => onChange(slot.id, k)}
               style={{
                 width: 30,
@@ -60,7 +64,7 @@ const VoteRow: React.FC<VoteRowProps> = (props) => {
                 border: active ? `2px solid ${meta.color}` : "1.5px solid var(--color-border)",
                 background: active ? meta.color : "#fff",
                 fontSize: 14,
-                cursor: "pointer",
+                cursor: disabled ? "not-allowed" : "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -136,6 +140,9 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
     return acc;
   }, {} as Record<string, EventData["slots"]>);
 
+  const isDateOnly = event.mode === "date_only";
+  const votingClosed = !isVotingOpen(event);
+
   const handleChange = (id: string, st: AvailabilityStatus): void => setAvailability((p) => ({ ...p, [id]: st }));
 
   const handleSubmit = () => {
@@ -159,6 +166,14 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+      {votingClosed && (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-hot-subtle)", border: "1px solid rgba(194,67,26,0.25)" }}>
+          <AlertTriangle size={14} color="var(--color-hot)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 12, color: "var(--color-ink)", lineHeight: 1.5 }}>
+            投票已於 {formatDeadline(event.responseDeadline)} 截止，如需補投請聯繫主揪重新開放投票。
+          </span>
+        </div>
+      )}
       <Input size="sm" label="您的暱稱" required placeholder="例如：小明" value={nickname} onChange={(e) => setNickname(e.target.value)} />
       <Input size="sm" label="聯絡 Email" placeholder="例如：name@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
 
@@ -302,7 +317,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
               </div>
               {list.map((s) => {
                 const status: AvailabilityStatus = availability[s.id] || "available";
-                return <VoteRow key={s.id} slot={s} status={status} onChange={handleChange} />;
+                return <VoteRow key={s.id} slot={s} status={status} onChange={handleChange} hideTime={isDateOnly} disabled={votingClosed} />;
               })}
             </div>
           ))}
@@ -374,7 +389,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
               </div>
               {(grouped[calActiveDate] || []).map((s) => {
                 const status: AvailabilityStatus = availability[s.id] || "available";
-                return <VoteRow key={s.id} slot={s} status={status} onChange={handleChange} />;
+                return <VoteRow key={s.id} slot={s} status={status} onChange={handleChange} hideTime={isDateOnly} disabled={votingClosed} />;
               })}
             </div>
           )}
@@ -382,7 +397,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
       )}
 
       <Input size="sm" label="給主揪的話" placeholder="例如：19:00 才能到" value={comment} onChange={(e) => setComment(e.target.value)} />
-      <Button variant="dark" fullWidth disabled={!nickname.trim() || isLoading} onClick={handleSubmit}>
+      <Button variant="dark" fullWidth disabled={!nickname.trim() || isLoading || votingClosed} onClick={handleSubmit}>
         {editingParticipantId ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             更新我的回覆

@@ -1,6 +1,7 @@
 import React from "react";
 import { X, Check, Crown } from "lucide-react";
 import { EventData } from "../types";
+import { formatDeadline } from "../lib/eventStatus";
 import { Button } from "../design-system/components";
 
 interface ShareModalProps {
@@ -18,7 +19,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, event, 
   const shareUrl = `${appOrigin}/#event=${event.id}`;
   const lineText = `📢【${event.title}】聚會時間調查邀請！
 主揪：${event.hostName || "熱心朋友"}
-${event.description ? `說明：${event.description}\n` : ""}
+${event.description ? `說明：${event.description}\n` : ""}${event.responseDeadline ? `⏰ 請於 ${formatDeadline(event.responseDeadline)} 前完成填寫\n` : ""}
 不用註冊登入，點擊連結即可選擇你有空的時間：
 ${shareUrl}`;
 

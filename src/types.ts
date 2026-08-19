@@ -1,5 +1,7 @@
 export type AvailabilityStatus = 'available' | 'if_needed' | 'unavailable';
 
+export type EventMode = 'date_only' | 'time_slots';
+
 export interface TimeSlot {
   id: string;
   date: string; // YYYY-MM-DD format e.g. "2026-08-15"
@@ -23,6 +25,8 @@ export interface EventData {
   description?: string;
   hostName?: string;
   hostEmail?: string;
+  mode: EventMode;
+  responseDeadline: string; // ISO datetime string — voting closes after this
   slots: TimeSlot[];
   responses: ParticipantResponse[];
   status: 'active' | 'finalized';
@@ -37,6 +41,8 @@ export interface CreateEventInput {
   description?: string;
   hostName?: string;
   hostEmail?: string;
+  mode: EventMode;
+  responseDeadline: string;
   slots: Omit<TimeSlot, 'id'>[];
 }
 

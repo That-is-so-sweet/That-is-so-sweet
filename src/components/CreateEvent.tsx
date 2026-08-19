@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { X, AlertTriangle, MapPin, Rocket } from "lucide-react";
-import { CreateEventInput, TimeSlot } from "../types";
+import { X, AlertTriangle, MapPin, Rocket, Clock, CalendarDays } from "lucide-react";
+import { CreateEventInput, EventMode, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { calculateSlotDuration, getNextWeekdayDate } from "../lib/slots";
+import { getDefaultDeadlineLocalValue, getNowLocalValue, localValueToIso } from "../lib/eventStatus";
 import { Button, Input, Tag } from "../design-system/components";
 import { MonthCalendar } from "../mobile/MonthCalendar";
 import { MiniMonthPicker } from "../mobile/MiniMonthPicker";
@@ -30,6 +31,8 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
   const [hostName, setHostName] = useState("");
   const [hostEmail, setHostEmail] = useState("");
   const [description, setDescription] = useState("");
+  const [mode, setMode] = useState<EventMode>("time_slots");
+  const [responseDeadline, setResponseDeadline] = useState(() => getDefaultDeadlineLocalValue());
   const [selectedDates, setSelectedDates] = useState<string[]>([SAT, SUN]);
   const [slots, setSlots] = useState<Omit<TimeSlot, "id">[]>(DEFAULT_SLOTS);
   const [startTime, setStartTime] = useState("10:00");
@@ -38,9 +41,19 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
   const [activeDate, setActiveDate] = useState<string | null>(selectedDates[0] || null);
   const [quickPresets] = useState(() => getRecentSlotPresets());
 
+  const isDateOnly = mode === "date_only";
+
   useEffect(() => {
     if (!activeDate || !selectedDates.includes(activeDate)) setActiveDate(selectedDates[0] || null);
   }, [selectedDates]);
+
+  // In "date only" mode there's no separate time-entry step — each selected
+  // date becomes exactly one slot behind the scenes, so downstream logic
+  // (stats, finalize, etc.) doesn't need to know the data shape changed.
+  useEffect(() => {
+    if (!isDateOnly) return;
+    setSlots(selectedDates.map((date) => ({ date, time: "", label: "" })));
+  }, [isDateOnly, selectedDates]);
 
   const targetDates = applyToAllDates ? selectedDates : activeDate ? [activeDate] : [];
 
@@ -75,16 +88,18 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
   const activeSlots = slots.filter((s) => s.date === activeDate);
   const datesMissingSlots = selectedDates.filter((d) => !slots.some((s) => s.date === d));
 
-  const canSubmit = !!title.trim() && selectedDates.length > 0 && datesMissingSlots.length === 0;
+  const canSubmit = !!title.trim() && !!responseDeadline && selectedDates.length > 0 && datesMissingSlots.length === 0;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    saveRecentSlotPresets(slots);
+    if (!isDateOnly) saveRecentSlotPresets(slots);
     onSubmit({
       title: title.trim(),
       hostName: hostName.trim(),
       hostEmail: hostEmail.trim(),
       description: description.trim(),
+      mode,
+      responseDeadline: localValueToIso(responseDeadline),
       slots,
     });
   };
@@ -98,6 +113,61 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
             <SectionLabel title="基本活動資訊" />
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <Input label="活動 / 會議名稱" required placeholder="例如：產品專案週對齊會議" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={30} />
+
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 6 }}>投票模式</label>
+                <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3 }}>
+                  {([
+                    { k: "time_slots" as EventMode, label: "需要選時段", Icon: Clock },
+                    { k: "date_only" as EventMode, label: "只選日期", Icon: CalendarDays },
+                  ]).map((m) => (
+                    <button
+                      key={m.k}
+                      onClick={() => setMode(m.k)}
+                      style={{
+                        flex: 1,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 5,
+                        padding: "8px 4px",
+                        borderRadius: "var(--radius-sm)",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        border: "none",
+                        cursor: "pointer",
+                        background: mode === m.k ? "var(--color-primary)" : "transparent",
+                        color: mode === m.k ? "#fff" : "var(--color-ink)",
+                        transition: "background 150ms ease, color 150ms ease",
+                      }}
+                    >
+                      <m.Icon size={13} />
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>
+                  {isDateOnly ? "參與者只需勾選日期，不用細分時段" : "參與者可針對每個候選日期勾選細部時段"}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 6 }}>
+                  投票截止時間<span style={{ color: "var(--color-primary)", marginLeft: 4 }}>*</span>
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Clock size={14} color="var(--color-muted)" style={{ flexShrink: 0 }} />
+                  <input
+                    type="datetime-local"
+                    value={responseDeadline}
+                    min={getNowLocalValue()}
+                    onChange={(e) => setResponseDeadline(e.target.value)}
+                    style={{ flex: 1, padding: "9px 10px", borderRadius: "var(--radius-input)", border: "1.5px solid var(--color-border)", fontSize: 13, fontWeight: 700 }}
+                  />
+                </div>
+                <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>預設為今天起 7 天後，可自行調整日期與時間</div>
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Input label="主揪暱稱" placeholder="例如：阿傑、Wally" value={hostName} onChange={(e) => setHostName(e.target.value)} />
                 <Input label="主揪 Email" placeholder="例如：host@example.com" type="email" value={hostEmail} onChange={(e) => setHostEmail(e.target.value)} />
@@ -107,7 +177,10 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
           </div>
 
           <div style={cardStyle}>
-            <SectionLabel title="候選日期與時段" hint={`點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`} />
+            <SectionLabel
+              title={isDateOnly ? "候選日期" : "候選日期與時段"}
+              hint={isDateOnly ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天` : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
+            />
             <MonthCalendar
               selectedDates={selectedDates}
               onChange={handleDatesChange}
@@ -124,7 +197,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
               </div>
             )}
 
-            {activeDate && selectedDates.length > 0 && (
+            {!isDateOnly && activeDate && selectedDates.length > 0 && (
               <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
                 <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 8 }}>
                   {activeDate} ({formatChineseWeekday(activeDate)}) 的候選時段
@@ -230,6 +303,10 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                 {description}
               </div>
             )}
+            <div style={{ fontSize: 11, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+              <Clock size={11} />
+              投票截止：{responseDeadline ? responseDeadline.replace("T", " ") : "尚未設定"}
+            </div>
 
             <div style={{ display: "flex", gap: 16, margin: "12px 0", paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -251,25 +328,27 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                 </span>
                 <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)" }}>天</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: "50%",
-                    background: "var(--color-primary)",
-                    color: "#fff",
-                    fontSize: 12,
-                    fontWeight: 900,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {slots.length}
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)" }}>個時段</span>
-              </div>
+              {!isDateOnly && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: "50%",
+                      background: "var(--color-primary)",
+                      color: "#fff",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {slots.length}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)" }}>個時段</span>
+                </div>
+              )}
             </div>
 
             {selectedDates.length > 0 && (
@@ -290,24 +369,26 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                     <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 6 }}>
                       {date} ({formatChineseWeekday(date)})
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {list.map((s, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "9px 12px",
-                            borderRadius: "var(--radius-md)",
-                            background: "var(--color-cream)",
-                          }}
-                        >
-                          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{s.time}</span>
-                          {s.label && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)" }}>{s.label}</span>}
-                        </div>
-                      ))}
-                    </div>
+                    {!isDateOnly && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {list.map((s, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              padding: "9px 12px",
+                              borderRadius: "var(--radius-md)",
+                              background: "var(--color-cream)",
+                            }}
+                          >
+                            <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{s.time}</span>
+                            {s.label && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)" }}>{s.label}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -1,23 +1,35 @@
 // Helper functions to generate calendar links and .ics files
 
+function addOneDay(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function generateGoogleCalendarUrl(
   title: string,
   dateStr: string, // "2026-08-15"
   timeStr: string, // "18:00 - 21:00"
   locationStr: string = "",
-  descriptionStr: string = ""
+  descriptionStr: string = "",
+  allDay: boolean = false
 ): string {
   try {
-    // Parse start and end time if possible
-    const [startHourMin, endHourMin] = parseTimes(timeStr);
-    
-    const startIso = formatDateForGCal(dateStr, startHourMin);
-    const endIso = formatDateForGCal(dateStr, endHourMin);
+    let dates: string;
+    if (allDay) {
+      const startYmd = dateStr.replace(/-/g, "");
+      dates = `${startYmd}/${addOneDay(dateStr)}`;
+    } else {
+      const [startHourMin, endHourMin] = parseTimes(timeStr);
+      const startIso = formatDateForGCal(dateStr, startHourMin);
+      const endIso = formatDateForGCal(dateStr, endHourMin);
+      dates = `${startIso}/${endIso}`;
+    }
 
     const baseUrl = "https://calendar.google.com/calendar/render?action=TEMPLATE";
     const params = new URLSearchParams({
       text: title,
-      dates: `${startIso}/${endIso}`,
+      dates,
       details: descriptionStr,
       location: locationStr,
     });
@@ -34,12 +46,16 @@ export function downloadIcsFile(
   dateStr: string,
   timeStr: string,
   locationStr: string = "",
-  descriptionStr: string = ""
+  descriptionStr: string = "",
+  allDay: boolean = false
 ) {
   try {
-    const [startHourMin, endHourMin] = parseTimes(timeStr);
-    const startIso = formatDateForGCal(dateStr, startHourMin);
-    const endIso = formatDateForGCal(dateStr, endHourMin);
+    const dateLines = allDay
+      ? [`DTSTART;VALUE=DATE:${dateStr.replace(/-/g, "")}`, `DTEND;VALUE=DATE:${addOneDay(dateStr)}`]
+      : (() => {
+          const [startHourMin, endHourMin] = parseTimes(timeStr);
+          return [`DTSTART:${formatDateForGCal(dateStr, startHourMin)}`, `DTEND:${formatDateForGCal(dateStr, endHourMin)}`];
+        })();
 
     const icsContent = [
       "BEGIN:VCALENDAR",
@@ -51,8 +67,7 @@ export function downloadIcsFile(
       `SUMMARY:${title}`,
       `DESCRIPTION:${descriptionStr.replace(/\n/g, "\\n")}`,
       `LOCATION:${locationStr}`,
-      `DTSTART:${startIso}`,
-      `DTEND:${endIso}`,
+      ...dateLines,
       `STATUS:CONFIRMED`,
       "END:VEVENT",
       "END:VCALENDAR",

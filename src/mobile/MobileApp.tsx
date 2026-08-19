@@ -17,14 +17,14 @@ interface MobileAppProps {
   onCreateEvent: (input: CreateEventInput) => Promise<void>;
   onRespond: (input: SubmitResponseInput) => Promise<void>;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
-  onReopen: () => Promise<void>;
+  onReopen: (newDeadline?: string) => Promise<void>;
   isShareModalOpen: boolean;
   setIsShareModalOpen: (open: boolean) => void;
   isHistoryOpen: boolean;
   setIsHistoryOpen: (open: boolean) => void;
   historyList: VisitedEventItem[];
   onSelectEvent: (id: string) => void;
-  onLoadDemo: () => void;
+  onLoadDemo: (id: string) => void;
   onCopySuccess: () => void;
   toasts: ToastMessage[];
 }

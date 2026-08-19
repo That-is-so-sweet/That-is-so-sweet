@@ -3,6 +3,7 @@ import {
   CreateEventInput,
   SubmitResponseInput,
   FinalizeEventInput,
+  EventMode,
 } from "../types.js";
 
 const LOCAL_HOST_TOKENS_KEY = "gathertime_host_tokens"; // { [eventId]: hostToken }
@@ -22,7 +23,7 @@ export async function fetchEvent(id: string, hostToken?: string): Promise<EventD
     throw new Error(errData.error || "讀取活動失敗");
   }
   const data = await res.json();
-  saveVisitedEvent(data.id, data.title);
+  saveVisitedEvent(data);
   return data;
 }
 
@@ -41,7 +42,7 @@ export async function createEvent(input: CreateEventInput): Promise<{ event: Eve
   const data = await res.json();
   // Save host token locally
   saveHostToken(data.event.id, data.hostToken);
-  saveVisitedEvent(data.event.id, data.event.title);
+  saveVisitedEvent(data.event);
   return data;
 }
 
@@ -61,7 +62,7 @@ export async function submitResponse(eventId: string, input: SubmitResponseInput
   // Remember user nickname and email locally
   if (input.nickname) saveUserNickname(input.nickname);
   if (input.email) saveUserEmail(input.email);
-  saveVisitedEvent(data.event.id, data.event.title);
+  saveVisitedEvent(data.event);
 
   return data.event;
 }
@@ -79,14 +80,15 @@ export async function finalizeEvent(eventId: string, input: FinalizeEventInput):
   }
 
   const data = await res.json();
+  saveVisitedEvent(data.event);
   return data.event;
 }
 
-export async function reopenEvent(eventId: string, hostToken: string): Promise<EventData> {
+export async function reopenEvent(eventId: string, hostToken: string, responseDeadline?: string): Promise<EventData> {
   const res = await fetch(`/api/events/${eventId}/reopen`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ hostToken }),
+    body: JSON.stringify({ hostToken, responseDeadline }),
   });
 
   if (!res.ok) {
@@ -95,6 +97,7 @@ export async function reopenEvent(eventId: string, hostToken: string): Promise<E
   }
 
   const data = await res.json();
+  saveVisitedEvent(data.event);
   return data.event;
 }
 
@@ -155,14 +158,23 @@ export interface VisitedEventItem {
   title: string;
   updatedAt: string;
   isHost: boolean;
+  mode?: EventMode;
+  status?: EventData["status"];
+  responseDeadline?: string;
+  finalSlotDate?: string;
 }
 
-export function saveVisitedEvent(id: string, title: string) {
+// Accepts either a full event snapshot (preferred — lets the history list show
+// an up-to-date status badge) or just an id+title for backward compatibility.
+export function saveVisitedEvent(event: Pick<EventData, "id" | "title" | "mode" | "status" | "responseDeadline" | "slots" | "finalSlotId">) {
   try {
+    const { id, title } = event;
     const isHost = Boolean(getHostToken(id));
     const raw = localStorage.getItem(LOCAL_MY_EVENTS_KEY);
     let list: VisitedEventItem[] = raw ? JSON.parse(raw) : [];
-    
+
+    const finalSlotDate = event.finalSlotId ? event.slots?.find((s) => s.id === event.finalSlotId)?.date : undefined;
+
     // Remove if exists
     list = list.filter((item) => item.id !== id);
     // Add to top
@@ -171,6 +183,10 @@ export function saveVisitedEvent(id: string, title: string) {
       title,
       updatedAt: new Date().toISOString(),
       isHost,
+      mode: event.mode,
+      status: event.status,
+      responseDeadline: event.responseDeadline,
+      finalSlotDate,
     });
     // Keep max 20
     list = list.slice(0, 20);

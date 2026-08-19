@@ -174,11 +174,11 @@ export default function App() {
     }
   };
 
-  const handleReopen = async () => {
+  const handleReopen = async (newDeadline?: string) => {
     if (!currentEventId || !currentHostToken) return;
     setIsLoading(true);
     try {
-      const updated = await reopenEvent(currentEventId, currentHostToken);
+      const updated = await reopenEvent(currentEventId, currentHostToken, newDeadline);
       setEventData(updated);
       addToast("info", "活動已重新開放投票統計");
     } catch (err: any) {
@@ -195,8 +195,8 @@ export default function App() {
     setEventData(null);
   };
 
-  const handleLoadDemo = () => {
-    window.location.hash = "event=demo-gathering";
+  const handleLoadDemo = (id: string = "demo-gathering") => {
+    window.location.hash = `event=${id}`;
   };
 
   if (isMobile) {

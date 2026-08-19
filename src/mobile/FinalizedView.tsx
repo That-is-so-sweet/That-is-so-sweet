@@ -1,27 +1,31 @@
-import React from "react";
-import { CheckCircle2, MessageCircle, RotateCcw } from "lucide-react";
+import React, { useState } from "react";
+import { CheckCircle2, MessageCircle, RotateCcw, Archive } from "lucide-react";
 import { EventData } from "../types";
 import { formatChineseWeekday, generateGoogleCalendarUrl, downloadIcsFile } from "../lib/calendar";
+import { getMeetupEndInfo } from "../lib/eventStatus";
 import { Button } from "../design-system/components";
 import { cardStyle, SectionLabel } from "./mobileStyles";
+import { ReopenModal } from "./ReopenModal";
 
 interface FinalizedViewProps {
   event: EventData;
   isHost?: boolean;
-  onReopen?: () => Promise<void>;
+  onReopen?: (newDeadline?: string) => Promise<void>;
   onCopySuccess: () => void;
 }
 
 export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onReopen, onCopySuccess }) => {
+  const [reopening, setReopening] = useState(false);
   const slot = event.slots.find((s) => s.id === event.finalSlotId) || event.slots[0];
   const attending = event.responses.filter((r) => r.availability[slot.id] === "available").map((r) => r.nickname);
+  const isDateOnly = event.mode === "date_only";
+  const hasEnded = !!getMeetupEndInfo(event)?.hasEnded;
 
   const broadcast = `🎉【聚會時間正式敲定囉！】
 活動名稱：${event.title}
 主揪：${event.hostName || "熱心主揪"}
 📅 日期：${slot.date} (${formatChineseWeekday(slot.date)})
-⏰ 時間：${slot.time}
-${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
+${isDateOnly ? "" : `⏰ 時間：${slot.time}\n`}${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
 👥 出席 (${attending.length}人)：${attending.join("、") || "歡迎大家參與！"}`;
 
   const handleCopy = async () => {
@@ -35,7 +39,7 @@ ${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ background: "var(--color-ink)", color: "#fff", borderRadius: "var(--radius-card)", padding: 16 }}>
+      <div style={{ background: hasEnded ? "var(--color-muted)" : "var(--color-ink)", color: "#fff", borderRadius: "var(--radius-card)", padding: 16 }}>
         <span
           style={{
             display: "inline-flex",
@@ -43,13 +47,13 @@ ${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
             gap: 6,
             padding: "4px 10px",
             borderRadius: "var(--radius-pill)",
-            background: "rgba(90,158,90,0.25)",
+            background: hasEnded ? "rgba(255,255,255,0.2)" : "rgba(90,158,90,0.25)",
             fontSize: 11,
             fontWeight: 800,
           }}
         >
-          <CheckCircle2 size={12} />
-          活動時間已敲定
+          {hasEnded ? <Archive size={12} /> : <CheckCircle2 size={12} />}
+          {hasEnded ? "活動已結束" : "活動時間已敲定"}
         </span>
         <div style={{ fontSize: 17, fontWeight: 900, fontFamily: "var(--font-display)", marginTop: 10 }}>{event.title}</div>
         {event.hostName && <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>發起人：{event.hostName}</div>}
@@ -58,8 +62,12 @@ ${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
           <div style={{ fontSize: 18, fontWeight: 900, fontFamily: "var(--font-display)" }}>
             {slot.date} ({formatChineseWeekday(slot.date)})
           </div>
-          <div style={{ fontSize: 11, opacity: 0.7, marginTop: 8 }}>時段</div>
-          <div style={{ fontSize: 15, fontWeight: 800 }}>{slot.time}</div>
+          {!isDateOnly && (
+            <>
+              <div style={{ fontSize: 11, opacity: 0.7, marginTop: 8 }}>時段</div>
+              <div style={{ fontSize: 15, fontWeight: 800 }}>{slot.time}</div>
+            </>
+          )}
           {event.finalNote && (
             <div style={{ fontSize: 11, marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "flex-start", gap: 4 }}>
               <MessageCircle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
@@ -74,7 +82,7 @@ ${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
             fullWidth
             onClick={() =>
               window.open(
-                generateGoogleCalendarUrl(event.title, slot.date, slot.time, event.finalNote || event.description || "", `主揪：${event.hostName || ""}`),
+                generateGoogleCalendarUrl(event.title, slot.date, slot.time, event.finalNote || event.description || "", `主揪：${event.hostName || ""}`, isDateOnly),
                 "_blank"
               )
             }
@@ -85,7 +93,7 @@ ${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
             variant="ghost"
             size="sm"
             fullWidth
-            onClick={() => downloadIcsFile(event.title, slot.date, slot.time, event.finalNote || event.description || "", `主揪：${event.hostName || ""}`)}
+            onClick={() => downloadIcsFile(event.title, slot.date, slot.time, event.finalNote || event.description || "", `主揪：${event.hostName || ""}`, isDateOnly)}
           >
             下載 .ics
           </Button>
@@ -130,12 +138,22 @@ ${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
       </div>
 
       {isHost && onReopen && (
-        <Button variant="muted" onClick={onReopen}>
+        <Button variant="muted" onClick={() => setReopening(true)}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
             <RotateCcw size={13} />
             重新開放投票
           </span>
         </Button>
+      )}
+      {reopening && onReopen && (
+        <ReopenModal
+          currentDeadline={event.responseDeadline}
+          onCancel={() => setReopening(false)}
+          onConfirm={(newDeadline) => {
+            setReopening(false);
+            onReopen(newDeadline);
+          }}
+        />
       )}
     </div>
   );

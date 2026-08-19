@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Users, Share2, History, Plus } from "lucide-react";
+import { Users, Share2, History, Plus, Clock, CalendarDays } from "lucide-react";
 import { EventData, SubmitResponseInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
-import { Badge } from "../design-system/components";
+import { getLifecycleStatus } from "../lib/eventStatus";
+import { Badge, Tag } from "../design-system/components";
 import { TopBar } from "../mobile/TopBar";
 import { VoteTab } from "../mobile/VoteTab";
 import { HeatmapTab } from "../mobile/HeatmapTab";
@@ -15,7 +16,7 @@ interface EventViewProps {
   hostToken?: string;
   onRespond: (input: SubmitResponseInput) => Promise<void>;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
-  onReopen: () => Promise<void>;
+  onReopen: (newDeadline?: string) => Promise<void>;
   onNewEvent: () => void;
   onOpenShareModal: () => void;
   onOpenHistory: () => void;
@@ -47,6 +48,7 @@ export const EventView: React.FC<EventViewProps> = ({
   const [email, setEmail] = useState(() => getUserEmail());
 
   const visibleTabs = isHost ? TABS : TABS.filter((t) => t.id !== "host");
+  const lifecycle = getLifecycleStatus(event);
 
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "24px 24px 60px" }}>
@@ -96,10 +98,12 @@ export const EventView: React.FC<EventViewProps> = ({
             </div>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 0", flexShrink: 0, marginLeft: "auto" }}>
-            <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--color-success)", flexShrink: 0 }} />
-            <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-success)", whiteSpace: "nowrap" }}>
-              {event.status === "finalized" ? "已敲定通知模式" : "統計時間中"}
-            </span>
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontWeight: 800, color: lifecycle.color, whiteSpace: "nowrap" }}>{lifecycle.label}</span>
+            <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
+            <Tag size="sm" emoji={event.mode === "date_only" ? <CalendarDays size={12} /> : <Clock size={12} />}>
+              {event.mode === "date_only" ? "僅選日期" : "含時段"}
+            </Tag>
             {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
           </div>
         </div>
@@ -112,7 +116,7 @@ export const EventView: React.FC<EventViewProps> = ({
               <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} />
             )}
             {tab === "heatmap" && <HeatmapTab event={event} userNickname={nickname} onGoToVote={() => setTab("vote")} />}
-            {tab === "host" && isHost && <HostTab event={event} onFinalize={onFinalize} isLoading={isLoading} />}
+            {tab === "host" && isHost && <HostTab event={event} onFinalize={onFinalize} onReopen={onReopen} isLoading={isLoading} />}
           </>
         )}
       </div>

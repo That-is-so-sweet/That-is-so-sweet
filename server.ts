@@ -2,14 +2,15 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { 
-  EventData, 
-  CreateEventInput, 
-  SubmitResponseInput, 
+import {
+  EventData,
+  CreateEventInput,
+  SubmitResponseInput,
   FinalizeEventInput,
   ParticipantResponse,
-  TimeSlot 
+  TimeSlot
 } from "./src/types.js";
+import { isVotingOpen, isLinkExpired } from "./src/lib/eventStatus.js";
 
 const app = express();
 const PORT = 3000;
@@ -62,88 +63,150 @@ function saveEvents() {
   }
 }
 
+// Day-offset helpers so seeded demo data always looks "current" relative to
+// whenever the server actually starts, instead of drifting into the past.
+function addDays(offsetDays: number): string {
+  const d = new Date(Date.now() + offsetDays * 86400000);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function addDaysIso(offsetDays: number, hour = 23, minute = 59): string {
+  const d = new Date(Date.now() + offsetDays * 86400000);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
 function seedDemoEvent() {
-  const demoId = "demo-gathering";
-  const demoHostToken = "demo-host-token-123";
-
+  // 1. 進行中・含時段候選 — normal collecting state, deadline still open.
   const slots: TimeSlot[] = [
-    { id: "slot_1", date: "2026-08-15", time: "12:00 - 14:00 (午餐)", label: "燒肉店聚餐" },
-    { id: "slot_2", date: "2026-08-15", time: "18:00 - 21:00 (晚餐)", label: "餐酒館小酌" },
-    { id: "slot_3", date: "2026-08-16", time: "14:00 - 17:00 (下午茶)", label: "甜點咖啡廳" },
-    { id: "slot_4", date: "2026-08-16", time: "18:00 - 21:00 (晚餐)", label: "火鍋吃到飽" },
-    { id: "slot_5", date: "2026-08-22", time: "18:00 - 21:00 (晚餐)", label: "週末熱炒夜" },
+    { id: "slot_1", date: addDays(2), time: "12:00 - 14:00 (午餐)", label: "燒肉店聚餐" },
+    { id: "slot_2", date: addDays(2), time: "18:00 - 21:00 (晚餐)", label: "餐酒館小酌" },
+    { id: "slot_3", date: addDays(3), time: "14:00 - 17:00 (下午茶)", label: "甜點咖啡廳" },
+    { id: "slot_4", date: addDays(3), time: "18:00 - 21:00 (晚餐)", label: "火鍋吃到飽" },
+    { id: "slot_5", date: addDays(9), time: "18:00 - 21:00 (晚餐)", label: "週末熱炒夜" },
   ];
-
   const responses: ParticipantResponse[] = [
     {
-      id: "p_1",
-      nickname: "主揪阿傑",
-      email: "ajai@example.com",
-      availability: {
-        slot_1: "available",
-        slot_2: "available",
-        slot_3: "if_needed",
-        slot_4: "available",
-        slot_5: "available",
-      },
-      comment: "大家快來選時間！我這幾天都算方便～",
-      updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+      id: "p_1", nickname: "主揪阿傑", email: "ajai@example.com",
+      availability: { slot_1: "available", slot_2: "available", slot_3: "if_needed", slot_4: "available", slot_5: "available" },
+      comment: "大家快來選時間！我這幾天都算方便～", updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
     },
     {
-      id: "p_2",
-      nickname: "小明",
-      availability: {
-        slot_1: "available",
-        slot_2: "available",
-        slot_3: "unavailable",
-        slot_4: "available",
-        slot_5: "if_needed",
-      },
-      comment: "週六整天都可以，週日下午不行要加班",
-      updatedAt: new Date(Date.now() - 86400000).toISOString(),
+      id: "p_2", nickname: "小明",
+      availability: { slot_1: "available", slot_2: "available", slot_3: "unavailable", slot_4: "available", slot_5: "if_needed" },
+      comment: "週六整天都可以，週日下午不行要加班", updatedAt: new Date(Date.now() - 86400000).toISOString(),
     },
     {
-      id: "p_3",
-      nickname: "Lily 莉莉",
-      email: "lily@example.com",
-      availability: {
-        slot_1: "if_needed",
-        slot_2: "available",
-        slot_3: "available",
-        slot_4: "available",
-        slot_5: "unavailable",
-      },
-      comment: "最想吃晚餐！",
-      updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+      id: "p_3", nickname: "Lily 莉莉", email: "lily@example.com",
+      availability: { slot_1: "if_needed", slot_2: "available", slot_3: "available", slot_4: "available", slot_5: "unavailable" },
+      comment: "最想吃晚餐！", updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
     },
     {
-      id: "p_4",
-      nickname: "陳大華",
-      availability: {
-        slot_1: "unavailable",
-        slot_2: "available",
-        slot_3: "if_needed",
-        slot_4: "available",
-        slot_5: "available",
-      },
+      id: "p_4", nickname: "陳大華",
+      availability: { slot_1: "unavailable", slot_2: "available", slot_3: "if_needed", slot_4: "available", slot_5: "available" },
       updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
     },
   ];
-
-  const demoEvent: EventData = {
-    id: demoId,
-    hostToken: demoHostToken,
+  eventsMap.set("demo-gathering", {
+    id: "demo-gathering", hostToken: "demo-host-token-123",
     title: "八月好友暑期歡聚小酌隊",
     description: "很久沒聚聚囉！挑個週末大家有空的時間吃頓好的 🍻",
-    hostName: "阿傑",
-    slots,
-    responses,
-    status: "active",
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+    hostName: "阿傑", mode: "time_slots", responseDeadline: addDaysIso(4),
+    slots, responses, status: "active",
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(), updatedAt: new Date().toISOString(),
+  });
 
-  eventsMap.set(demoId, demoEvent);
+  // 2. 進行中・僅選日期模式範例 — date_only mode, one slot per date.
+  const dateOnlySlots: TimeSlot[] = [
+    { id: "d_1", date: addDays(3), time: "", label: "" },
+    { id: "d_2", date: addDays(4), time: "", label: "" },
+    { id: "d_3", date: addDays(10), time: "", label: "" },
+  ];
+  eventsMap.set("demo-date-only", {
+    id: "demo-date-only", hostToken: "demo-host-token-date-only",
+    title: "部門秋季小旅行敲日期",
+    description: "先喬出大家都有空的日子，細節之後再討論",
+    hostName: "PM Sandy", mode: "date_only", responseDeadline: addDaysIso(5),
+    slots: dateOnlySlots,
+    responses: [
+      { id: "dp_1", nickname: "Sandy", availability: { d_1: "available", d_2: "available", d_3: "if_needed" }, comment: "我這三天都可以喬", updatedAt: new Date(Date.now() - 86400000).toISOString() },
+      { id: "dp_2", nickname: "Marco", availability: { d_1: "if_needed", d_2: "available", d_3: "unavailable" }, updatedAt: new Date(Date.now() - 3600000 * 6).toISOString() },
+    ],
+    status: "active",
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(), updatedAt: new Date().toISOString(),
+  });
+
+  // 3. 投票已截止・尚未定案 — deadline already passed, host hasn't finalized yet.
+  eventsMap.set("demo-voting-closed", {
+    id: "demo-voting-closed", hostToken: "demo-host-token-closed",
+    title: "老同學久違聚餐",
+    description: "終於要約出來吃飯了！",
+    hostName: "阿凱", mode: "time_slots", responseDeadline: addDaysIso(-2),
+    slots: [
+      { id: "c_1", date: addDays(6), time: "18:30 - 21:00 (晚餐)", label: "日式居酒屋" },
+      { id: "c_2", date: addDays(7), time: "12:00 - 14:00 (午餐)", label: "義式餐廳" },
+    ],
+    responses: [
+      { id: "cp_1", nickname: "阿凱", availability: { c_1: "available", c_2: "if_needed" }, updatedAt: new Date(Date.now() - 86400000 * 4).toISOString() },
+      { id: "cp_2", nickname: "小玉", availability: { c_1: "available", c_2: "available" }, updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
+      { id: "cp_3", nickname: "阿宏", availability: { c_1: "unavailable", c_2: "available" }, updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
+    ],
+    status: "active",
+    createdAt: new Date(Date.now() - 86400000 * 9).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+  });
+
+  // 4. 已敲定・尚未舉辦 — finalized, meetup date still in the future.
+  eventsMap.set("demo-finalized-upcoming", {
+    id: "demo-finalized-upcoming", hostToken: "demo-host-token-upcoming",
+    title: "生日慶生趴",
+    description: "壽星指定要吃火鍋！",
+    hostName: "小雨", mode: "time_slots", responseDeadline: addDaysIso(-1),
+    slots: [
+      { id: "u_1", date: addDays(7), time: "18:00 - 21:00 (晚餐)", label: "麻辣鍋" },
+      { id: "u_2", date: addDays(8), time: "18:00 - 21:00 (晚餐)", label: "石頭火鍋" },
+    ],
+    responses: [
+      { id: "up_1", nickname: "小雨", availability: { u_1: "available", u_2: "if_needed" }, updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
+      { id: "up_2", nickname: "阿福", availability: { u_1: "available", u_2: "available" }, updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
+      { id: "up_3", nickname: "美美", availability: { u_1: "available", u_2: "unavailable" }, updatedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
+    ],
+    status: "finalized", finalSlotId: "u_1", finalNote: "訂位小雨，18:00 準時集合",
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+  });
+
+  // 5. 活動已結束（3 天前）— finalized, meetup date 3 days in the past, within the 7-day grace window.
+  eventsMap.set("demo-finalized-ended", {
+    id: "demo-finalized-ended", hostToken: "demo-host-token-ended",
+    title: "週末露營活動",
+    description: "新手露營團，裝備不夠可以跟團友借",
+    hostName: "阿凱", mode: "time_slots", responseDeadline: addDaysIso(-10),
+    slots: [
+      { id: "e_1", date: addDays(-3), time: "14:00 - 隔日 10:00 (過夜)", label: "溪畔營地" },
+      { id: "e_2", date: addDays(-2), time: "14:00 - 隔日 10:00 (過夜)", label: "溪畔營地（備案）" },
+    ],
+    responses: [
+      { id: "ep_1", nickname: "阿凱", availability: { e_1: "available", e_2: "if_needed" }, updatedAt: new Date(Date.now() - 86400000 * 12).toISOString() },
+      { id: "ep_2", nickname: "婷婷", availability: { e_1: "available", e_2: "available" }, updatedAt: new Date(Date.now() - 86400000 * 11).toISOString() },
+      { id: "ep_3", nickname: "老王", availability: { e_1: "available", e_2: "unavailable" }, updatedAt: new Date(Date.now() - 86400000 * 11).toISOString() },
+    ],
+    status: "finalized", finalSlotId: "e_1", finalNote: "營地入口見，記得帶睡袋！",
+    createdAt: new Date(Date.now() - 86400000 * 14).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+  });
+
+  // 6. 連結已失效範例 — finalized, meetup date more than 7 days ago -> GET should 404.
+  eventsMap.set("demo-expired-link", {
+    id: "demo-expired-link", hostToken: "demo-host-token-expired",
+    title: "上個月的讀書會",
+    description: "示範連結過期後的畫面",
+    hostName: "書僮", mode: "time_slots", responseDeadline: addDaysIso(-17),
+    slots: [{ id: "x_1", date: addDays(-10), time: "19:00 - 21:00 (晚上)", label: "線上讀書會" }],
+    responses: [
+      { id: "xp_1", nickname: "書僮", availability: { x_1: "available" }, updatedAt: new Date(Date.now() - 86400000 * 19).toISOString() },
+      { id: "xp_2", nickname: "小安", availability: { x_1: "available" }, updatedAt: new Date(Date.now() - 86400000 * 18).toISOString() },
+    ],
+    status: "finalized", finalSlotId: "x_1", finalNote: "",
+    createdAt: new Date(Date.now() - 86400000 * 21).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+  });
+
   saveEvents();
 }
 
@@ -153,7 +216,7 @@ loadEvents();
 
 // 01. Create new event
 app.post("/api/events", (req, res) => {
-  const { title, description, hostName, hostEmail, slots } = req.body as CreateEventInput;
+  const { title, description, hostName, hostEmail, mode, responseDeadline, slots } = req.body as CreateEventInput;
 
   if (!title || !title.trim()) {
     return res.status(400).json({ error: "請輸入活動名稱" });
@@ -184,6 +247,8 @@ app.post("/api/events", (req, res) => {
     description: description ? description.trim() : "",
     hostName: hostName ? hostName.trim() : "",
     hostEmail: hostEmail ? hostEmail.trim() : "",
+    mode: mode === "date_only" ? "date_only" : "time_slots",
+    responseDeadline: responseDeadline ? new Date(responseDeadline).toISOString() : new Date(Date.now() + 7 * 86400000).toISOString(),
     slots: formattedSlots,
     responses: [],
     status: "active",
@@ -211,6 +276,10 @@ app.get("/api/events/:id", (req, res) => {
     return res.status(404).json({ error: "找不到此活動，可能已被刪除或網址錯誤" });
   }
 
+  if (isLinkExpired(event)) {
+    return res.status(404).json({ error: "此活動連結已失效（活動結束超過 7 天）" });
+  }
+
   const isHost = Boolean(hostToken && hostToken === event.hostToken);
 
   // Return event. Hide hostToken from non-host response for security.
@@ -235,6 +304,10 @@ app.post("/api/events/:id/respond", (req, res) => {
 
   if (event.status === "finalized") {
     return res.status(400).json({ error: "此活動時間已由主揪拍板定案，暫停接受新投票" });
+  }
+
+  if (!isVotingOpen(event)) {
+    return res.status(400).json({ error: "投票已截止，請聯繫主揪重新開放投票" });
   }
 
   if (!nickname || !nickname.trim()) {
@@ -344,7 +417,7 @@ app.post("/api/events/:id/finalize", (req, res) => {
 // 05. Host re-open event (optional)
 app.post("/api/events/:id/reopen", (req, res) => {
   const { id } = req.params;
-  const { hostToken } = req.body;
+  const { hostToken, responseDeadline } = req.body;
 
   const event = eventsMap.get(id);
   if (!event) {
@@ -357,6 +430,13 @@ app.post("/api/events/:id/reopen", (req, res) => {
 
   event.status = "active";
   event.finalSlotId = undefined;
+  // Make sure reopening always actually unlocks voting: honor a host-picked
+  // deadline, or push the old one forward if it had already passed.
+  if (responseDeadline) {
+    event.responseDeadline = new Date(responseDeadline).toISOString();
+  } else if (!isVotingOpen({ ...event, status: "active" })) {
+    event.responseDeadline = new Date(Date.now() + 7 * 86400000).toISOString();
+  }
   event.updatedAt = new Date().toISOString();
 
   eventsMap.set(id, event);
