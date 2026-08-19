@@ -247,7 +247,7 @@ export default function App() {
         )}
 
         {!isLoading && !pageError && !currentEventId && (
-          <CreateEvent onSubmit={handleCreateEvent} isLoading={isLoading} onOpenHistory={() => setIsHistoryOpen(true)} />
+          <CreateEvent onSubmit={handleCreateEvent} isLoading={isLoading} />
         )}
 
         {!pageError && currentEventId && eventData && (

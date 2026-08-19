@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { History, X, AlertTriangle, MapPin, Rocket, CalendarDays, Sparkles } from "lucide-react";
+import { X, AlertTriangle, MapPin, Rocket } from "lucide-react";
 import { CreateEventInput, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { calculateSlotDuration, getNextWeekdayDate } from "../lib/slots";
@@ -11,7 +11,6 @@ import { cardStyle, SectionLabel } from "../mobile/mobileStyles";
 interface CreateEventProps {
   onSubmit: (input: CreateEventInput) => Promise<void>;
   isLoading: boolean;
-  onOpenHistory: () => void;
 }
 
 const SAT = getNextWeekdayDate(6);
@@ -34,7 +33,7 @@ const QUICK_PRESETS = [
   { start: "21:00", label: "續攤" },
 ];
 
-export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading, onOpenHistory }) => {
+export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const [title, setTitle] = useState("");
   const [hostName, setHostName] = useState("");
@@ -99,65 +98,6 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading, o
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 24px 60px" }}>
-      {/* Banner */}
-      <div
-        style={{
-          background: "var(--color-primary)",
-          borderRadius: "var(--radius-card)",
-          padding: "22px 28px",
-          color: "#fff",
-          marginBottom: 24,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "4px 12px",
-              borderRadius: "var(--radius-pill)",
-              background: "rgba(255,255,255,0.18)",
-              border: "1px solid rgba(255,255,255,0.3)",
-              fontSize: 11,
-              fontWeight: 800,
-              marginBottom: 10,
-            }}
-          >
-            <Sparkles size={13} />
-            快速發起聚會與會議時間調查
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 900, fontFamily: "var(--font-display)", display: "flex", alignItems: "center", gap: 8 }}>
-            主揪發起活動與約會
-            <CalendarDays size={22} />
-          </div>
-        </div>
-        <button
-          onClick={onOpenHistory}
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: "var(--radius-md)",
-            background: "rgba(255,255,255,0.18)",
-            border: "1.5px solid rgba(255,255,255,0.3)",
-            color: "#fff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-          title="我的聚會紀錄"
-        >
-          <History size={17} />
-        </button>
-      </div>
-
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.6fr) minmax(320px,1fr)", gap: 20, alignItems: "start" }}>
         {/* Left column: 基本資訊 + 候選日期與時段 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
@@ -285,7 +225,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading, o
 
         {/* Right column: 確認送出 — always visible live preview */}
         <div style={{ position: "sticky", top: 88, display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
-          <div style={cardStyle}>
+          <div style={{ ...cardStyle, background: "var(--color-primary-subtle)", border: "1.5px solid rgba(224,75,40,0.18)" }}>
             <SectionLabel title="確認活動內容" />
             <div style={{ fontSize: 15, fontWeight: 900, fontFamily: "var(--font-display)", marginBottom: 4, color: "var(--color-ink)" }}>{title || "（尚未命名）"}</div>
             {hostName && <div style={{ fontSize: 11, color: "var(--color-muted)" }}>主揪：{hostName}</div>}
