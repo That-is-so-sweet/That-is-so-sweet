@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Users, Share2, History } from "lucide-react";
+import { Users, Share2, History, Plus } from "lucide-react";
 import { EventData, SubmitResponseInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
 import { Badge } from "../design-system/components";
@@ -16,7 +16,7 @@ interface EventScreenProps {
   onRespond: (input: SubmitResponseInput) => Promise<void>;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
   onReopen: () => Promise<void>;
-  onDeleteResponse: (participantId: string) => void;
+  onNewEvent: () => void;
   onOpenShare: () => void;
   onOpenHistory: () => void;
   onCopySuccess: () => void;
@@ -24,8 +24,8 @@ interface EventScreenProps {
 }
 
 const TABS: { id: "vote" | "heatmap" | "host"; label: string }[] = [
-  { id: "vote", label: "勾選時間" },
   { id: "heatmap", label: "熱點圖" },
+  { id: "vote", label: "勾選時間" },
   { id: "host", label: "主揪定案" },
 ];
 
@@ -35,13 +35,13 @@ export const EventScreen: React.FC<EventScreenProps> = ({
   onRespond,
   onFinalize,
   onReopen,
-  onDeleteResponse,
+  onNewEvent,
   onOpenShare,
   onOpenHistory,
   onCopySuccess,
   isLoading,
 }) => {
-  const [tab, setTab] = useState<"vote" | "heatmap" | "host">("vote");
+  const [tab, setTab] = useState<"vote" | "heatmap" | "host">("heatmap");
   const [nickname, setNickname] = useState(() => getUserNickname());
   const [email, setEmail] = useState(() => getUserEmail());
 
@@ -59,17 +59,47 @@ export const EventScreen: React.FC<EventScreenProps> = ({
         }
         right={
           <>
+            <button style={iconBtnStyle} onClick={onNewEvent} title="新增活動"><Plus size={15} /></button>
             <button style={iconBtnStyle} onClick={onOpenShare}><Share2 size={15} /></button>
             <button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>
           </>
         }
       />
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", flexShrink: 0 }}>
-        <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--color-success)" }} />
-        <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-success)" }}>
-          {event.status === "finalized" ? "已敲定通知模式" : "統計時間中 · 免登入"}
-        </span>
-        {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "0 16px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", flexShrink: 0, overflowX: "auto" }}>
+        {event.status !== "finalized" && (
+          <div style={{ display: "flex", gap: 16, flexShrink: 0 }}>
+            {visibleTabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                style={{
+                  position: "relative",
+                  flexShrink: 0,
+                  whiteSpace: "nowrap",
+                  padding: "9px 0",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  border: "none",
+                  background: "none",
+                  cursor: "pointer",
+                  color: tab === t.id ? "var(--color-primary)" : "var(--color-muted)",
+                }}
+              >
+                {t.label}
+                {tab === t.id && (
+                  <span style={{ position: "absolute", left: 0, right: 0, bottom: -1, height: 2, borderRadius: 2, background: "var(--color-primary)" }} />
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 0", flexShrink: 0, marginLeft: "auto" }}>
+          <span style={{ width: 7, height: 7, borderRadius: 999, background: "var(--color-success)", flexShrink: 0 }} />
+          <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-success)", whiteSpace: "nowrap" }}>
+            {event.status === "finalized" ? "已敲定通知模式" : "統計時間中"}
+          </span>
+          {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
+        </div>
       </div>
 
       {event.status === "finalized" ? (
@@ -77,37 +107,13 @@ export const EventScreen: React.FC<EventScreenProps> = ({
           <FinalizedView event={event} isHost={isHost} onReopen={onReopen} onCopySuccess={onCopySuccess} />
         </div>
       ) : (
-        <>
-          <div style={{ display: "flex", gap: 6, padding: "8px 16px", overflowX: "auto", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", flexShrink: 0 }}>
-            {visibleTabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={{
-                  flexShrink: 0,
-                  whiteSpace: "nowrap",
-                  padding: "7px 14px",
-                  borderRadius: "var(--radius-pill)",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  border: "none",
-                  cursor: "pointer",
-                  background: tab === t.id ? "var(--color-primary)" : "var(--color-cream)",
-                  color: tab === t.id ? "#fff" : "var(--color-ink)",
-                }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div style={{ flex: 1, overflowY: "auto" }}>
-            {tab === "vote" && (
-              <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} />
-            )}
-            {tab === "heatmap" && <HeatmapTab event={event} onDelete={onDeleteResponse} userNickname={nickname} />}
-            {tab === "host" && isHost && <HostTab event={event} onFinalize={onFinalize} isLoading={isLoading} />}
-          </div>
-        </>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {tab === "vote" && (
+            <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} />
+          )}
+          {tab === "heatmap" && <HeatmapTab event={event} userNickname={nickname} onGoToVote={() => setTab("vote")} />}
+          {tab === "host" && isHost && <HostTab event={event} onFinalize={onFinalize} isLoading={isLoading} />}
+        </div>
       )}
     </div>
   );

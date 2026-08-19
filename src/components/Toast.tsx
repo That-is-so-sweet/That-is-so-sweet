@@ -1,6 +1,5 @@
-import React, { useEffect } from "react";
-import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import React from "react";
+import { X } from "lucide-react";
 import { ToastMessage } from "../types";
 
 interface ToastProps {
@@ -10,36 +9,50 @@ interface ToastProps {
 
 export const Toast: React.FC<ToastProps> = ({ toasts, onDismiss }) => {
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full px-4 pointer-events-none">
-      <AnimatePresence>
-        {toasts.map((toast) => (
-          <motion.div
-            key={toast.id}
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className={`pointer-events-auto flex items-center gap-3 p-4 rounded-xl shadow-lg border backdrop-blur-md ${
-              toast.type === "success"
-                ? "bg-emerald-900/90 border-emerald-700 text-emerald-100"
-                : toast.type === "error"
-                ? "bg-rose-900/90 border-rose-700 text-rose-100"
-                : "bg-slate-900/90 border-slate-700 text-slate-100"
-            }`}
+    <div
+      style={{
+        position: "fixed",
+        bottom: 20,
+        left: 0,
+        right: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
+        zIndex: 300,
+        pointerEvents: "none",
+        padding: "0 16px",
+      }}
+    >
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          style={{
+            pointerEvents: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 16px",
+            borderRadius: "var(--radius-md)",
+            background: t.type === "info" ? "var(--color-ink)" : t.type === "error" ? "var(--color-error)" : "var(--color-success)",
+            color: "#fff",
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: "var(--font-body)",
+            boxShadow: "var(--shadow-lg)",
+            maxWidth: 420,
+          }}
+        >
+          <span style={{ flex: 1 }}>{t.text}</span>
+          <button
+            onClick={() => onDismiss(t.id)}
+            aria-label="關閉提示"
+            style={{ border: "none", background: "none", color: "rgba(255,255,255,0.8)", cursor: "pointer", display: "flex", alignItems: "center", flexShrink: 0 }}
           >
-            {toast.type === "success" && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
-            {toast.type === "error" && <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />}
-            {toast.type === "info" && <Info className="w-5 h-5 text-sky-400 shrink-0" />}
-            <span className="text-sm font-medium flex-1">{toast.text}</span>
-            <button
-              onClick={() => onDismiss(toast.id)}
-              className="p-1 hover:opacity-75 transition"
-              aria-label="關閉提示"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+            <X size={14} />
+          </button>
+        </div>
+      ))}
     </div>
   );
 };

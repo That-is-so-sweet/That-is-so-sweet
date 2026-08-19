@@ -95,7 +95,15 @@ export const Button: React.FC<ButtonProps> = ({
       type={type}
       style={style}
       disabled={disabled}
-      onClick={disabled ? undefined : onClick}
+      onClick={
+        disabled
+          ? undefined
+          : (e) => {
+              onClick?.(e);
+              setHover(false);
+              setPressed(false);
+            }
+      }
       onMouseEnter={() => !disabled && setHover(true)}
       onMouseLeave={() => { setHover(false); setPressed(false); }}
       onMouseDown={() => !disabled && setPressed(true)}

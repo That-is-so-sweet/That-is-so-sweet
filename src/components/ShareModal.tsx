@@ -1,19 +1,7 @@
-import React, { useState } from "react";
-import { 
-  CheckCircle2, 
-  Copy, 
-  Check, 
-  Share2, 
-  X, 
-  ExternalLink, 
-  Crown,
-  MessageCircle,
-  QrCode,
-  PartyPopper,
-  Smartphone,
-  ArrowRight
-} from "lucide-react";
+import React from "react";
+import { X, Check, Crown } from "lucide-react";
 import { EventData } from "../types";
+import { Button } from "../design-system/components";
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -23,166 +11,70 @@ interface ShareModalProps {
   onCopySuccess: () => void;
 }
 
-export const ShareModal: React.FC<ShareModalProps> = ({
-  isOpen,
-  onClose,
-  event,
-  hostToken,
-  onCopySuccess,
-}) => {
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedLineMsg, setCopiedLineMsg] = useState(false);
-
+export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, event, hostToken, onCopySuccess }) => {
   if (!isOpen) return null;
 
   const appOrigin = window.location.origin;
   const shareUrl = `${appOrigin}/#event=${event.id}`;
-  const hostUrl = hostToken ? `${appOrigin}/#event=${event.id}&hostToken=${hostToken}` : shareUrl;
-
-  const lineMessageText = `📢【${event.title}】聚會時間調查邀請！
+  const lineText = `📢【${event.title}】聚會時間調查邀請！
 主揪：${event.hostName || "熱心朋友"}
 ${event.description ? `說明：${event.description}\n` : ""}
 不用註冊登入，點擊連結即可選擇你有空的時間：
-👇 直接填寫連結 👇
 ${shareUrl}`;
 
-  const handleCopyShareUrl = async () => {
+  const copy = async (text: string, msg: string) => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedLink(true);
+      await navigator.clipboard.writeText(text);
       onCopySuccess();
-      setTimeout(() => setCopiedLink(false), 2500);
     } catch {
-      // Fallback prompt
-      window.prompt("複製活動連結：", shareUrl);
+      window.prompt(msg, text);
     }
-  };
-
-  const handleCopyLineText = async () => {
-    try {
-      await navigator.clipboard.writeText(lineMessageText);
-      setCopiedLineMsg(true);
-      onCopySuccess();
-      setTimeout(() => setCopiedLineMsg(false), 2500);
-    } catch {
-      window.prompt("複製廣播文字：", lineMessageText);
-    }
-  };
-
-  const handleLineShareDirect = () => {
-    const encodedText = encodeURIComponent(lineMessageText);
-    const lineUrl = `https://line.me/R/msg/text/?${encodedText}`;
-    window.open(lineUrl, "_blank");
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative max-h-[90vh] overflow-y-auto">
-        {/* Close Button */}
+    <div style={{ position: "fixed", inset: 0, background: "rgba(26,18,8,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 200 }}>
+      <div style={{ background: "#fff", borderRadius: "var(--radius-modal)", padding: 24, width: "100%", maxWidth: 440, maxHeight: "85vh", overflowY: "auto", position: "relative" }}>
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+          style={{ position: "absolute", top: 16, right: 16, border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}
         >
-          <X className="w-5 h-5" />
+          <X size={18} />
         </button>
-
-        {/* Success Banner */}
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3 shadow-inner">
-            <CheckCircle2 className="w-10 h-10" />
-          </div>
-          <h3 className="text-2xl font-bold text-slate-900 tracking-tight inline-flex items-center gap-2">
-            活動建立成功！
-            <PartyPopper className="w-5 h-5" />
-          </h3>
-          <p className="text-slate-500 text-xs sm:text-sm mt-1">
-            活動名稱：<span className="font-semibold text-slate-800">{event.title}</span>
-          </p>
-        </div>
-
-        {/* Action 1: LINE Share Button */}
-        <div className="space-y-4">
-          <button
-            onClick={handleLineShareDirect}
-            className="w-full py-3.5 px-5 rounded-lg bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-95"
+        <div style={{ textAlign: "center", marginBottom: 18 }}>
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: "var(--radius-pill)",
+              background: "rgba(90,158,90,0.12)",
+              color: "var(--color-success)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 10px",
+            }}
           >
-            <MessageCircle className="w-5 h-5 fill-white" />
-            <span className="inline-flex items-center gap-1.5">
-              一鍵分享到 LINE 群組
-              <Smartphone className="w-4 h-4" />
-            </span>
-          </button>
-
-          {/* Action 2: Copy URL */}
-          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/80 space-y-2">
-            <label className="block text-xs font-semibold text-slate-700">
-              專屬參與者填寫連結
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                readOnly
-                value={shareUrl}
-                className="flex-1 px-3 py-2 rounded-xl bg-white border border-slate-300 text-slate-800 text-xs font-mono select-all focus:outline-none"
-              />
-              <button
-                onClick={handleCopyShareUrl}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition shrink-0"
-              >
-                {copiedLink ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-400" />
-                    <span>已複製</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>一鍵複製</span>
-                  </>
-                )}
-              </button>
-            </div>
+            <Check size={26} />
           </div>
-
-          {/* Action 3: Copy Full LINE Text */}
-          <div className="bg-amber-50/70 rounded-lg p-4 border border-amber-200/80 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-amber-900">
-                預設 LINE 群組廣播文範本
-              </span>
-              <button
-                onClick={handleCopyLineText}
-                className="text-xs font-semibold text-amber-800 hover:text-amber-950 underline flex items-center gap-1"
-              >
-                {copiedLineMsg ? "已複製廣播文！" : "複製整段文字"}
-              </button>
-            </div>
-            <p className="text-[11px] text-amber-900/80 bg-white/80 p-3 rounded-xl font-mono leading-relaxed whitespace-pre-line border border-amber-200/50">
-              {lineMessageText}
-            </p>
-          </div>
-
-          {/* Host Management Note */}
-          {hostToken && (
-            <div className="p-3.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-xs flex items-start gap-2.5">
-              <Crown className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold text-slate-800">主揪專屬權限：</span>
-                此瀏覽器已自動儲存您為主揪。更換裝置時可使用含有主揪密鑰的管理網址來管理此活動。
-              </div>
-            </div>
-          )}
+          <div style={{ fontSize: 19, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>活動建立成功！</div>
+          <div style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4 }}>{event.title}</div>
         </div>
-
-        {/* Bottom Enter Event Button */}
-        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
-          <button
-            onClick={onClose}
-            className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition inline-flex items-center justify-center gap-1.5"
-          >
-            進入活動統計頁面
-            <ArrowRight className="w-4 h-4" />
-          </button>
+        <Button variant="primary" fullWidth onClick={() => copy(lineText, "複製 LINE 分享文字：")}>複製 LINE 分享文字</Button>
+        <div style={{ background: "var(--color-cream)", borderRadius: "var(--radius-md)", padding: 14, marginTop: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "var(--color-ink)" }}>專屬參與者填寫連結</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input readOnly value={shareUrl} style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "var(--radius-input)", border: "1px solid var(--color-border)", fontSize: 12, background: "#fff", color: "var(--color-ink)" }} />
+            <Button variant="dark" size="sm" onClick={() => copy(shareUrl, "複製活動連結：")}>複製</Button>
+          </div>
+        </div>
+        {hostToken && (
+          <div style={{ marginTop: 14, padding: 12, borderRadius: "var(--radius-md)", background: "var(--color-cream)", fontSize: 12, color: "var(--color-muted)", lineHeight: 1.6, display: "flex", alignItems: "flex-start", gap: 6 }}>
+            <Crown size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>此瀏覽器已自動儲存您為主揪。更換裝置時可使用含有主揪密鑰的管理網址來管理此活動。</span>
+          </div>
+        )}
+        <div style={{ marginTop: 16 }}>
+          <Button variant="ghost" fullWidth onClick={onClose}>進入活動統計頁面</Button>
         </div>
       </div>
     </div>

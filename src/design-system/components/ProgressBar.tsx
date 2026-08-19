@@ -53,7 +53,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
             >
               {full ? (
                 <>
-                  已成團！
+                  所有人都可以！
                   <PartyPopper size={13} />
                 </>
               ) : (

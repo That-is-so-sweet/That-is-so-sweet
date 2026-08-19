@@ -8,73 +8,94 @@ interface HeaderProps {
   activeEventTitle?: string;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  onNewEvent,
-  onOpenHistory,
-  onLoadDemo,
-  activeEventTitle,
-}) => {
+const pillBtnStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+  padding: "8px 14px",
+  borderRadius: "var(--radius-pill)",
+  border: "1.5px solid rgba(255,255,255,0.3)",
+  background: "rgba(255,255,255,0.14)",
+  color: "#fff",
+  fontSize: 12,
+  fontWeight: 800,
+  fontFamily: "var(--font-body)",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  transition: "background 150ms ease",
+};
+
+export const Header: React.FC<HeaderProps> = ({ onNewEvent, onOpenHistory, onLoadDemo, activeEventTitle }) => {
   return (
-    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        {/* Brand logo & Title */}
-        <div 
-          onClick={onNewEvent}
-          className="flex items-center gap-3 cursor-pointer group select-none shrink-0"
-        >
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
-            <CalendarHeart className="w-5 h-5" />
+    <header style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--color-primary)", color: "#fff", boxShadow: "var(--shadow-sm)" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div onClick={onNewEvent} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none", flexShrink: 0 }}>
+          <div
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: "var(--radius-lg)",
+              background: "rgba(255,255,255,0.18)",
+              border: "1.5px solid rgba(255,255,255,0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <CalendarHeart size={19} />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-bold text-slate-900 tracking-tight text-lg leading-none">
-                揪甘心
-              </h1>
-              <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 18, lineHeight: 1.1 }}>揪甘心</span>
+              <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: "var(--radius-pill)", background: "var(--color-secondary)", color: "var(--color-ink)" }}>
                 免登入
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-normal mt-0.5 hidden sm:block">
-              聚會時間協調神器
-            </p>
+            <p style={{ fontSize: 11, opacity: 0.85, margin: 0, marginTop: 1 }}>聚會時間協調神器</p>
           </div>
         </div>
 
-        {/* Current Active Event Banner or Navigation */}
         {activeEventTitle && (
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/80 border border-slate-200 text-slate-700 text-xs max-w-xs truncate">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span className="font-medium text-slate-500 shrink-0">正在瀏覽：</span>
-            <span className="font-semibold truncate">{activeEventTitle}</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "7px 12px",
+              borderRadius: "var(--radius-lg)",
+              background: "rgba(255,255,255,0.12)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              fontSize: 12,
+              maxWidth: 280,
+              overflow: "hidden",
+            }}
+          >
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: "#fff", flexShrink: 0 }} />
+            <span style={{ opacity: 0.85, flexShrink: 0 }}>正在瀏覽：</span>
+            <span style={{ fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{activeEventTitle}</span>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <button
             onClick={onLoadDemo}
-            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50/80 hover:bg-amber-100 text-amber-900 text-xs font-semibold transition"
+            style={pillBtnStyle}
             title="查看範例活動體驗功能"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+            <Sparkles size={14} />
             體驗示範
           </button>
-
-          <button
-            onClick={onOpenHistory}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition"
-            title="查看瀏覽或建立過的活動紀錄"
-          >
-            <History className="w-3.5 h-3.5 text-slate-500" />
-            <span className="hidden sm:inline">我的聚會</span>
+          <button onClick={onOpenHistory} style={pillBtnStyle} title="查看瀏覽或建立過的活動紀錄">
+            <History size={14} />
+            我的聚會
           </button>
-
           <button
             onClick={onNewEvent}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition active:scale-95"
+            style={{ ...pillBtnStyle, background: "var(--color-ink)", border: "1.5px solid var(--color-ink)" }}
           >
-            <PlusCircle className="w-4 h-4 text-amber-400" />
-            <span>發起活動</span>
+            <PlusCircle size={14} />
+            發起活動
           </button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import React from "react";
-import { History, X, ChevronRight, Crown, Calendar, Sparkles } from "lucide-react";
+import { X } from "lucide-react";
 import { VisitedEventItem } from "../lib/api";
+import { Badge, Button } from "../design-system/components";
 
 interface MyEventsModalProps {
   isOpen: boolean;
@@ -20,75 +21,53 @@ export const MyEventsModal: React.FC<MyEventsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl border border-slate-100 relative max-h-[85vh] flex flex-col">
+    <div style={{ position: "fixed", inset: 0, background: "rgba(26,18,8,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 200 }}>
+      <div style={{ background: "#fff", borderRadius: "var(--radius-modal)", padding: 20, width: "100%", maxWidth: 440, maxHeight: "80vh", overflowY: "auto", position: "relative" }}>
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition"
+          style={{ position: "absolute", top: 14, right: 14, border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}
         >
-          <X className="w-5 h-5" />
+          <X size={18} />
         </button>
-
-        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-          <History className="w-5 h-5 text-amber-500" />
-          <h3 className="font-bold text-lg text-slate-900">我的聚會紀錄</h3>
-        </div>
-
-        <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
-          {eventsList.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 text-xs space-y-3">
-              <Calendar className="w-10 h-10 text-slate-300 mx-auto" />
-              <p>目前尚無紀錄，點擊「發起活動」開始吧！</p>
-            </div>
-          ) : (
-            eventsList.map((item) => (
+        <div style={{ fontSize: 15, fontWeight: 900, fontFamily: "var(--font-display)", marginBottom: 12, color: "var(--color-ink)" }}>我的聚會紀錄</div>
+        {eventsList.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "24px 0", color: "var(--color-muted)", fontSize: 12 }}>
+            目前尚無紀錄，發起活動後會顯示在這裡！
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {eventsList.map((h) => (
               <div
-                key={item.id}
+                key={h.id}
                 onClick={() => {
-                  onSelectEvent(item.id);
+                  onSelectEvent(h.id);
                   onClose();
                 }}
-                className="p-3.5 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/40 transition cursor-pointer flex items-center justify-between group"
+                style={{ padding: 12, borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", cursor: "pointer" }}
               >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 text-sm group-hover:text-amber-700">
-                      {item.title}
-                    </span>
-                    {item.isHost && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 flex items-center gap-0.5">
-                        <Crown className="w-2.5 h-2.5 text-amber-600" /> 主揪
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">
-                    上次查看：{new Date(item.updatedAt).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{h.title}</span>
+                  {h.isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
                 </div>
-
-                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition" />
+                <div style={{ fontSize: 10, color: "var(--color-muted)", marginTop: 4 }}>
+                  上次查看：{new Date(h.updatedAt).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </div>
               </div>
-            ))
-          )}
-        </div>
-
-        <div className="pt-4 border-t border-slate-100 mt-2 flex gap-2">
-          <button
+            ))}
+          </div>
+        )}
+        <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
+          <Button
+            variant="secondary"
+            fullWidth
             onClick={() => {
               onLoadDemo();
               onClose();
             }}
-            className="flex-1 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs border border-amber-200 transition flex items-center justify-center gap-1.5"
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
             載入體驗示範活動
-          </button>
-          <button
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-semibold text-xs hover:bg-slate-200 transition"
-          >
-            關閉
-          </button>
+          </Button>
+          <Button variant="muted" onClick={onClose}>關閉</Button>
         </div>
       </div>
     </div>

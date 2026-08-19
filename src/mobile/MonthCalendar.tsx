@@ -2,12 +2,16 @@ import React, { useEffect, useRef, useState } from "react";
 import { Lightbulb, Flag, Zap, ChevronUp, ChevronDown } from "lucide-react";
 import { navBtnStyle, quickBtnStyle } from "./mobileStyles";
 import { HOLIDAYS_2026 } from "./holidays";
+import { TimeSlot } from "../types";
 
 interface MonthCalendarProps {
   selectedDates: string[];
   onChange: (dates: string[]) => void;
   viewDate: Date;
   setViewDate: (d: Date) => void;
+  slots?: Omit<TimeSlot, "id">[];
+  activeDate?: string | null;
+  onActiveDateChange?: (d: string) => void;
 }
 
 const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
@@ -17,7 +21,15 @@ const RANGE_OPTS: { k: "month" | "2weeks" | "3months"; label: string }[] = [
   { k: "3months", label: "近三個月" },
 ];
 
-export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onChange, viewDate, setViewDate }) => {
+export const MonthCalendar: React.FC<MonthCalendarProps> = ({
+  selectedDates,
+  onChange,
+  viewDate,
+  setViewDate,
+  slots,
+  activeDate,
+  onActiveDateChange,
+}) => {
   const [bulkRange, setBulkRange] = useState<"month" | "2weeks" | "3months">("month");
   const [toolsOpen, setToolsOpen] = useState(false);
   const year = viewDate.getFullYear();
@@ -30,6 +42,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
   const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
   const monthHolidays = Object.entries(HOLIDAYS_2026).filter(([k]) => k.startsWith(monthPrefix));
   const set = new Set(selectedDates);
+  const countFor = (ds: string) => (slots ? slots.filter((s) => s.date === ds).length : 0);
 
   const rangeDates = (): Date[] => {
     if (bulkRange === "month") return Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
@@ -51,30 +64,64 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
     onChange(Array.from(next).sort());
   };
 
-  // Click-and-drag multi-select: the first cell touched decides add/remove for the whole gesture,
-  // works the same for mouse drag and touch swipe.
+  // Click-and-drag multi-select: dragging across cells adds/removes them in bulk (decided by the
+  // first cell's state), same for mouse drag and touch swipe. A plain tap (no drag movement)
+  // instead runs handleCellTap, which also drives which date is "active" for time editing.
   const dragModeRef = useRef<"add" | "remove" | null>(null);
+  const dragStartRef = useRef<string | null>(null);
+  const dragMovedRef = useRef(false);
   const lastCellRef = useRef<string | null>(null);
+  // Tracks the selection as it's being built up during one gesture. A drag can paint the start
+  // cell and the newly-entered cell within the same event (same tick), before React has re-rendered
+  // with the previous onChange's result — reading the `selectedDates` prop for the second paint
+  // would still see the pre-update value and clobber the first. This ref carries the running result
+  // across paints within a single gesture instead.
+  const pendingDatesRef = useRef<string[]>(selectedDates);
 
   const paintCell = (ds: string) => {
     if (ds < todayStr || !dragModeRef.current) return;
     if (lastCellRef.current === ds) return;
     lastCellRef.current = ds;
-    const isSelected = selectedDates.includes(ds);
-    if (dragModeRef.current === "add" && !isSelected) onChange([...selectedDates, ds].sort());
-    if (dragModeRef.current === "remove" && isSelected) onChange(selectedDates.filter((x) => x !== ds));
+    const isSelected = pendingDatesRef.current.includes(ds);
+    if (dragModeRef.current === "add" && !isSelected) {
+      pendingDatesRef.current = [...pendingDatesRef.current, ds].sort();
+      onChange(pendingDatesRef.current);
+    }
+    if (dragModeRef.current === "remove" && isSelected) {
+      pendingDatesRef.current = pendingDatesRef.current.filter((x) => x !== ds);
+      onChange(pendingDatesRef.current);
+    }
   };
 
   const startDrag = (ds: string) => {
     if (ds < todayStr) return;
     dragModeRef.current = selectedDates.includes(ds) ? "remove" : "add";
+    dragStartRef.current = ds;
+    dragMovedRef.current = false;
     lastCellRef.current = null;
-    paintCell(ds);
+    pendingDatesRef.current = selectedDates;
+  };
+
+  const handleCellTap = (ds: string) => {
+    if (ds < todayStr) return;
+    if (!selectedDates.includes(ds)) {
+      onChange([...selectedDates, ds].sort());
+      onActiveDateChange?.(ds);
+    } else if (onActiveDateChange && activeDate !== ds) {
+      onActiveDateChange(ds);
+    } else {
+      onChange(selectedDates.filter((x) => x !== ds));
+    }
   };
 
   useEffect(() => {
     const end = () => {
+      if (dragModeRef.current && !dragMovedRef.current && dragStartRef.current) {
+        handleCellTap(dragStartRef.current);
+      }
       dragModeRef.current = null;
+      dragStartRef.current = null;
+      dragMovedRef.current = false;
       lastCellRef.current = null;
     };
     window.addEventListener("pointerup", end);
@@ -83,13 +130,18 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
       window.removeEventListener("pointerup", end);
       window.removeEventListener("pointercancel", end);
     };
-  }, []);
+  });
 
   const handleGridPointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
-    if (!dragModeRef.current) return;
+    if (!dragModeRef.current || !dragStartRef.current) return;
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     const ds = el?.closest<HTMLElement>("[data-date]")?.dataset.date;
-    if (ds) paintCell(ds);
+    if (!ds) return;
+    if (ds !== dragStartRef.current && !dragMovedRef.current) {
+      dragMovedRef.current = true;
+      paintCell(dragStartRef.current);
+    }
+    if (dragMovedRef.current) paintCell(ds);
   };
 
   const cells: (number | null)[] = [...Array(startDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
@@ -156,6 +208,8 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
           const isWeekend = dow === 0 || dow === 6;
           const holiday = HOLIDAYS_2026[ds];
           const active = set.has(ds);
+          const isActiveDate = !!onActiveDateChange && ds === activeDate;
+          const cnt = countFor(ds);
           const isPast = ds < todayStr;
           const isToday = ds === todayStr;
           return (
@@ -171,6 +225,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
                 position: "relative",
                 aspectRatio: "1.8",
                 border: isToday && !active ? "1.5px solid var(--color-primary)" : "1px solid transparent",
+                boxShadow: isActiveDate ? "0 0 0 2px var(--color-secondary-dark)" : "none",
                 borderRadius: "var(--radius-sm)",
                 background: active ? "var(--color-primary)" : holiday ? "rgba(194,67,26,0.08)" : "transparent",
                 color: isPast ? "var(--color-border)" : active ? "#fff" : isWeekend || holiday ? "var(--color-hot)" : "var(--color-ink)",
@@ -196,13 +251,58 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
                   }}
                 />
               )}
+              {active && cnt > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: 1,
+                    right: 1,
+                    minWidth: 10,
+                    height: 10,
+                    fontSize: 7,
+                    fontWeight: 900,
+                    borderRadius: 999,
+                    background: "var(--color-secondary)",
+                    color: "var(--color-ink)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "0 2px",
+                  }}
+                >
+                  {cnt}
+                </span>
+              )}
+              {active && cnt === 0 && (
+                <span
+                  title="尚未選擇時段"
+                  style={{
+                    position: "absolute",
+                    top: 1,
+                    right: 1,
+                    width: 10,
+                    height: 10,
+                    fontSize: 8,
+                    fontWeight: 900,
+                    lineHeight: "10px",
+                    borderRadius: 999,
+                    background: "var(--color-hot)",
+                    color: "#fff",
+                    textAlign: "center",
+                  }}
+                >
+                  !
+                </span>
+              )}
             </button>
           );
         })}
       </div>
       <div style={{ fontSize: 9, color: "var(--color-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 3 }}>
         <Lightbulb size={10} />
-        可直接按住拖曳，一次選取或取消多天
+        {onActiveDateChange
+          ? "拖曳可一次選取/取消多天；點日期切換編輯時段，再點一次作用中日期可取消"
+          : "可直接按住拖曳，一次選取或取消多天"}
       </div>
 
       {monthHolidays.length > 0 && (

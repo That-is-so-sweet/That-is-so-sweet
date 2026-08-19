@@ -18,7 +18,6 @@ interface MobileAppProps {
   onRespond: (input: SubmitResponseInput) => Promise<void>;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
   onReopen: () => Promise<void>;
-  onDeleteResponse: (participantId: string) => void;
   isShareModalOpen: boolean;
   setIsShareModalOpen: (open: boolean) => void;
   isHistoryOpen: boolean;
@@ -41,7 +40,6 @@ export const MobileApp: React.FC<MobileAppProps> = ({
   onRespond,
   onFinalize,
   onReopen,
-  onDeleteResponse,
   isShareModalOpen,
   setIsShareModalOpen,
   isHistoryOpen,
@@ -99,7 +97,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
             onRespond={onRespond}
             onFinalize={onFinalize}
             onReopen={onReopen}
-            onDeleteResponse={onDeleteResponse}
+            onNewEvent={onGoHome}
             onOpenShare={() => setIsShareModalOpen(true)}
             onOpenHistory={() => setIsHistoryOpen(true)}
             onCopySuccess={onCopySuccess}

@@ -1,29 +1,143 @@
-import React from "react";
-import { Trophy, Medal, MessageCircle, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Trophy, Medal, MessageCircle, LayoutGrid, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp } from "lucide-react";
 import { EventData, SlotStats } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats } from "../lib/slots";
-import { Avatar, Badge, ProgressBar } from "../design-system/components";
-import { cardStyle, SectionLabel } from "./mobileStyles";
+import { Avatar, Badge, Button, ProgressBar } from "../design-system/components";
+import { cardStyle, navBtnStyle, SectionLabel, STATUS_META } from "./mobileStyles";
 
 interface HeatmapTabProps {
   event: EventData;
-  onDelete: (participantId: string) => void;
   userNickname: string;
+  onGoToVote: () => void;
 }
 
+const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
 const medalColors = ["#d4a017", "#9aa0a6", "#b06a3d"];
 
-export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, onDelete, userNickname }) => {
+const heatColor = (ratio: number) =>
+  ratio >= 0.75 ? "var(--color-success)" : ratio >= 0.4 ? "rgba(90,158,90,0.3)" : ratio > 0 ? "rgba(90,158,90,0.12)" : "var(--color-cream)";
+
+const BreakdownIcons: React.FC<{ s: SlotStats; color?: string; size?: number }> = ({ s, color, size = 10 }) => (
+  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: color || STATUS_META.available.color }}>
+      <STATUS_META.available.icon size={size} color={color || STATUS_META.available.color} />
+      {s.availableCount} 確定有空
+    </span>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: color || STATUS_META.if_needed.color }}>
+      <STATUS_META.if_needed.icon size={size} color={color || STATUS_META.if_needed.color} />
+      {s.ifNeededCount} 可能
+    </span>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: color || STATUS_META.unavailable.color }}>
+      <STATUS_META.unavailable.icon size={size} color={color || STATUS_META.unavailable.color} />
+      {s.unavailableCount} 不行
+    </span>
+  </div>
+);
+
+const NamesPanel: React.FC<{ s: SlotStats }> = ({ s }) => (
+  <div style={{ marginTop: 6, padding: 8, background: "var(--color-cream)", borderRadius: "var(--radius-md)", display: "flex", flexDirection: "column", gap: 6 }}>
+    {s.availableNames.length > 0 && (
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 11 }}>
+        <STATUS_META.available.icon size={11} color={STATUS_META.available.color} style={{ flexShrink: 0, marginTop: 2 }} />
+        <span><span style={{ fontWeight: 800 }}>確定有空</span>：{s.availableNames.join("、")}</span>
+      </div>
+    )}
+    {s.ifNeededNames.length > 0 && (
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 11 }}>
+        <STATUS_META.if_needed.icon size={11} color={STATUS_META.if_needed.color} style={{ flexShrink: 0, marginTop: 2 }} />
+        <span><span style={{ fontWeight: 800 }}>可能／視情況</span>：{s.ifNeededNames.join("、")}</span>
+      </div>
+    )}
+    {s.unavailableNames.length > 0 && (
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 11, color: "var(--color-muted)" }}>
+        <STATUS_META.unavailable.icon size={11} color={STATUS_META.unavailable.color} style={{ flexShrink: 0, marginTop: 2 }} />
+        <span><span style={{ fontWeight: 800 }}>不行</span>：{s.unavailableNames.join("、")}</span>
+      </div>
+    )}
+  </div>
+);
+
+export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onGoToVote }) => {
+  const [distMode, setDistMode] = useState<"grid" | "bar" | "calendar">("grid");
+  const [calViewDate, setCalViewDate] = useState(new Date());
+  const [calActiveDate, setCalActiveDate] = useState<string | null>(null);
+  const [showAllTop, setShowAllTop] = useState(false);
+  const [expandedSlotId, setExpandedSlotId] = useState<string | null>(null);
+  const toggleExpand = (id: string) => setExpandedSlotId((cur) => (cur === id ? null : id));
   const stats = computeSlotStats(event.slots, event.responses);
-  const top = [...stats].filter((s) => s.availableCount + s.ifNeededCount > 0).sort((a, b) => b.score - a.score).slice(0, 3);
+  const qualifying = [...stats].filter((s) => s.availableCount + s.ifNeededCount > 0).sort((a, b) => b.score - a.score);
+  const top = showAllTop ? qualifying : qualifying.slice(0, 3);
+  const moreCount = qualifying.length - 3;
   const grouped = stats.reduce((acc, s) => {
     (acc[s.slot.date] = acc[s.slot.date] || []).push(s);
     return acc;
   }, {} as Record<string, typeof stats>);
+  const total = event.responses.length;
+  const hasResponded = !!userNickname.trim() && event.responses.some((r) => r.nickname.toLowerCase() === userNickname.trim().toLowerCase());
+
+  const allDates: string[] = event.slots
+    .map((s) => s.date)
+    .filter((d, i, arr) => arr.indexOf(d) === i)
+    .sort();
+
+  useEffect(() => {
+    if (!calActiveDate || !allDates.includes(calActiveDate)) {
+      const first = allDates[0] || null;
+      setCalActiveDate(first);
+      if (first) {
+        const [y, m] = first.split("-").map(Number);
+        setCalViewDate(new Date(y, m - 1, 1));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event.id]);
+
+  const calYear = calViewDate.getFullYear();
+  const calMonth = calViewDate.getMonth();
+  const calDaysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const calStartDay = new Date(calYear, calMonth, 1).getDay();
+  const calDateStr = (d: number) => `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const calCells: (number | null)[] = [...Array(calStartDay).fill(null), ...Array.from({ length: calDaysInMonth }, (_, i) => i + 1)];
+  const dateSet = new Set(allDates);
 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={cardStyle}>
+        <SectionLabel title="活動資訊" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)" }}>
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: event.status === "finalized" ? "var(--color-muted)" : "var(--color-success)", flexShrink: 0 }} />
+            狀態：{event.status === "finalized" ? "已敲定，投票已結束" : "投票統計中"}
+          </div>
+          {event.hostName && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)" }}>
+              <User size={12} color="var(--color-muted)" style={{ flexShrink: 0 }} />
+              主揪：{event.hostName}
+            </div>
+          )}
+          {event.description && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "var(--color-ink)", lineHeight: 1.5 }}>
+              <MapPin size={12} color="var(--color-muted)" style={{ flexShrink: 0, marginTop: 2 }} />
+              <span>{event.description}</span>
+            </div>
+          )}
+        </div>
+      </div>
+      <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "var(--color-primary-subtle)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          <CalendarCheck size={18} color="var(--color-primary)" style={{ flexShrink: 0 }} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)" }}>
+              {hasResponded ? "已收到您的時間紀錄" : "還沒有勾選您的時間？"}
+            </div>
+            <div style={{ fontSize: 10, color: "var(--color-muted)", marginTop: 1 }}>
+              {hasResponded ? "隨時可以回來更新" : "花 30 秒勾選，讓大家更快敲定時間"}
+            </div>
+          </div>
+        </div>
+        <Button variant="hot" size="sm" onClick={onGoToVote}>{hasResponded ? "更新時間" : "我要勾選時間"}</Button>
+      </div>
       {event.responses.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", color: "var(--color-muted)", fontSize: 12 }}>
           目前尚無任何人填寫，快分享連結邀請朋友！
@@ -31,16 +145,16 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, onDelete, userNic
       ) : (
         <>
           <div style={cardStyle}>
-            <SectionLabel title="熱門推薦時段" />
+            <SectionLabel title="交集時段" />
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {top.map((s, i) => (
                 <div key={s.slot.id} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                     <span style={{ fontSize: 12, fontWeight: 900, display: "inline-flex", alignItems: "center", gap: 4 }}>
                       {i === 0 ? (
-                        <Trophy size={13} color={medalColors[i]} />
+                        <Trophy size={13} color={medalColors[0]} />
                       ) : (
-                        <Medal size={13} color={medalColors[i]} />
+                        <Medal size={13} color={medalColors[i] || medalColors[2]} />
                       )}
                       {s.slot.date} ({formatChineseWeekday(s.slot.date)}) {s.slot.time}
                     </span>
@@ -52,29 +166,277 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, onDelete, userNic
                 </div>
               ))}
             </div>
+            {moreCount > 0 && (
+              <button
+                onClick={() => setShowAllTop((v) => !v)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 4,
+                  marginTop: 8,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: "7px 0",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px dashed var(--color-border-strong)",
+                  background: "#fff",
+                  color: "var(--color-muted)",
+                  cursor: "pointer",
+                }}
+              >
+                {showAllTop ? (
+                  <>
+                    收合
+                    <ChevronUp size={12} />
+                  </>
+                ) : (
+                  <>
+                    還有 {moreCount} 個交集時段
+                    <ChevronDown size={12} />
+                  </>
+                )}
+              </button>
+            )}
           </div>
           <div style={cardStyle}>
             <SectionLabel title="時間熱點分佈" />
-            {(Object.entries(grouped) as [string, SlotStats[]][]).map(([date, list]) => (
-              <div key={date} style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)" }}>
-                  {date} ({formatChineseWeekday(date)})
+            <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3, marginBottom: 10 }}>
+              {[{ k: "grid" as const, label: "色塊檢視", icon: LayoutGrid }, { k: "bar" as const, label: "長條圖檢視", icon: BarChart3 }, { k: "calendar" as const, label: "月曆檢視", icon: CalendarDays }].map((m) => (
+                <button
+                  key={m.k}
+                  onClick={() => setDistMode(m.k)}
+                  style={{
+                    flex: 1,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    padding: "7px 4px",
+                    borderRadius: "var(--radius-sm)",
+                    fontSize: 12,
+                    fontWeight: 800,
+                    border: "none",
+                    cursor: "pointer",
+                    background: distMode === m.k ? "var(--color-primary)" : "transparent",
+                    color: distMode === m.k ? "#fff" : "var(--color-ink)",
+                    transition: "background 150ms ease, color 150ms ease",
+                  }}
+                >
+                  <m.icon size={12} />
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ background: "var(--color-cream)", borderRadius: "var(--radius-md)", padding: "8px 10px", marginBottom: 10 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 10, fontWeight: 700 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: STATUS_META.available.color }}>
+                  <STATUS_META.available.icon size={10} color={STATUS_META.available.color} />
+                  確定有空
                 </span>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 4 }}>
-                  {list.map((s) => {
-                    const ratio = event.responses.length ? s.availableCount / event.responses.length : 0;
-                    const bg = ratio >= 0.75 ? "var(--color-success)" : ratio >= 0.4 ? "rgba(90,158,90,0.3)" : ratio > 0 ? "rgba(90,158,90,0.12)" : "var(--color-cream)";
-                    const fg = ratio >= 0.75 ? "#fff" : "var(--color-ink)";
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: STATUS_META.if_needed.color }}>
+                  <STATUS_META.if_needed.icon size={10} color={STATUS_META.if_needed.color} />
+                  可能／視情況
+                </span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: STATUS_META.unavailable.color }}>
+                  <STATUS_META.unavailable.icon size={10} color={STATUS_META.unavailable.color} />
+                  不行
+                </span>
+              </div>
+              <div style={{ fontSize: 9, color: "var(--color-muted)", marginTop: 4, lineHeight: 1.5 }}>
+                色塊與月曆的顏色深淺僅以「確定有空」人數計算，「可能」不算在內；點選時段可展開查看名單
+              </div>
+            </div>
+
+            {distMode === "grid" &&
+              (Object.entries(grouped) as [string, SlotStats[]][]).map(([date, list]) => {
+                const expandedInDate = list.find((s) => s.slotId === expandedSlotId);
+                return (
+                  <div key={date} style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)" }}>
+                      {date} ({formatChineseWeekday(date)})
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 4 }}>
+                      {list.map((s) => {
+                        const ratio = total ? s.availableCount / total : 0;
+                        const bg = heatColor(ratio);
+                        const fg = ratio >= 0.75 ? "#fff" : "var(--color-ink)";
+                        const isExpanded = expandedSlotId === s.slotId;
+                        return (
+                          <button
+                            key={s.slot.id}
+                            onClick={() => toggleExpand(s.slotId)}
+                            style={{
+                              textAlign: "left",
+                              borderRadius: "var(--radius-md)",
+                              padding: 8,
+                              background: bg,
+                              color: fg,
+                              border: isExpanded ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <div style={{ fontSize: 11, fontWeight: 800 }}>{s.slot.time}</div>
+                            <div style={{ fontSize: 10, marginTop: 2, fontWeight: 700, opacity: 0.9 }}>{s.availableCount}/{total} 確定有空</div>
+                            <div style={{ marginTop: 4 }}>
+                              <BreakdownIcons s={s} color="currentColor" size={9} />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {expandedInDate && <NamesPanel s={expandedInDate} />}
+                  </div>
+                );
+              })}
+
+            {distMode === "bar" &&
+              (Object.entries(grouped) as [string, SlotStats[]][]).map(([date, list]) => (
+                <div key={date} style={{ marginBottom: 12 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)" }}>
+                    {date} ({formatChineseWeekday(date)})
+                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 6 }}>
+                    {list.map((s) => {
+                      const availPct = total ? (s.availableCount / total) * 100 : 0;
+                      const ifNeededPct = total ? (s.ifNeededCount / total) * 100 : 0;
+                      const unavailPct = total ? (s.unavailableCount / total) * 100 : 0;
+                      const isExpanded = expandedSlotId === s.slotId;
+                      return (
+                        <div key={s.slot.id}>
+                          <button
+                            onClick={() => toggleExpand(s.slotId)}
+                            style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-ink)" }}>
+                                {s.slot.time}
+                                {s.slot.label && <span style={{ fontWeight: 500, color: "var(--color-muted)" }}> · {s.slot.label}</span>}
+                              </span>
+                              <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-success)" }}>{s.availableCount}/{total} 確定有空</span>
+                            </div>
+                            <div style={{ width: "100%", height: 14, borderRadius: 999, background: "var(--color-cream)", overflow: "hidden", display: "flex" }}>
+                              {availPct > 0 && <div style={{ width: `${availPct}%`, background: "var(--color-success)", transition: "width 600ms var(--ease-spring)" }} />}
+                              {ifNeededPct > 0 && <div style={{ width: `${ifNeededPct}%`, background: "var(--color-secondary)", transition: "width 600ms var(--ease-spring)" }} />}
+                              {unavailPct > 0 && <div style={{ width: `${unavailPct}%`, background: "var(--color-border-strong)", transition: "width 600ms var(--ease-spring)" }} />}
+                            </div>
+                            <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <BreakdownIcons s={s} size={9} />
+                              <span style={{ fontSize: 9, fontWeight: 700, color: "var(--color-muted)", display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+                                {isExpanded ? "收合" : "查看名單"}
+                                {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                              </span>
+                            </div>
+                          </button>
+                          {isExpanded && <NamesPanel s={s} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+            {distMode === "calendar" && (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
+                  <button style={navBtnStyle} onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))}>‹</button>
+                  <div style={{ fontSize: 12, fontWeight: 800, fontFamily: "var(--font-display)" }}>{calYear}年{calMonth + 1}月</div>
+                  <button style={navBtnStyle} onClick={() => setCalViewDate(new Date(calYear, calMonth + 1, 1))}>›</button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
+                  {WEEK.map((w, i) => (
+                    <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-hot)" : "var(--color-muted)" }}>
+                      {w}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+                  {calCells.map((d, i) => {
+                    if (d === null) return <div key={i} />;
+                    const ds = calDateStr(d);
+                    const hasSlots = dateSet.has(ds);
+                    const dateSlots = hasSlots ? grouped[ds] || [] : [];
+                    const avgRatio = hasSlots && total && dateSlots.length
+                      ? dateSlots.reduce((sum, s) => sum + s.availableCount / total, 0) / dateSlots.length
+                      : 0;
+                    const bg = hasSlots ? heatColor(avgRatio) : "transparent";
+                    const fg = avgRatio >= 0.75 ? "#fff" : "var(--color-ink)";
+                    const isActive = ds === calActiveDate;
                     return (
-                      <div key={s.slot.id} style={{ borderRadius: "var(--radius-md)", padding: 8, background: bg, color: fg, border: "1px solid var(--color-border)" }}>
-                        <div style={{ fontSize: 11, fontWeight: 800 }}>{s.slot.time}</div>
-                        <div style={{ fontSize: 10, marginTop: 2, opacity: 0.9 }}>{s.availableCount}/{event.responses.length} 有空</div>
-                      </div>
+                      <button
+                        key={i}
+                        disabled={!hasSlots}
+                        onClick={() => setCalActiveDate(ds)}
+                        style={{
+                          position: "relative",
+                          aspectRatio: "1",
+                          border: isActive ? "2px solid var(--color-primary)" : "1px solid transparent",
+                          borderRadius: "var(--radius-md)",
+                          background: bg,
+                          color: hasSlots ? fg : "var(--color-border)",
+                          fontSize: 11,
+                          fontWeight: hasSlots ? 800 : 400,
+                          cursor: hasSlots ? "pointer" : "default",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {d}
+                      </button>
                     );
                   })}
                 </div>
+
+                {calActiveDate && (
+                  <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
+                    <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 6 }}>
+                      {calActiveDate} ({formatChineseWeekday(calActiveDate)})
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {(grouped[calActiveDate] || []).map((s) => {
+                        const ratio = total ? s.availableCount / total : 0;
+                        const bg = heatColor(ratio);
+                        const fg = ratio >= 0.75 ? "#fff" : "var(--color-ink)";
+                        const isExpanded = expandedSlotId === s.slotId;
+                        return (
+                          <div key={s.slot.id}>
+                            <button
+                              onClick={() => toggleExpand(s.slotId)}
+                              style={{
+                                display: "block",
+                                width: "100%",
+                                textAlign: "left",
+                                borderRadius: "var(--radius-md)",
+                                padding: 8,
+                                background: bg,
+                                color: fg,
+                                border: isExpanded ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                <span style={{ fontSize: 11, fontWeight: 800 }}>
+                                  {s.slot.time}
+                                  {s.slot.label && <span style={{ fontWeight: 500, opacity: 0.85 }}> · {s.slot.label}</span>}
+                                </span>
+                                <span style={{ fontSize: 10, fontWeight: 800, opacity: 0.9 }}>{s.availableCount}/{total} 確定有空</span>
+                              </div>
+                              <div style={{ marginTop: 4 }}>
+                                <BreakdownIcons s={s} color="currentColor" size={9} />
+                              </div>
+                            </button>
+                            {isExpanded && <NamesPanel s={s} />}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            ))}
+            )}
           </div>
         </>
       )}
@@ -99,7 +461,6 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, onDelete, userNic
                   )}
                 </div>
                 <Badge variant="success" size="sm">{availCount}/{event.slots.length}</Badge>
-                <button onClick={() => onDelete(r.id)} style={{ border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}><X size={14} /></button>
               </div>
             );
           })}

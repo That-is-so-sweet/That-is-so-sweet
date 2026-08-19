@@ -220,7 +220,6 @@ export default function App() {
         onRespond={handleRespond}
         onFinalize={handleFinalize}
         onReopen={handleReopen}
-        onDeleteResponse={handleDeleteResponse}
         isShareModalOpen={isShareModalOpen}
         setIsShareModalOpen={setIsShareModalOpen}
         isHistoryOpen={isHistoryOpen}

@@ -162,5 +162,96 @@
     "createdAt": "2026-08-16T15:32:35.045Z",
     "updatedAt": "2026-08-16T15:34:01.879Z",
     "finalNote": ""
+  },
+  {
+    "id": "event_mszsygv87ydrenit",
+    "hostToken": "token_mszsygv8m2cg0ws6",
+    "title": "w",
+    "description": "",
+    "hostName": "",
+    "hostEmail": "",
+    "slots": [
+      {
+        "id": "slot_1_qxpt",
+        "date": "2026-08-22",
+        "time": "10:00 - 11:00",
+        "label": "上午會議"
+      },
+      {
+        "id": "slot_2_50tb",
+        "date": "2026-08-22",
+        "time": "14:00 - 15:00",
+        "label": "下午討論"
+      },
+      {
+        "id": "slot_3_lmdh",
+        "date": "2026-08-23",
+        "time": "10:00 - 11:00",
+        "label": "上午會議"
+      },
+      {
+        "id": "slot_4_mvxm",
+        "date": "2026-08-23",
+        "time": "14:00 - 15:00",
+        "label": "下午討論"
+      },
+      {
+        "id": "slot_5_u8uh",
+        "date": "2026-08-22",
+        "time": "10:00 - 11:00",
+        "label": "上午對齊"
+      },
+      {
+        "id": "slot_6_gjn3",
+        "date": "2026-08-22",
+        "time": "10:00 - 11:00",
+        "label": "上午對齊"
+      },
+      {
+        "id": "slot_7_o8w1",
+        "date": "2026-08-22",
+        "time": "20:00 - 21:00",
+        "label": "晚間線上會"
+      }
+    ],
+    "responses": [
+      {
+        "id": "p_mszszuekibvtn4z5",
+        "nickname": "1",
+        "email": "",
+        "availability": {
+          "slot_1_qxpt": "available",
+          "slot_2_50tb": "available",
+          "slot_3_lmdh": "available",
+          "slot_4_mvxm": "available",
+          "slot_5_u8uh": "available",
+          "slot_6_gjn3": "available",
+          "slot_7_o8w1": "available"
+        },
+        "comment": "",
+        "updatedAt": "2026-08-19T08:02:13.292Z"
+      },
+      {
+        "id": "p_msztcbcd8u519a42",
+        "nickname": "1w",
+        "email": "",
+        "availability": {
+          "slot_1_qxpt": "available",
+          "slot_2_50tb": "if_needed",
+          "slot_3_lmdh": "available",
+          "slot_4_mvxm": "available",
+          "slot_5_u8uh": "available",
+          "slot_6_gjn3": "unavailable",
+          "slot_7_o8w1": "available"
+        },
+        "comment": "",
+        "updatedAt": "2026-08-19T08:11:55.117Z"
+      }
+    ],
+    "status": "finalized",
+    "createdAt": "2026-08-19T08:01:09.092Z",
+    "updatedAt": "2026-08-19T08:31:09.758Z",
+    "finalSlotId": "slot_1_qxpt",
+    "finalNote": ""
   }
 ]
