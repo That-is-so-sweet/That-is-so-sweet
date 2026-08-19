@@ -173,30 +173,6 @@ export default function App() {
     }
   };
 
-  const handleDeleteResponse = async (participantId: string) => {
-    if (!currentEventId) return;
-    if (!window.confirm("確定要刪除這筆填寫紀錄嗎？")) return;
-
-    setIsLoading(true);
-    try {
-      const token = currentHostToken || undefined;
-      const res = await fetch(
-        `/api/events/${currentEventId}/responses/${participantId}${
-          token ? `?hostToken=${token}` : ""
-        }`,
-        { method: "DELETE" }
-      );
-      if (!res.ok) throw new Error("刪除失敗");
-      const data = await res.json();
-      setEventData(data.event);
-      addToast("info", "已刪除該填寫紀錄");
-    } catch (err: any) {
-      addToast("error", err.message || "刪除失敗");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleGoHome = () => {
     window.location.hash = "";
     setCurrentEventId(null);
@@ -236,7 +212,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-800 font-sans flex flex-col antialiased selection:bg-amber-200 selection:text-amber-900">
+    <div style={{ minHeight: "100vh", background: "var(--color-cream)", color: "var(--color-ink)", fontFamily: "var(--font-body)", display: "flex", flexDirection: "column" }}>
       {/* Top Header */}
       <Header
         onNewEvent={handleGoHome}
@@ -246,24 +222,24 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1">
+      <main style={{ flex: 1 }}>
         {isLoading && !eventData && (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-500 space-y-3">
-            <RefreshCw className="w-8 h-8 animate-spin text-amber-500" />
-            <p className="text-sm font-medium">正在載入活動內容...</p>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 0", gap: 12, color: "var(--color-muted)" }}>
+            <RefreshCw size={28} className="animate-spin" style={{ color: "var(--color-primary)" }} />
+            <p style={{ fontSize: 13, fontWeight: 700 }}>正在載入活動內容...</p>
           </div>
         )}
 
         {pageError && (
-          <div className="max-w-md mx-auto my-12 p-6 bg-white rounded-xl border border-rose-200 shadow-xl text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-6 h-6" />
+          <div style={{ maxWidth: 420, margin: "48px auto", padding: 24, background: "var(--color-surface)", borderRadius: "var(--radius-card)", border: "1px solid var(--color-border)", boxShadow: "var(--shadow-lg)", textAlign: "center" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--color-hot-subtle)", color: "var(--color-hot)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+              <AlertTriangle size={22} />
             </div>
-            <h3 className="font-bold text-slate-900 text-lg">讀取失敗</h3>
-            <p className="text-xs text-slate-500">{pageError}</p>
+            <h3 style={{ fontWeight: 900, fontFamily: "var(--font-display)", fontSize: 17, color: "var(--color-ink)", marginBottom: 6 }}>讀取失敗</h3>
+            <p style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 16 }}>{pageError}</p>
             <button
               onClick={handleGoHome}
-              className="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-semibold text-xs shadow-md"
+              style={{ padding: "10px 20px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-ink)", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer" }}
             >
               返回建立新活動
             </button>
@@ -271,7 +247,7 @@ export default function App() {
         )}
 
         {!isLoading && !pageError && !currentEventId && (
-          <CreateEvent onSubmit={handleCreateEvent} isLoading={isLoading} />
+          <CreateEvent onSubmit={handleCreateEvent} isLoading={isLoading} onOpenHistory={() => setIsHistoryOpen(true)} />
         )}
 
         {!pageError && currentEventId && eventData && (
@@ -281,8 +257,9 @@ export default function App() {
             onRespond={handleRespond}
             onFinalize={handleFinalize}
             onReopen={handleReopen}
-            onDeleteResponse={handleDeleteResponse}
+            onNewEvent={handleGoHome}
             onOpenShareModal={() => setIsShareModalOpen(true)}
+            onOpenHistory={() => setIsHistoryOpen(true)}
             onCopySuccess={() => addToast("success", "已成功複製到剪貼簿！")}
             isLoading={isLoading}
           />
@@ -290,11 +267,11 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200/80 bg-white/60 py-6 text-center text-xs text-slate-500 space-y-1">
-        <p className="font-medium text-slate-700">
+      <footer style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-surface)", padding: "20px 0", textAlign: "center", fontSize: 11, color: "var(--color-muted)" }}>
+        <p style={{ fontWeight: 700, color: "var(--color-ink)", margin: 0 }}>
           聚會時間協調神器 • 免註冊免登入 • 快速搞定朋友聚餐
         </p>
-        <p className="text-[11px] text-slate-400">
+        <p style={{ marginTop: 4, margin: 0 }}>
           支援跨裝置熱點圖、LINE 群組廣播與 Google 日曆匯出
         </p>
       </footer>
