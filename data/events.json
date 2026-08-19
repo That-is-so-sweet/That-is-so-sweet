@@ -250,8 +250,62 @@
     ],
     "status": "finalized",
     "createdAt": "2026-08-19T08:01:09.092Z",
-    "updatedAt": "2026-08-19T08:31:09.758Z",
+    "updatedAt": "2026-08-19T13:54:59.713Z",
     "finalSlotId": "slot_1_qxpt",
+    "finalNote": ""
+  },
+  {
+    "id": "event_mt056m8i6h1ol44e",
+    "hostToken": "token_mt056m8i82wa8mlk",
+    "title": "fff",
+    "description": "",
+    "hostName": "",
+    "hostEmail": "",
+    "slots": [
+      {
+        "id": "slot_1_aj67",
+        "date": "2026-08-22",
+        "time": "10:00",
+        "label": "上午會議"
+      },
+      {
+        "id": "slot_2_gvsd",
+        "date": "2026-08-22",
+        "time": "14:00",
+        "label": "下午討論"
+      },
+      {
+        "id": "slot_3_piqd",
+        "date": "2026-08-23",
+        "time": "10:00",
+        "label": "上午會議"
+      },
+      {
+        "id": "slot_4_w799",
+        "date": "2026-08-23",
+        "time": "14:00",
+        "label": "下午討論"
+      }
+    ],
+    "responses": [
+      {
+        "id": "p_mt056r8xlf6iexef",
+        "nickname": "1w",
+        "email": "",
+        "availability": {
+          "slot_1_aj67": "available",
+          "slot_2_gvsd": "available",
+          "slot_3_piqd": "available",
+          "slot_4_w799": "available"
+        },
+        "comment": "",
+        "updatedAt": "2026-08-19T13:43:31.185Z"
+      }
+    ],
+    "status": "finalized",
+    "createdAt": "2026-08-19T13:43:24.690Z",
+    "updatedAt": "2026-08-19T14:17:05.755Z",
+    "finalSlotId": "slot_1_aj67",
     "finalNote": ""
   }
 ]
