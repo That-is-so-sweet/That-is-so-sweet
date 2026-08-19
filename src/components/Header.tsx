@@ -28,14 +28,14 @@ export const Header: React.FC<HeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-bold text-slate-900 tracking-tight text-lg leading-none">
-                聚會時間協調神器
+                揪甘心
               </h1>
               <span className="hidden sm:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
                 免登入
               </span>
             </div>
             <p className="text-xs text-slate-500 font-normal mt-0.5 hidden sm:block">
-              熱點圖即時彙整 • 一鍵 LINE 分享
+              聚會時間協調神器
             </p>
           </div>
         </div>

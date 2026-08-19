@@ -14,7 +14,11 @@ import {
   CalendarDays,
   Timer,
   Layers,
-  Info
+  Info,
+  Target,
+  Lightbulb,
+  AlertTriangle,
+  Rocket
 } from "lucide-react";
 import { CreateEventInput, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
@@ -26,10 +30,10 @@ interface CreateEventProps {
 }
 
 const MEAL_PRESETS = [
-  { label: "⚡ 週末雙餐", times: ["12:00 - 14:00 (午餐)", "18:00 - 21:00 (晚餐)"] },
-  { label: "⚡ 經典全天 3 時段", times: ["10:00 - 12:00 (早午餐)", "12:00 - 14:00 (午餐)", "18:00 - 21:00 (晚餐)"] },
-  { label: "⚡ 晚間聚餐續攤", times: ["18:00 - 21:00 (晚餐)", "21:00 - 23:30 (酒吧續攤)"] },
-  { label: "⚡ 下午茶聊天", times: ["14:00 - 17:00 (下午茶)"] },
+  { label: "週末雙餐", times: ["12:00 - 14:00 (午餐)", "18:00 - 21:00 (晚餐)"] },
+  { label: "經典全天 3 時段", times: ["10:00 - 12:00 (早午餐)", "12:00 - 14:00 (午餐)", "18:00 - 21:00 (晚餐)"] },
+  { label: "晚間聚餐續攤", times: ["18:00 - 21:00 (晚餐)", "21:00 - 23:30 (酒吧續攤)"] },
+  { label: "下午茶聊天", times: ["14:00 - 17:00 (下午茶)"] },
 ];
 
 const ONE_HOUR_MEETING_PRESETS = [
@@ -162,9 +166,9 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
     if (addedCount > 0) {
       setSlots((prev) => [...prev, ...newEntries]);
-      showToast(`✨ 已新增 ${timeString} 至 ${targetDates.length} 個選定日期`);
+      showToast(`已新增 ${timeString} 至 ${targetDates.length} 個選定日期`);
     } else {
-      showToast(`⚠️ 此時間點已存在於列表中`);
+      showToast(`此時間點已存在於列表中`);
     }
   };
 
@@ -187,9 +191,9 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
     if (addedCount > 0) {
       setSlots((prev) => [...prev, ...newEntries]);
-      showToast(`✨ 已新增【${preset.label} ${timeString}】`);
+      showToast(`已新增【${preset.label} ${timeString}】`);
     } else {
-      showToast(`⚠️ 此時段已存在於列表中`);
+      showToast(`此時段已存在於列表中`);
     }
   };
 
@@ -202,7 +206,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
       });
     });
     setSlots(newSlots);
-    showToast(`✨ 已套用聚餐時段組合至 ${selectedDates.length} 個日期`);
+    showToast(`已套用聚餐時段組合至 ${selectedDates.length} 個日期`);
   };
 
   // Generate batch slots
@@ -279,15 +283,16 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* Banner Card */}
-      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl mb-8 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-xl p-6 sm:p-8 text-white shadow-xl mb-8 relative overflow-hidden">
         <div className="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
         <div className="relative z-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold mb-3 border border-white/30">
             <Sparkles className="w-3.5 h-3.5 text-amber-200" />
             快速發起聚會與會議時間調查
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-            主揪發起活動與約會 🗓️
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2 inline-flex items-center gap-2">
+            主揪發起活動與約會
+            <CalendarDays className="w-6 h-6 sm:w-7 sm:h-7" />
           </h2>
           <p className="text-amber-100 text-sm leading-relaxed max-w-xl">
             彈性設定 1 小時精準開會時段、聚餐時段或全天區塊，專屬連結讓所有人快速勾選空檔！
@@ -297,9 +302,9 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Step 1: Basic Event Info */}
-        <div className="bg-white rounded-3xl p-6 border-4 border-orange-100 shadow-md space-y-5">
+        <div className="bg-white rounded-xl p-6 border-4 border-orange-100 shadow-md space-y-5">
           <div className="flex items-center gap-2 pb-3 border-b border-orange-100">
-            <span className="w-7 h-7 rounded-2xl bg-orange-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
+            <span className="w-7 h-7 rounded-lg bg-orange-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
               1
             </span>
             <h3 className="font-black text-slate-900 text-base">基本活動與會議資訊</h3>
@@ -307,7 +312,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1.5">
-              活動 / 會議名稱 <span className="text-rose-500">*</span>
+              活動 / 會議名稱 <span className="text-orange-500">*</span>
               <span className="text-slate-400 font-normal ml-1">({title.length}/30 字)</span>
             </label>
             <input
@@ -317,36 +322,36 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="例如：產品專案週對齊會議、八月燒肉慶功宴、產品線規劃討論..."
-              className="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-slate-900 text-sm font-semibold transition placeholder:text-slate-400 placeholder:font-normal"
+              className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-slate-900 text-sm font-semibold transition placeholder:text-slate-400 placeholder:font-normal"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1">
-                <User className="w-3.5 h-3.5 text-orange-500" />
-                主揪 / 發起人暱稱 <span className="text-slate-400 font-normal">(選填)</span>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                <User className="w-3.5 h-3.5 text-slate-400" />
+                主揪 / 發起人暱稱
               </label>
               <input
                 type="text"
                 value={hostName}
                 onChange={(e) => setHostName(e.target.value)}
                 placeholder="例如：阿傑、Wally"
-                className="w-full px-4 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-slate-900 text-sm font-medium transition placeholder:text-slate-400"
+                className="w-full px-4 py-2.5 rounded-lg border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-slate-900 text-sm font-medium transition placeholder:text-slate-400"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5 text-orange-500" />
-                主揪通知 Email <span className="text-slate-400 font-normal">(選填)</span>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                <Mail className="w-3.5 h-3.5 text-slate-400" />
+                主揪通知 Email
               </label>
               <input
                 type="email"
                 value={hostEmail}
                 onChange={(e) => setHostEmail(e.target.value)}
                 placeholder="例如：host@example.com"
-                className="w-full px-4 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-slate-900 text-sm font-medium transition placeholder:text-slate-400"
+                className="w-full px-4 py-2.5 rounded-lg border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-slate-900 text-sm font-medium transition placeholder:text-slate-400"
               />
               <p className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
                 <Info className="w-3 h-3 text-orange-500 shrink-0" />
@@ -356,25 +361,25 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1">
-              <FileText className="w-3.5 h-3.5 text-orange-500" />
-              地點或開會說明 <span className="text-slate-400 font-normal">(選填)</span>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+              <FileText className="w-3.5 h-3.5 text-slate-400" />
+              地點或開會說明
             </label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="例如：Google Meet 線上會議 或 捷運中山站火鍋"
-              className="w-full px-4 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-slate-900 text-sm font-medium transition placeholder:text-slate-400"
+              className="w-full px-4 py-2.5 rounded-lg border-2 border-slate-200 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-slate-900 text-sm font-medium transition placeholder:text-slate-400"
             />
           </div>
         </div>
 
         {/* Step 2: Date & Time Picker */}
-        <div className="bg-white rounded-3xl p-6 border-4 border-orange-100 shadow-md space-y-6">
+        <div className="bg-white rounded-xl p-6 border-4 border-orange-100 shadow-md space-y-6">
           <div className="flex items-center justify-between pb-3 border-b border-orange-100">
             <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-2xl bg-orange-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
+              <span className="w-7 h-7 rounded-lg bg-orange-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
                 2
               </span>
               <div>
@@ -388,7 +393,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
           </div>
 
           {/* Section A: Date Selection */}
-          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 space-y-3">
+          <div className="bg-slate-50/80 rounded-lg p-4 border border-slate-200/80 space-y-3">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <CalendarIcon className="w-4 h-4 text-orange-600" />
@@ -449,7 +454,10 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                     key={d}
                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-orange-100/90 border border-orange-300 text-orange-950 text-xs font-bold shadow-2xs group"
                   >
-                    <span>📅 {d} ({formatChineseWeekday(d)})</span>
+                    <span className="inline-flex items-center gap-1">
+                      <CalendarIcon className="w-3.5 h-3.5" />
+                      {d} ({formatChineseWeekday(d)})
+                    </span>
                     <button
                       type="button"
                       onClick={() => handleRemoveDate(d)}
@@ -466,7 +474,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
           {/* Toast Notification Banner */}
           {addedToast && (
-            <div className="px-4 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-2xl shadow-lg flex items-center justify-between animate-bounce">
+            <div className="px-4 py-2.5 bg-emerald-600 text-white font-bold text-xs rounded-lg shadow-lg flex items-center justify-between animate-bounce">
               <span>{addedToast}</span>
               <Check className="w-4 h-4" />
             </div>
@@ -481,8 +489,11 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
               </label>
 
               {/* Target date dropdown */}
-              <div className="flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-2xl border border-orange-200">
-                <span className="text-xs font-black text-orange-900">🎯 時段套用至：</span>
+              <div className="flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-lg border border-orange-200">
+                <span className="text-xs font-black text-orange-900 inline-flex items-center gap-1">
+                  <Target className="w-3.5 h-3.5" />
+                  時段套用至：
+                </span>
                 <select
                   value={targetDateOption}
                   onChange={(e) => setTargetDateOption(e.target.value)}
@@ -499,7 +510,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
             </div>
 
             {/* Mode Switch Tabs */}
-            <div className="flex p-1 rounded-2xl bg-slate-100 border border-slate-200 text-xs font-bold gap-1">
+            <div className="flex p-1 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold gap-1">
               <button
                 type="button"
                 onClick={() => setTimeMode("precise")}
@@ -542,7 +553,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
             {/* Tab 1: Precise Time / Duration Picker */}
             {timeMode === "precise" && (
-              <div className="p-5 rounded-2xl bg-amber-50/50 border-2 border-amber-200/80 space-y-4 animate-fade-in">
+              <div className="p-5 rounded-lg bg-amber-50/50 border-2 border-amber-200/80 space-y-4 animate-fade-in">
                 {/* Duration shortcut pills */}
                 <div>
                   <span className="block text-xs font-bold text-slate-700 mb-2">
@@ -560,13 +571,14 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                         key={d.mins}
                         type="button"
                         onClick={() => handleDurationSelect(d.mins)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer inline-flex items-center gap-1 ${
                           durationMinutes === d.mins
                             ? "bg-orange-500 text-white border-orange-600 shadow-xs"
                             : "bg-white text-slate-700 border-slate-200 hover:border-orange-300"
                         }`}
                       >
-                        ⏱️ {d.label}
+                        <Timer className="w-3 h-3" />
+                        {d.label}
                       </button>
                     ))}
                   </div>
@@ -640,8 +652,9 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
                 {/* Quick 1-hour Meeting Shortcuts */}
                 <div className="border-t border-amber-200/80 pt-3">
-                  <span className="block text-xs font-bold text-slate-700 mb-2">
-                    💡 一鍵點選常用精確會議時段：
+                  <span className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1">
+                    <Lightbulb className="w-3.5 h-3.5" />
+                    一鍵點選常用精確會議時段：
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {ONE_HOUR_MEETING_PRESETS.map((preset, idx) => (
@@ -667,7 +680,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
             {/* Tab 2: Meals & Casual Events Presets */}
             {timeMode === "meal" && (
-              <div className="p-5 rounded-2xl bg-orange-50/50 border-2 border-orange-200/80 space-y-4 animate-fade-in">
+              <div className="p-5 rounded-lg bg-orange-50/50 border-2 border-orange-200/80 space-y-4 animate-fade-in">
                 <p className="text-xs font-bold text-slate-700">
                   一鍵套用聚餐經典時段組合（午餐、下午茶、晚餐、續攤）：
                 </p>
@@ -677,9 +690,10 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                       key={idx}
                       type="button"
                       onClick={() => handleApplyMealPreset(preset.times)}
-                      className="text-left p-3.5 rounded-2xl bg-white border-2 border-slate-200 hover:border-orange-400 hover:bg-orange-50/60 transition shadow-2xs group cursor-pointer"
+                      className="text-left p-3.5 rounded-lg bg-white border-2 border-slate-200 hover:border-orange-400 hover:bg-orange-50/60 transition shadow-2xs group cursor-pointer"
                     >
-                      <div className="font-bold text-xs text-slate-900 group-hover:text-orange-600 mb-1">
+                      <div className="font-bold text-xs text-slate-900 group-hover:text-orange-600 mb-1 flex items-center gap-1">
+                        <Zap className="w-3 h-3 text-amber-500" />
                         {preset.label}
                       </div>
                       <div className="text-xs text-slate-500 font-medium leading-relaxed">
@@ -693,7 +707,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
             {/* Tab 3: Batch Generator */}
             {timeMode === "batch" && (
-              <div className="p-5 rounded-2xl bg-indigo-50/50 border-2 border-indigo-200/80 space-y-4 animate-fade-in">
+              <div className="p-5 rounded-lg bg-indigo-50/50 border-2 border-indigo-200/80 space-y-4 animate-fade-in">
                 <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs">
                   <Zap className="w-4 h-4 text-indigo-600" />
                   自動將一段時間切分為連續的會議/活動區塊：
@@ -776,17 +790,21 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
             </div>
 
             {slots.length === 0 ? (
-              <div className="p-8 text-center rounded-2xl bg-rose-50 border-2 border-dashed border-rose-200 text-rose-700 text-xs font-bold space-y-1">
-                <p>⚠️ 目前尚未建立任何候選時段！</p>
+              <div className="p-8 text-center rounded-lg bg-rose-50 border-2 border-dashed border-rose-200 text-rose-700 text-xs font-bold space-y-1">
+                <p className="flex items-center justify-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  目前尚未建立任何候選時段！
+                </p>
                 <p className="text-rose-500 font-normal">請在上方的時間選擇器中設定時間並點選「新增」或套用範本。</p>
               </div>
             ) : (
               <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
                 {(Object.entries(groupedSlots) as [string, { slot: Omit<TimeSlot, "id">; originalIndex: number }[]][]).map(([date, dateSlots]) => (
-                  <div key={date} className="bg-slate-50 rounded-2xl p-3 border border-slate-200 space-y-2">
+                  <div key={date} className="bg-slate-50 rounded-lg p-3 border border-slate-200 space-y-2">
                     <div className="text-xs font-black text-slate-800 flex items-center gap-2">
-                      <span className="px-2.5 py-1 rounded-lg bg-orange-500 text-white font-bold">
-                        📅 {date} ({formatChineseWeekday(date)})
+                      <span className="px-2.5 py-1 rounded-lg bg-orange-500 text-white font-bold inline-flex items-center gap-1">
+                        <CalendarIcon className="w-3.5 h-3.5" />
+                        {date} ({formatChineseWeekday(date)})
                       </span>
                       <span className="text-slate-400 font-normal">({dateSlots.length} 個選項)</span>
                     </div>
@@ -802,8 +820,9 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-bold text-slate-900 text-xs">{slot.time}</span>
                               {durationStr && (
-                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-bold">
-                                  ⏱️ {durationStr}
+                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-bold inline-flex items-center gap-1">
+                                  <Timer className="w-2.5 h-2.5" />
+                                  {durationStr}
                                 </span>
                               )}
                               {slot.label && (
@@ -837,7 +856,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
           <button
             type="submit"
             disabled={isLoading || !title.trim() || slots.length === 0}
-            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-black text-base shadow-xl shadow-orange-500/25 flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 cursor-pointer border-b-4 border-orange-700"
+            className="w-full py-4 px-6 rounded-lg bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-black text-base shadow-xl shadow-orange-500/25 flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 cursor-pointer border-b-4 border-orange-700"
           >
             {isLoading ? (
               <>
@@ -846,7 +865,10 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
               </>
             ) : (
               <>
-                <span>產生活動連結並開啟邀請 🚀</span>
+                <span className="inline-flex items-center gap-1.5">
+                  產生活動連結並開啟邀請
+                  <Rocket className="w-4 h-4" />
+                </span>
                 <ArrowRight className="w-5 h-5" />
               </>
             )}

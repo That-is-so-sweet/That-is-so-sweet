@@ -2,7 +2,7 @@ import React from "react";
 
 interface TopBarProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   right?: React.ReactNode;
 }
 

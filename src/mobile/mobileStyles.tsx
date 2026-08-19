@@ -1,4 +1,5 @@
 import React from "react";
+import { Circle, Triangle, X, LucideIcon } from "lucide-react";
 
 export const cardStyle: React.CSSProperties = {
   background: "var(--color-surface)",
@@ -49,10 +50,10 @@ export const quickBtnStyle: React.CSSProperties = {
   cursor: "pointer",
 };
 
-export const STATUS_META: Record<string, { icon: string; color: string }> = {
-  available: { icon: "⭕", color: "var(--color-success)" },
-  if_needed: { icon: "🔺", color: "var(--color-secondary-dark)" },
-  unavailable: { icon: "❌", color: "var(--color-muted)" },
+export const STATUS_META: Record<string, { icon: LucideIcon; color: string }> = {
+  available: { icon: Circle, color: "var(--color-success)" },
+  if_needed: { icon: Triangle, color: "var(--color-secondary-dark)" },
+  unavailable: { icon: X, color: "var(--color-muted)" },
 };
 
 export function SectionLabel({ title, hint }: { title: string; hint?: string }) {

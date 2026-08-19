@@ -1,4 +1,5 @@
 import React from "react";
+import { CheckCircle2, MessageCircle, RotateCcw } from "lucide-react";
 import { EventData } from "../types";
 import { formatChineseWeekday, generateGoogleCalendarUrl, downloadIcsFile } from "../lib/calendar";
 import { Button } from "../design-system/components";
@@ -47,7 +48,8 @@ ${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
             fontWeight: 800,
           }}
         >
-          ✅ 活動時間已敲定
+          <CheckCircle2 size={12} />
+          活動時間已敲定
         </span>
         <div style={{ fontSize: 17, fontWeight: 900, fontFamily: "var(--font-display)", marginTop: 10 }}>{event.title}</div>
         {event.hostName && <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>發起人：{event.hostName}</div>}
@@ -59,7 +61,10 @@ ${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
           <div style={{ fontSize: 11, opacity: 0.7, marginTop: 8 }}>時段</div>
           <div style={{ fontSize: 15, fontWeight: 800 }}>{slot.time}</div>
           {event.finalNote && (
-            <div style={{ fontSize: 11, marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.15)" }}>💬 {event.finalNote}</div>
+            <div style={{ fontSize: 11, marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.15)", display: "flex", alignItems: "flex-start", gap: 4 }}>
+              <MessageCircle size={12} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>{event.finalNote}</span>
+            </div>
           )}
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
@@ -124,7 +129,14 @@ ${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
         <Button variant="dark" fullWidth onClick={handleCopy}>一鍵複製定案通知</Button>
       </div>
 
-      {isHost && onReopen && <Button variant="muted" onClick={onReopen}>↺ 重新開放投票</Button>}
+      {isHost && onReopen && (
+        <Button variant="muted" onClick={onReopen}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <RotateCcw size={13} />
+            重新開放投票
+          </span>
+        </Button>
+      )}
     </div>
   );
 };

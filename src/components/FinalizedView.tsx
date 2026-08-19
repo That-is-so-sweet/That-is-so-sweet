@@ -12,7 +12,9 @@ import {
   RotateCcw, 
   MessageCircle,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  Target,
+  Smartphone
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import { EventData } from "../types";
@@ -110,14 +112,15 @@ ${shareUrl}`;
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Big Confirmed Card */}
-      <div className="bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+      <div className="bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 text-white rounded-xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs font-bold backdrop-blur-md">
               <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-              活動時間已敲定定案 🎯
+              活動時間已敲定定案
+              <Target className="w-3.5 h-3.5" />
             </div>
 
             {isHost && onReopen && (
@@ -143,7 +146,7 @@ ${shareUrl}`;
           </div>
 
           {/* Time & Details Highlight Box */}
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-5 border border-white/20 space-y-3">
+          <div className="bg-white/10 backdrop-blur-md rounded-lg p-5 border border-white/20 space-y-3">
             <div className="flex items-center gap-3">
               <Calendar className="w-6 h-6 text-emerald-300 shrink-0" />
               <div>
@@ -196,7 +199,7 @@ ${shareUrl}`;
       </div>
 
       {/* Attending Roster */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+      <div className="bg-white rounded-lg p-6 border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-emerald-600" />
@@ -242,7 +245,7 @@ ${shareUrl}`;
       </div>
 
       {/* LINE Broadcast Text Generator & Copy Box */}
-      <div className="bg-emerald-50/80 rounded-2xl p-6 border border-emerald-200/80 space-y-3">
+      <div className="bg-emerald-50/80 rounded-lg p-6 border border-emerald-200/80 space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="font-bold text-emerald-950 text-sm flex items-center gap-1.5">
             <MessageCircle className="w-4 h-4 text-emerald-600 fill-emerald-600" />
@@ -253,7 +256,8 @@ ${shareUrl}`;
             onClick={handleLineShareResult}
             className="px-3 py-1.5 rounded-xl bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-xs flex items-center gap-1 shadow-2xs"
           >
-            直接開啟 LINE 📲
+            直接開啟 LINE
+            <Smartphone className="w-3.5 h-3.5" />
           </button>
         </div>
 

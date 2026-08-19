@@ -1,4 +1,5 @@
 import React from "react";
+import { PartyPopper } from "lucide-react";
 
 type ProgressVariant = "primary" | "hot" | "success";
 type ProgressSize = "sm" | "md" | "lg";
@@ -45,9 +46,19 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
                 fontWeight: 900,
                 fontFamily: "var(--font-display)",
                 color: full ? "var(--color-success)" : "var(--color-primary)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
               }}
             >
-              {full ? "已成團！🎉" : `${value} / ${max} 人`}
+              {full ? (
+                <>
+                  已成團！
+                  <PartyPopper size={13} />
+                </>
+              ) : (
+                `${value} / ${max} 人`
+              )}
             </span>
           )}
         </div>

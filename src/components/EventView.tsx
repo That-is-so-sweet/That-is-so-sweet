@@ -16,7 +16,18 @@ import {
   Sparkles,
   Info,
   Copy,
-  Mail
+  Mail,
+  Smartphone,
+  MapPin,
+  Zap,
+  Timer,
+  Utensils,
+  Pin,
+  ArrowRight,
+  RotateCw,
+  Rocket,
+  User,
+  MessageCircle
 } from "lucide-react";
 import { 
   EventData, 
@@ -161,7 +172,7 @@ export const EventView: React.FC<EventViewProps> = ({
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       {/* Event Header Banner */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-md space-y-4 relative overflow-hidden">
+      <div className="bg-white rounded-xl p-6 sm:p-8 border border-slate-200/80 shadow-md space-y-4 relative overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -182,7 +193,10 @@ export const EventView: React.FC<EventViewProps> = ({
               className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shadow-2xs"
             >
               <Share2 className="w-3.5 h-3.5 text-amber-400" />
-              <span>分享活動連結 📲</span>
+              <span className="inline-flex items-center gap-1">
+                分享活動連結
+                <Smartphone className="w-3.5 h-3.5" />
+              </span>
             </button>
           </div>
         </div>
@@ -192,8 +206,9 @@ export const EventView: React.FC<EventViewProps> = ({
             {event.title}
           </h2>
           {event.description && (
-            <p className="text-slate-600 text-sm mt-1.5 leading-relaxed">
-              📍 {event.description}
+            <p className="text-slate-600 text-sm mt-1.5 leading-relaxed flex items-start gap-1.5">
+              <MapPin className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>{event.description}</span>
             </p>
           )}
           {event.hostName && (
@@ -251,7 +266,7 @@ export const EventView: React.FC<EventViewProps> = ({
       {activeTab === "voting" && (
         <form onSubmit={handleSubmitVote} className="space-y-6">
           {/* User Nickname & Email input */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="bg-white rounded-lg p-6 border border-slate-200/80 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs">
@@ -261,8 +276,9 @@ export const EventView: React.FC<EventViewProps> = ({
               </h3>
 
               {editingParticipantId && (
-                <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                  ✏️ 正在編輯此暱稱的紀錄
+                <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200 inline-flex items-center gap-1">
+                  <Edit3 className="w-3 h-3" />
+                  正在編輯此暱稱的紀錄
                 </span>
               )}
             </div>
@@ -270,7 +286,7 @@ export const EventView: React.FC<EventViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  您的暱稱 <span className="text-rose-500">*</span>
+                  您的暱稱 <span className="text-orange-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -283,9 +299,9 @@ export const EventView: React.FC<EventViewProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5 flex items-center gap-1">
-                  <Mail className="w-3.5 h-3.5 text-amber-500" />
-                  聯絡 Email / LINE ID <span className="text-slate-400 font-normal">(選填)</span>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5 flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5 text-slate-400" />
+                  聯絡 Email / LINE ID
                 </label>
                 <input
                   type="text"
@@ -303,7 +319,7 @@ export const EventView: React.FC<EventViewProps> = ({
           </div>
 
           {/* Time Slots Selector */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-5">
+          <div className="bg-white rounded-lg p-6 border border-slate-200/80 shadow-xs space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
               <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs">
@@ -316,9 +332,10 @@ export const EventView: React.FC<EventViewProps> = ({
                 <button
                   type="button"
                   onClick={handleSelectAllAvailable}
-                  className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold border border-emerald-200 transition"
+                  className="px-3 py-1 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-xs font-semibold border border-emerald-200 transition inline-flex items-center gap-1"
                 >
-                  ⚡ 全部點選有空
+                  <Zap className="w-3 h-3" />
+                  全部點選有空
                 </button>
                 <button
                   type="button"
@@ -366,7 +383,7 @@ export const EventView: React.FC<EventViewProps> = ({
 
                           {/* Timeline Slot Card */}
                           <div
-                            className={`p-4 rounded-2xl border-2 transition-all ${
+                            className={`p-4 rounded-lg border-2 transition-all ${
                               currentStatus === "available"
                                 ? "bg-emerald-50/80 border-emerald-300 shadow-2xs"
                                 : currentStatus === "if_needed"
@@ -381,7 +398,7 @@ export const EventView: React.FC<EventViewProps> = ({
                                   <div className="inline-flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs font-mono text-xs">
                                     <span className="text-slate-400 font-bold">開始</span>
                                     <span className="font-black text-slate-900 text-sm">{parsedTime.start}</span>
-                                    <span className="text-slate-300 font-bold mx-0.5">➔</span>
+                                    <ArrowRight className="w-3 h-3 text-slate-300 mx-0.5" />
                                     <span className="text-slate-400 font-bold">結束</span>
                                     <span className="font-black text-slate-900 text-sm">{parsedTime.end}</span>
                                   </div>
@@ -392,20 +409,23 @@ export const EventView: React.FC<EventViewProps> = ({
                                 )}
 
                                 {durationStr && (
-                                  <span className="px-2 py-1 rounded-lg bg-amber-100/90 text-amber-950 text-xs font-bold border border-amber-200">
-                                    ⏱️ {durationStr}
+                                  <span className="px-2 py-1 rounded-lg bg-amber-100/90 text-amber-950 text-xs font-bold border border-amber-200 inline-flex items-center gap-1">
+                                    <Timer className="w-3 h-3" />
+                                    {durationStr}
                                   </span>
                                 )}
 
                                 {parsedTime.periodLabel && (
-                                  <span className="px-2 py-1 rounded-lg bg-orange-100 text-orange-950 text-xs font-bold border border-orange-200">
-                                    🍴 {parsedTime.periodLabel}
+                                  <span className="px-2 py-1 rounded-lg bg-orange-100 text-orange-950 text-xs font-bold border border-orange-200 inline-flex items-center gap-1">
+                                    <Utensils className="w-3 h-3" />
+                                    {parsedTime.periodLabel}
                                   </span>
                                 )}
 
                                 {slot.label && (
-                                  <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200">
-                                    📌 {slot.label}
+                                  <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-medium border border-slate-200 inline-flex items-center gap-1">
+                                    <Pin className="w-3 h-3" />
+                                    {slot.label}
                                   </span>
                                 )}
                               </div>
@@ -413,18 +433,21 @@ export const EventView: React.FC<EventViewProps> = ({
                               {/* Selected Status Badge */}
                               <div className="text-xs font-black shrink-0">
                                 {currentStatus === "available" && (
-                                  <span className="text-emerald-800 bg-emerald-100/90 px-2.5 py-1 rounded-full border border-emerald-200">
-                                    ⭕ 可以
+                                  <span className="text-emerald-800 bg-emerald-100/90 px-2.5 py-1 rounded-full border border-emerald-200 inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    可以
                                   </span>
                                 )}
                                 {currentStatus === "if_needed" && (
-                                  <span className="text-amber-900 bg-amber-100/90 px-2.5 py-1 rounded-full border border-amber-200">
-                                    🔺 視情況
+                                  <span className="text-amber-900 bg-amber-100/90 px-2.5 py-1 rounded-full border border-amber-200 inline-flex items-center gap-1">
+                                    <HelpCircle className="w-3 h-3" />
+                                    視情況
                                   </span>
                                 )}
                                 {currentStatus === "unavailable" && (
-                                  <span className="text-slate-600 bg-slate-200/90 px-2.5 py-1 rounded-full border border-slate-300">
-                                    ❌ 不行
+                                  <span className="text-slate-600 bg-slate-200/90 px-2.5 py-1 rounded-full border border-slate-300 inline-flex items-center gap-1">
+                                    <XCircle className="w-3 h-3" />
+                                    不行
                                   </span>
                                 )}
                               </div>
@@ -442,7 +465,7 @@ export const EventView: React.FC<EventViewProps> = ({
                                 }`}
                               >
                                 <CheckCircle2 className="w-4 h-4" />
-                                <span>可以 ⭕</span>
+                                <span>可以</span>
                               </button>
 
                               <button
@@ -455,7 +478,7 @@ export const EventView: React.FC<EventViewProps> = ({
                                 }`}
                               >
                                 <HelpCircle className="w-4 h-4" />
-                                <span>視情況 🔺</span>
+                                <span>視情況</span>
                               </button>
 
                               <button
@@ -468,7 +491,7 @@ export const EventView: React.FC<EventViewProps> = ({
                                 }`}
                               >
                                 <XCircle className="w-4 h-4" />
-                                <span>不行 ❌</span>
+                                <span>不行</span>
                               </button>
                             </div>
                           </div>
@@ -482,8 +505,8 @@ export const EventView: React.FC<EventViewProps> = ({
 
             {/* Comment Note */}
             <div className="pt-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                給主揪的話 / 備註 <span className="text-slate-400 font-normal">(選填，例：會晚點到)</span>
+              <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                給主揪的話 / 備註
               </label>
               <input
                 type="text"
@@ -499,14 +522,26 @@ export const EventView: React.FC<EventViewProps> = ({
           <button
             type="submit"
             disabled={isLoading || !nickname.trim()}
-            className="w-full py-4 px-6 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 cursor-pointer"
+            className="w-full py-4 px-6 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-base shadow-xl flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-50 cursor-pointer"
           >
             {isLoading ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
                 <Send className="w-5 h-5 text-amber-400" />
-                <span>{editingParticipantId ? "更新我的回覆 🔄" : "送出我的時間 🚀"}</span>
+                <span className="inline-flex items-center gap-1.5">
+                  {editingParticipantId ? (
+                    <>
+                      更新我的回覆
+                      <RotateCw className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      送出我的時間
+                      <Rocket className="w-4 h-4" />
+                    </>
+                  )}
+                </span>
               </>
             )}
           </button>
@@ -527,7 +562,7 @@ export const EventView: React.FC<EventViewProps> = ({
           />
 
           {/* Participant Responses Roster */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-4">
+          <div className="bg-white rounded-lg p-6 border border-slate-200/80 shadow-xs space-y-4">
             <h3 className="font-bold text-slate-900 text-base flex items-center justify-between">
               <span>已填寫名冊 ({event.responses.length} 人)</span>
             </h3>
@@ -548,7 +583,8 @@ export const EventView: React.FC<EventViewProps> = ({
                     >
                       <div className="flex items-center justify-between font-bold text-slate-900">
                         <span className="text-sm flex items-center gap-1.5">
-                          👤 {r.nickname}
+                          <User className="w-3.5 h-3.5" />
+                          {r.nickname}
                           {r.nickname === nickname && (
                             <span className="text-[10px] bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full font-semibold">
                               (您)
@@ -573,8 +609,9 @@ export const EventView: React.FC<EventViewProps> = ({
                       </div>
 
                       {r.comment && (
-                        <div className="text-slate-600 bg-white p-2 rounded-lg border border-slate-200/60 text-[11px]">
-                          💬 {r.comment}
+                        <div className="text-slate-600 bg-white p-2 rounded-lg border border-slate-200/60 text-[11px] flex items-start gap-1">
+                          <MessageCircle className="w-3 h-3 shrink-0 mt-0.5" />
+                          <span>{r.comment}</span>
                         </div>
                       )}
                     </div>

@@ -9,7 +9,14 @@ import {
   ChevronRight,
   ChevronDown,
   Sparkles,
-  Info
+  Info,
+  Timer,
+  MapPin,
+  Calendar,
+  ArrowRight,
+  X,
+  BarChart3,
+  Target
 } from "lucide-react";
 import { TimeSlot, ParticipantResponse, SlotStats } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
@@ -80,7 +87,7 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
     <div className="space-y-6">
       {/* Top 3 Popularity Recommendations */}
       {totalParticipants > 0 && sortedTopSlots.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-200/80 rounded-2xl p-5 shadow-xs">
+        <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-rose-500/10 border border-amber-200/80 rounded-lg p-5 shadow-xs">
           <div className="flex items-center gap-2 mb-3">
             <Trophy className="w-5 h-5 text-amber-600 shrink-0" />
             <h4 className="font-bold text-slate-900 text-sm">
@@ -105,7 +112,7 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
                 >
                   <div className="flex items-center justify-between gap-2 mb-1">
                     <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
                         isFirst
                           ? "bg-amber-500 text-white"
                           : idx === 1
@@ -113,7 +120,13 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
                           : "bg-amber-700/80 text-white"
                       }`}
                     >
-                      TOP {idx + 1} {isFirst ? "🏆 最推薦" : ""}
+                      TOP {idx + 1}
+                      {isFirst && (
+                        <>
+                          <Trophy className="w-3 h-3" />
+                          最推薦
+                        </>
+                      )}
                     </span>
 
                     <span className="text-xs font-bold text-emerald-700">
@@ -127,15 +140,17 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
                   <div className="flex items-center gap-2 flex-wrap text-xs font-semibold text-slate-700">
                     <span>{stats.slot.time}</span>
                     {calculateSlotDuration(stats.slot.time) && (
-                      <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-bold">
-                        ⏱️ {calculateSlotDuration(stats.slot.time)}
+                      <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-bold inline-flex items-center gap-1">
+                        <Timer className="w-3 h-3" />
+                        {calculateSlotDuration(stats.slot.time)}
                       </span>
                     )}
                   </div>
 
                   {stats.slot.label && (
-                    <div className="text-[11px] text-slate-500 mt-0.5">
-                      📍 {stats.slot.label}
+                    <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      {stats.slot.label}
                     </div>
                   )}
 
@@ -144,8 +159,9 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
                       出席：{stats.availableNames.slice(0, 3).join("、")}
                       {stats.availableNames.length > 3 ? "..." : ""}
                     </span>
-                    <span className="text-amber-700 font-semibold group-hover:underline">
-                      查看詳情 →
+                    <span className="text-amber-700 font-semibold group-hover:underline inline-flex items-center gap-0.5">
+                      查看詳情
+                      <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
                 </div>
@@ -156,7 +172,7 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
       )}
 
       {/* Heatmap Grid Matrix */}
-      <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
+      <div className="bg-white rounded-lg p-5 sm:p-6 border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-amber-500" />
@@ -192,8 +208,9 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
           {(Object.entries(groupedSlots) as [string, TimeSlot[]][]).map(([date, dateSlots]) => (
             <div key={date} className="space-y-2">
               <div className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-900">
-                  📅 {date} ({formatChineseWeekday(date)})
+                <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-900 inline-flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5" />
+                  {date} ({formatChineseWeekday(date)})
                 </span>
               </div>
 
@@ -214,8 +231,9 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
                     >
                       {/* Final Chosen Badge */}
                       {isFinal && (
-                        <div className="absolute top-2 right-2 bg-rose-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm animate-bounce">
-                          🎯 主揪拍板
+                        <div className="absolute top-2 right-2 bg-rose-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm animate-bounce inline-flex items-center gap-1">
+                          <Target className="w-3 h-3" />
+                          主揪拍板
                         </div>
                       )}
 
@@ -261,16 +279,17 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
       {/* Modal: Details of WHO is available for clicked slot */}
       {selectedSlotModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 relative">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl border border-slate-100 relative">
             <button
               onClick={() => setSelectedSlotModal(null)}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
 
-            <h4 className="font-bold text-lg text-slate-900 mb-1">
-              時段出席明細 📊
+            <h4 className="font-bold text-lg text-slate-900 mb-1 flex items-center gap-1.5">
+              時段出席明細
+              <BarChart3 className="w-4 h-4" />
             </h4>
             <p className="text-xs text-slate-500 mb-4">
               {selectedSlotModal.slot.date} ({formatChineseWeekday(selectedSlotModal.slot.date)}) • {selectedSlotModal.slot.time}
@@ -282,7 +301,7 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
                 <div className="font-bold text-emerald-900 text-xs flex items-center justify-between mb-2">
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    ⭕ 確定有空 ({selectedSlotModal.availableCount} 人)
+                    確定有空 ({selectedSlotModal.availableCount} 人)
                   </span>
                 </div>
                 {selectedSlotModal.availableNames.length === 0 ? (
@@ -306,7 +325,7 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
                 <div className="font-bold text-amber-900 text-xs flex items-center justify-between mb-2">
                   <span className="flex items-center gap-1.5">
                     <HelpCircle className="w-4 h-4 text-amber-600" />
-                    🔺 視情況 / 需調整 ({selectedSlotModal.ifNeededCount} 人)
+                    視情況 / 需調整 ({selectedSlotModal.ifNeededCount} 人)
                   </span>
                 </div>
                 {selectedSlotModal.ifNeededNames.length === 0 ? (
@@ -330,7 +349,7 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
                 <div className="font-bold text-rose-900 text-xs flex items-center justify-between mb-2">
                   <span className="flex items-center gap-1.5">
                     <XCircle className="w-4 h-4 text-rose-600" />
-                    ❌ 時間不行 ({selectedSlotModal.unavailableCount} 人)
+                    時間不行 ({selectedSlotModal.unavailableCount} 人)
                   </span>
                 </div>
                 {selectedSlotModal.unavailableNames.length === 0 ? (
@@ -358,9 +377,10 @@ export const HeatmapView: React.FC<HeatmapViewProps> = ({
                     onSelectSlotForFinalize(selectedSlotModal.slotId);
                     setSelectedSlotModal(null);
                   }}
-                  className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition"
+                  className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition inline-flex items-center justify-center gap-1.5"
                 >
-                  🎯 選擇此時段並去拍板定案
+                  <Target className="w-3.5 h-3.5" />
+                  選擇此時段並去拍板定案
                 </button>
               </div>
             )}

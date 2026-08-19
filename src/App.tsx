@@ -23,7 +23,7 @@ import {
   getVisitedEvents,
   VisitedEventItem
 } from "./lib/api";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, AlertTriangle } from "lucide-react";
 
 export default function App() {
   const { isMobile } = useViewport();
@@ -151,7 +151,7 @@ export default function App() {
         finalNote,
       });
       setEventData(updated);
-      addToast("success", "🎉 聚會時間已拍板定案！結果已發布");
+      addToast("success", "聚會時間已拍板定案！結果已發布");
     } catch (err: any) {
       addToast("error", err.message || "拍板定案失敗");
     } finally {
@@ -256,9 +256,9 @@ export default function App() {
         )}
 
         {pageError && (
-          <div className="max-w-md mx-auto my-12 p-6 bg-white rounded-3xl border border-rose-200 shadow-xl text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto font-bold text-xl">
-              ⚠️
+          <div className="max-w-md mx-auto my-12 p-6 bg-white rounded-xl border border-rose-200 shadow-xl text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-6 h-6" />
             </div>
             <h3 className="font-bold text-slate-900 text-lg">讀取失敗</h3>
             <p className="text-xs text-slate-500">{pageError}</p>

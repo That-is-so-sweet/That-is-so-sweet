@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Zap, RotateCw } from "lucide-react";
 import { EventData, AvailabilityStatus, SubmitResponseInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { Button, Input } from "../design-system/components";
@@ -49,7 +50,7 @@ const VoteRow: React.FC<VoteRowProps> = (props) => {
                 justifyContent: "center",
               }}
             >
-              {meta.icon}
+              <meta.icon size={14} color={active ? "#fff" : meta.color} />
             </button>
           );
         })}
@@ -105,10 +106,15 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-      <Input size="sm" label="您的暱稱 *" placeholder="例如：小明" value={nickname} onChange={(e) => setNickname(e.target.value)} />
-      <Input size="sm" label="聯絡 Email（選填）" placeholder="例如：name@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Input size="sm" label="您的暱稱" required placeholder="例如：小明" value={nickname} onChange={(e) => setNickname(e.target.value)} />
+      <Input size="sm" label="聯絡 Email" placeholder="例如：name@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <div style={{ display: "flex", gap: 6 }}>
-        <Button variant="ghost" size="sm" onClick={() => setAll("available")}>⚡ 全部有空</Button>
+        <Button variant="ghost" size="sm" onClick={() => setAll("available")}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Zap size={12} />
+            全部有空
+          </span>
+        </Button>
         <Button variant="muted" size="sm" onClick={() => setAll("unavailable")}>全選不行</Button>
       </div>
       <div style={cardStyle}>
@@ -125,9 +131,16 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
           </div>
         ))}
       </div>
-      <Input size="sm" label="給主揪的話（選填）" placeholder="例如：19:00 才能到" value={comment} onChange={(e) => setComment(e.target.value)} />
+      <Input size="sm" label="給主揪的話" placeholder="例如：19:00 才能到" value={comment} onChange={(e) => setComment(e.target.value)} />
       <Button variant="dark" fullWidth disabled={!nickname.trim() || isLoading} onClick={handleSubmit}>
-        {editingParticipantId ? "更新我的回覆 🔄" : "送出我的時間"}
+        {editingParticipantId ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            更新我的回覆
+            <RotateCw size={14} />
+          </span>
+        ) : (
+          "送出我的時間"
+        )}
       </Button>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Crown, CheckCircle2, AlertTriangle, Sparkles, Send, Lock } from "lucide-react";
+import { Crown, CheckCircle2, AlertTriangle, Sparkles, Send, Lock, Calendar, Clock, MessageCircle, PartyPopper } from "lucide-react";
 import { TimeSlot, EventData } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 
@@ -40,7 +40,7 @@ export const HostManagePanel: React.FC<HostManagePanelProps> = ({
   };
 
   return (
-    <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-rose-500/10 rounded-2xl p-6 border-2 border-amber-300 shadow-md space-y-5">
+    <div className="bg-gradient-to-br from-amber-500/10 via-orange-500/10 to-rose-500/10 rounded-lg p-6 border-2 border-amber-300 shadow-md space-y-5">
       <div className="flex items-center justify-between pb-3 border-b border-amber-200">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold">
@@ -55,8 +55,9 @@ export const HostManagePanel: React.FC<HostManagePanelProps> = ({
             </p>
           </div>
         </div>
-        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-500 text-white shadow-xs">
-          👑 權限已驗證
+        <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-500 text-white shadow-xs inline-flex items-center gap-1">
+          <Crown className="w-3.5 h-3.5" />
+          權限已驗證
         </span>
       </div>
 
@@ -125,8 +126,8 @@ export const HostManagePanel: React.FC<HostManagePanelProps> = ({
 
         {/* Note / Announcement message */}
         <div>
-          <label className="block text-xs font-bold text-slate-800 mb-1.5">
-            定案給大家的備註訊息 <span className="text-slate-400 font-normal">(選填，如地點、注意事項)</span>
+          <label className="block text-xs font-medium text-slate-500 mb-1.5">
+            定案給大家的備註訊息
           </label>
           <input
             type="text"
@@ -144,14 +145,14 @@ export const HostManagePanel: React.FC<HostManagePanelProps> = ({
           className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
         >
           <Lock className="w-4 h-4 text-amber-400" />
-          <span>確認最終時間並定案 🔒</span>
+          <span>確認最終時間並定案</span>
         </button>
       </form>
 
       {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 text-slate-800">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-2xl border border-slate-100 text-slate-800">
             <div className="w-12 h-12 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-3">
               <AlertTriangle className="w-6 h-6" />
             </div>
@@ -161,17 +162,25 @@ export const HostManagePanel: React.FC<HostManagePanelProps> = ({
             </h4>
 
             <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1 my-3">
-              <div className="font-bold text-sm">
-                📅 {chosenSlot?.date} ({formatChineseWeekday(chosenSlot?.date || "")})
+              <div className="font-bold text-sm flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 shrink-0" />
+                {chosenSlot?.date} ({formatChineseWeekday(chosenSlot?.date || "")})
               </div>
-              <div className="font-semibold text-amber-950">
-                ⏰ {chosenSlot?.time}
+              <div className="font-semibold text-amber-950 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 shrink-0" />
+                {chosenSlot?.time}
               </div>
-              {finalNote && <div className="text-slate-600 pt-1">💬 {finalNote}</div>}
+              {finalNote && (
+                <div className="text-slate-600 pt-1 flex items-start gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>{finalNote}</span>
+                </div>
+              )}
             </div>
 
-            <p className="text-xs text-slate-500 mb-5 leading-relaxed">
-              ⚠️ 定案後，活動頁面將轉為「已拍板通知模式」，暫停開放新投票。所有點進此連結的朋友皆會看到此最終聚會時間。
+            <p className="text-xs text-slate-500 mb-5 leading-relaxed flex items-start gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>定案後，活動頁面將轉為「已拍板通知模式」，暫停開放新投票。所有點進此連結的朋友皆會看到此最終聚會時間。</span>
             </p>
 
             <div className="flex gap-2">
@@ -185,9 +194,10 @@ export const HostManagePanel: React.FC<HostManagePanelProps> = ({
               <button
                 type="button"
                 onClick={handleExecuteFinalize}
-                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-sm"
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-sm inline-flex items-center justify-center gap-1.5"
               >
-                拍板確定！🎉
+                拍板確定！
+                <PartyPopper className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

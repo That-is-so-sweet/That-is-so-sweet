@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Users, Share2, History } from "lucide-react";
 import { EventData, SubmitResponseInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
 import { Badge } from "../design-system/components";
@@ -50,11 +51,16 @@ export const EventScreen: React.FC<EventScreenProps> = ({
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, position: "relative" }}>
       <TopBar
         title={event.title}
-        subtitle={`👥 ${event.responses.length} 人已回覆`}
+        subtitle={
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Users size={11} />
+            {event.responses.length} 人已回覆
+          </span>
+        }
         right={
           <>
-            <button style={iconBtnStyle} onClick={onOpenShare}>📤</button>
-            <button style={iconBtnStyle} onClick={onOpenHistory}>🕒</button>
+            <button style={iconBtnStyle} onClick={onOpenShare}><Share2 size={15} /></button>
+            <button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>
           </>
         }
       />

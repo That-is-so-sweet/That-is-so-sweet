@@ -46,7 +46,18 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%", fontFamily: "var(--font-body)" }}>
-      {label && <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)" }}>{label}</label>}
+      {label && (
+        <label
+          style={{
+            fontSize: 13,
+            fontWeight: required ? 700 : 500,
+            color: required ? "var(--color-ink)" : "var(--color-muted)",
+          }}
+        >
+          {label}
+          {required && <span style={{ color: "var(--color-primary)", marginLeft: 4 }}>*</span>}
+        </label>
+      )}
       <div
         style={{
           display: "flex",

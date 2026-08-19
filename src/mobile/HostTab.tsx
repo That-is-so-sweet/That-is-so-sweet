@@ -63,7 +63,7 @@ export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, isLoading }
             );
           })}
         </div>
-        <Input label="定案備註（選填）" placeholder="例如：訂位阿傑，18:00 集合" value={note} onChange={(e) => setNote(e.target.value)} />
+        <Input label="定案備註" placeholder="例如：訂位阿傑，18:00 集合" value={note} onChange={(e) => setNote(e.target.value)} />
         <div style={{ marginTop: 12 }}>
           <Button variant="dark" fullWidth disabled={!selected || isLoading} onClick={() => setConfirming(true)}>
             確認最終時間並定案

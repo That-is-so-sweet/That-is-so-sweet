@@ -1,4 +1,5 @@
 import React from "react";
+import { Trophy, Medal, MessageCircle, X } from "lucide-react";
 import { EventData, SlotStats } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats } from "../lib/slots";
@@ -11,7 +12,7 @@ interface HeatmapTabProps {
   userNickname: string;
 }
 
-const medals = ["🥇", "🥈", "🥉"];
+const medalColors = ["#d4a017", "#9aa0a6", "#b06a3d"];
 
 export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, onDelete, userNickname }) => {
   const stats = computeSlotStats(event.slots, event.responses);
@@ -35,8 +36,13 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, onDelete, userNic
               {top.map((s, i) => (
                 <div key={s.slot.id} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, fontWeight: 900 }}>
-                      {medals[i]} {s.slot.date} ({formatChineseWeekday(s.slot.date)}) {s.slot.time}
+                    <span style={{ fontSize: 12, fontWeight: 900, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                      {i === 0 ? (
+                        <Trophy size={13} color={medalColors[i]} />
+                      ) : (
+                        <Medal size={13} color={medalColors[i]} />
+                      )}
+                      {s.slot.date} ({formatChineseWeekday(s.slot.date)}) {s.slot.time}
                     </span>
                     <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-success)" }}>
                       {s.availableCount}/{event.responses.length}
@@ -85,10 +91,15 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, onDelete, userNic
                     {r.nickname}
                     {r.nickname === userNickname && <span style={{ fontSize: 9, marginLeft: 6, color: "var(--color-primary)" }}>(您)</span>}
                   </div>
-                  {r.comment && <div style={{ fontSize: 10, color: "var(--color-muted)" }}>💬 {r.comment}</div>}
+                  {r.comment && (
+                    <div style={{ fontSize: 10, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+                      <MessageCircle size={10} />
+                      {r.comment}
+                    </div>
+                  )}
                 </div>
                 <Badge variant="success" size="sm">{availCount}/{event.slots.length}</Badge>
-                <button onClick={() => onDelete(r.id)} style={{ border: "none", background: "none", color: "var(--color-muted)", fontSize: 13, cursor: "pointer" }}>✕</button>
+                <button onClick={() => onDelete(r.id)} style={{ border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}><X size={14} /></button>
               </div>
             );
           })}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { History, X, AlertTriangle, MapPin, Rocket } from "lucide-react";
 import { CreateEventInput, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { calculateSlotDuration, addMinutesToTime, getNextWeekdayDate } from "../lib/slots";
@@ -118,9 +119,9 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <TopBar
-        title="揪團時間"
+        title="揪甘心"
         subtitle={`步驟 ${step + 1}/4 · ${STEP_LABELS[step]}`}
-        right={<button style={iconBtnStyle} onClick={onOpenHistory}>🕒</button>}
+        right={<button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>}
       />
       <div style={{ padding: "10px 16px 0", flexShrink: 0 }}>
         <div style={{ height: 4, borderRadius: 4, background: "var(--color-border)", overflow: "hidden" }}>
@@ -140,10 +141,10 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
           <div style={cardStyle}>
             <SectionLabel title="基本活動資訊" />
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Input label="活動 / 會議名稱 *" placeholder="例如：產品專案週對齊會議" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={30} />
-              <Input label="主揪暱稱（選填）" placeholder="例如：阿傑、Wally" value={hostName} onChange={(e) => setHostName(e.target.value)} />
-              <Input label="主揪 Email（選填）" placeholder="例如：host@example.com" type="email" value={hostEmail} onChange={(e) => setHostEmail(e.target.value)} />
-              <Input label="地點或說明（選填）" placeholder="例如：捷運中山站火鍋" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Input label="活動 / 會議名稱" required placeholder="例如：產品專案週對齊會議" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={30} />
+              <Input label="主揪暱稱" placeholder="例如：阿傑、Wally" value={hostName} onChange={(e) => setHostName(e.target.value)} />
+              <Input label="主揪 Email" placeholder="例如：host@example.com" type="email" value={hostEmail} onChange={(e) => setHostEmail(e.target.value)} />
+              <Input label="地點或說明" placeholder="例如：捷運中山站火鍋" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
           </div>
         )}
@@ -154,7 +155,15 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
             <MonthCalendar selectedDates={selectedDates} onChange={setSelectedDates} viewDate={viewDate} setViewDate={setViewDate} />
             {selectedDates.length > 0 && (
               <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid var(--color-border)" }}>
-                <div style={{ fontSize: 10, color: "var(--color-muted)", marginBottom: 4 }}>已選 {selectedDates.length} 天</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <div style={{ fontSize: 10, color: "var(--color-muted)" }}>已選 {selectedDates.length} 天</div>
+                  <span
+                    onClick={() => setSelectedDates([])}
+                    style={{ fontSize: 10, fontWeight: 700, color: "var(--color-hot)", cursor: "pointer" }}
+                  >
+                    清空全部
+                  </span>
+                </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                   {selectedDates.map((d) => (
                     <span
@@ -173,13 +182,19 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                         gap: 3,
                       }}
                     >
-                      {d.slice(5)}({formatChineseWeekday(d).replace("週", "")})<span style={{ opacity: 0.6 }}>✕</span>
+                      {d.slice(5).replace("-", "/")}({formatChineseWeekday(d).replace("週", "")})
+                      <X size={10} style={{ opacity: 0.6 }} />
                     </span>
                   ))}
                 </div>
               </div>
             )}
-            {selectedDates.length === 0 && <div style={{ marginTop: 12, fontSize: 11, color: "var(--color-hot)" }}>⚠️ 請至少選擇一個日期</div>}
+            {selectedDates.length === 0 && (
+              <div style={{ marginTop: 12, fontSize: 11, color: "var(--color-hot)", display: "flex", alignItems: "center", gap: 4 }}>
+                <AlertTriangle size={12} />
+                請至少選擇一個日期
+              </div>
+            )}
           </div>
         )}
 
@@ -257,7 +272,9 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
                       <div>
-                        <label style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", display: "block", marginBottom: 4 }}>開始時間</label>
+                        <label style={{ fontSize: 10, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 4 }}>
+                          開始時間<span style={{ color: "var(--color-primary)", marginLeft: 3 }}>*</span>
+                        </label>
                         <input
                           type="time"
                           value={startTime}
@@ -266,7 +283,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                         />
                       </div>
                       <div>
-                        <label style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", display: "block", marginBottom: 4 }}>標籤（選填）</label>
+                        <label style={{ fontSize: 10, fontWeight: 500, color: "var(--color-muted)", display: "block", marginBottom: 4 }}>標籤</label>
                         <input
                           value={label}
                           onChange={(e) => setLabel(e.target.value)}
@@ -326,7 +343,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                               {s.label ? ` · ${s.label}` : ""}
                               {durationStr && <span style={{ color: "var(--color-muted)", fontWeight: 400 }}> ({durationStr})</span>}
                             </span>
-                            <button onClick={() => removeSlot(originalIndex)} style={{ border: "none", background: "none", color: "var(--color-muted)", fontSize: 13, cursor: "pointer" }}>✕</button>
+                            <button onClick={() => removeSlot(originalIndex)} style={{ border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}><X size={14} /></button>
                           </div>
                         );
                       })}
@@ -335,7 +352,12 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                 </div>
               </div>
             )}
-            {slots.length === 0 && <div style={{ marginTop: 10, fontSize: 11, color: "var(--color-hot)" }}>⚠️ 尚未建立任何候選時段</div>}
+            {slots.length === 0 && (
+              <div style={{ marginTop: 10, fontSize: 11, color: "var(--color-hot)", display: "flex", alignItems: "center", gap: 4 }}>
+                <AlertTriangle size={12} />
+                尚未建立任何候選時段
+              </div>
+            )}
           </div>
         )}
 
@@ -344,7 +366,12 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
             <SectionLabel title="確認活動內容" />
             <div style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", marginBottom: 4 }}>{title || "（尚未命名）"}</div>
             {hostName && <div style={{ fontSize: 11, color: "var(--color-muted)" }}>主揪：{hostName}</div>}
-            {description && <div style={{ fontSize: 11, color: "var(--color-muted)" }}>📍 {description}</div>}
+            {description && (
+              <div style={{ fontSize: 11, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                <MapPin size={11} />
+                {description}
+              </div>
+            )}
             <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
               {(Object.entries(grouped) as [string, Omit<TimeSlot, "id">[]][]).map(([date, list]) => (
                 <div key={date} style={{ marginBottom: 6 }}>
@@ -365,7 +392,14 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
           <Button variant="primary" fullWidth disabled={!canNext} onClick={() => setStep((s) => s + 1)}>下一步</Button>
         ) : (
           <Button variant="hot" fullWidth disabled={isLoading} onClick={handleSubmit}>
-            {isLoading ? "正在產生活動連結..." : "產生活動連結 🚀"}
+            {isLoading ? (
+              "正在產生活動連結..."
+            ) : (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                產生活動連結
+                <Rocket size={14} />
+              </span>
+            )}
           </Button>
         )}
       </div>

@@ -8,7 +8,10 @@ import {
   ExternalLink, 
   Crown,
   MessageCircle,
-  QrCode
+  QrCode,
+  PartyPopper,
+  Smartphone,
+  ArrowRight
 } from "lucide-react";
 import { EventData } from "../types";
 
@@ -74,7 +77,7 @@ ${shareUrl}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -88,8 +91,9 @@ ${shareUrl}`;
           <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3 shadow-inner">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-            活動建立成功！🎉
+          <h3 className="text-2xl font-bold text-slate-900 tracking-tight inline-flex items-center gap-2">
+            活動建立成功！
+            <PartyPopper className="w-5 h-5" />
           </h3>
           <p className="text-slate-500 text-xs sm:text-sm mt-1">
             活動名稱：<span className="font-semibold text-slate-800">{event.title}</span>
@@ -100,14 +104,17 @@ ${shareUrl}`;
         <div className="space-y-4">
           <button
             onClick={handleLineShareDirect}
-            className="w-full py-3.5 px-5 rounded-2xl bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-95"
+            className="w-full py-3.5 px-5 rounded-lg bg-[#06C755] hover:bg-[#05b34c] text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 transition active:scale-95"
           >
             <MessageCircle className="w-5 h-5 fill-white" />
-            <span>一鍵分享到 LINE 群組 📲</span>
+            <span className="inline-flex items-center gap-1.5">
+              一鍵分享到 LINE 群組
+              <Smartphone className="w-4 h-4" />
+            </span>
           </button>
 
           {/* Action 2: Copy URL */}
-          <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-2">
+          <div className="bg-slate-50 rounded-lg p-4 border border-slate-200/80 space-y-2">
             <label className="block text-xs font-semibold text-slate-700">
               專屬參與者填寫連結
             </label>
@@ -138,7 +145,7 @@ ${shareUrl}`;
           </div>
 
           {/* Action 3: Copy Full LINE Text */}
-          <div className="bg-amber-50/70 rounded-2xl p-4 border border-amber-200/80 space-y-2">
+          <div className="bg-amber-50/70 rounded-lg p-4 border border-amber-200/80 space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-amber-900">
                 預設 LINE 群組廣播文範本
@@ -157,7 +164,7 @@ ${shareUrl}`;
 
           {/* Host Management Note */}
           {hostToken && (
-            <div className="p-3.5 rounded-2xl bg-slate-100 border border-slate-200 text-slate-600 text-xs flex items-start gap-2.5">
+            <div className="p-3.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-xs flex items-start gap-2.5">
               <Crown className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-slate-800">主揪專屬權限：</span>
@@ -171,9 +178,10 @@ ${shareUrl}`;
         <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
           <button
             onClick={onClose}
-            className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition"
+            className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition inline-flex items-center justify-center gap-1.5"
           >
-            進入活動統計頁面 ➡️
+            進入活動統計頁面
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>

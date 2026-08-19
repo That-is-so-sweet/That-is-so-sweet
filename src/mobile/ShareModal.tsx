@@ -1,4 +1,5 @@
 import React from "react";
+import { X, Check, Crown } from "lucide-react";
 import { EventData } from "../types";
 import { Button } from "../design-system/components";
 
@@ -30,7 +31,7 @@ ${shareUrl}`;
   return (
     <div style={{ position: "absolute", inset: 0, background: "rgba(26,18,8,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 200 }}>
       <div style={{ background: "#fff", borderRadius: "var(--radius-modal)", padding: 20, width: "100%", maxHeight: "85%", overflowY: "auto", position: "relative" }}>
-        <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, border: "none", background: "none", fontSize: 16, color: "var(--color-muted)", cursor: "pointer" }}>✕</button>
+        <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}><X size={18} /></button>
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div
             style={{
@@ -42,11 +43,10 @@ ${shareUrl}`;
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 24,
               margin: "0 auto 10px",
             }}
           >
-            ✓
+            <Check size={24} />
           </div>
           <div style={{ fontSize: 17, fontWeight: 900, fontFamily: "var(--font-display)" }}>活動建立成功！</div>
           <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }}>{event.title}</div>
@@ -60,8 +60,9 @@ ${shareUrl}`;
           </div>
         </div>
         {hostToken && (
-          <div style={{ marginTop: 12, padding: 12, borderRadius: "var(--radius-md)", background: "var(--color-cream)", fontSize: 11, color: "var(--color-muted)", lineHeight: 1.6 }}>
-            👑 此瀏覽器已自動儲存您為主揪。更換裝置時可使用含有主揪密鑰的管理網址來管理此活動。
+          <div style={{ marginTop: 12, padding: 12, borderRadius: "var(--radius-md)", background: "var(--color-cream)", fontSize: 11, color: "var(--color-muted)", lineHeight: 1.6, display: "flex", alignItems: "flex-start", gap: 5 }}>
+            <Crown size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>此瀏覽器已自動儲存您為主揪。更換裝置時可使用含有主揪密鑰的管理網址來管理此活動。</span>
           </div>
         )}
         <div style={{ marginTop: 14 }}>

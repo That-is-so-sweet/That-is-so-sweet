@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { Lightbulb, Flag, Zap, ChevronUp, ChevronDown } from "lucide-react";
 import { navBtnStyle, quickBtnStyle } from "./mobileStyles";
 import { HOLIDAYS_2026 } from "./holidays";
 
@@ -18,6 +19,7 @@ const RANGE_OPTS: { k: "month" | "2weeks" | "3months"; label: string }[] = [
 
 export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onChange, viewDate, setViewDate }) => {
   const [bulkRange, setBulkRange] = useState<"month" | "2weeks" | "3months">("month");
+  const [toolsOpen, setToolsOpen] = useState(false);
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -28,7 +30,6 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
   const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}`;
   const monthHolidays = Object.entries(HOLIDAYS_2026).filter(([k]) => k.startsWith(monthPrefix));
   const set = new Set(selectedDates);
-  const toggleOne = (ds: string) => onChange(set.has(ds) ? selectedDates.filter((x) => x !== ds) : [...selectedDates, ds].sort());
 
   const rangeDates = (): Date[] => {
     if (bulkRange === "month") return Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
@@ -40,7 +41,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
     });
   };
 
-  const bulk = (pred: (dow: number) => boolean) => {
+  const bulkAdd = (pred: (dow: number) => boolean) => {
     const next = new Set(selectedDates);
     rangeDates().forEach((d) => {
       const ds = fmtDate(d);
@@ -50,9 +51,45 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
     onChange(Array.from(next).sort());
   };
 
-  const clearRange = () => {
-    const rset = new Set(rangeDates().map(fmtDate));
-    onChange(selectedDates.filter((x) => !rset.has(x)));
+  // Click-and-drag multi-select: the first cell touched decides add/remove for the whole gesture,
+  // works the same for mouse drag and touch swipe.
+  const dragModeRef = useRef<"add" | "remove" | null>(null);
+  const lastCellRef = useRef<string | null>(null);
+
+  const paintCell = (ds: string) => {
+    if (ds < todayStr || !dragModeRef.current) return;
+    if (lastCellRef.current === ds) return;
+    lastCellRef.current = ds;
+    const isSelected = selectedDates.includes(ds);
+    if (dragModeRef.current === "add" && !isSelected) onChange([...selectedDates, ds].sort());
+    if (dragModeRef.current === "remove" && isSelected) onChange(selectedDates.filter((x) => x !== ds));
+  };
+
+  const startDrag = (ds: string) => {
+    if (ds < todayStr) return;
+    dragModeRef.current = selectedDates.includes(ds) ? "remove" : "add";
+    lastCellRef.current = null;
+    paintCell(ds);
+  };
+
+  useEffect(() => {
+    const end = () => {
+      dragModeRef.current = null;
+      lastCellRef.current = null;
+    };
+    window.addEventListener("pointerup", end);
+    window.addEventListener("pointercancel", end);
+    return () => {
+      window.removeEventListener("pointerup", end);
+      window.removeEventListener("pointercancel", end);
+    };
+  }, []);
+
+  const handleGridPointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    if (!dragModeRef.current) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const ds = el?.closest<HTMLElement>("[data-date]")?.dataset.date;
+    if (ds) paintCell(ds);
   };
 
   const cells: (number | null)[] = [...Array(startDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
@@ -108,7 +145,10 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+      <div
+        style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, touchAction: "none", userSelect: "none" }}
+        onPointerMove={handleGridPointerMove}
+      >
         {cells.map((d, i) => {
           if (d === null) return <div key={i} />;
           const ds = dateStr(d);
@@ -121,16 +161,20 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
           return (
             <button
               key={i}
+              data-date={ds}
               disabled={isPast}
-              onClick={() => toggleOne(ds)}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                startDrag(ds);
+              }}
               style={{
                 position: "relative",
-                aspectRatio: "1",
+                aspectRatio: "1.8",
                 border: isToday && !active ? "1.5px solid var(--color-primary)" : "1px solid transparent",
-                borderRadius: "var(--radius-md)",
+                borderRadius: "var(--radius-sm)",
                 background: active ? "var(--color-primary)" : holiday ? "rgba(194,67,26,0.08)" : "transparent",
                 color: isPast ? "var(--color-border)" : active ? "#fff" : isWeekend || holiday ? "var(--color-hot)" : "var(--color-ink)",
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: isToday ? 900 : 700,
                 cursor: isPast ? "default" : "pointer",
                 display: "flex",
@@ -144,9 +188,9 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
                 <span
                   style={{
                     position: "absolute",
-                    bottom: 2,
-                    width: 4,
-                    height: 4,
+                    bottom: 1,
+                    width: 3,
+                    height: 3,
                     borderRadius: "50%",
                     background: active ? "#fff" : "var(--color-hot)",
                   }}
@@ -156,12 +200,16 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
           );
         })}
       </div>
+      <div style={{ fontSize: 9, color: "var(--color-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 3 }}>
+        <Lightbulb size={10} />
+        可直接按住拖曳，一次選取或取消多天
+      </div>
 
       {monthHolidays.length > 0 && (
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 3 }}>
           {monthHolidays.map(([k, v]) => (
             <div key={k} style={{ fontSize: 10, color: "var(--color-hot)", display: "flex", gap: 4, alignItems: "center" }}>
-              <span>🎌</span>
+              <Flag size={10} />
               <span style={{ fontWeight: 800 }}>{k.slice(5).replace("-", "/")}</span>
               <span>{v}</span>
             </div>
@@ -170,42 +218,94 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({ selectedDates, onC
       )}
 
       <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>批次選取範圍</div>
-        <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
-          {RANGE_OPTS.map((r) => (
-            <button
-              key={r.k}
-              onClick={() => setBulkRange(r.k)}
+        <button
+          onClick={() => setToolsOpen((v) => !v)}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 5,
+            fontSize: 11,
+            fontWeight: 700,
+            padding: "7px 0",
+            borderRadius: "var(--radius-md)",
+            border: "1px dashed var(--color-border-strong)",
+            background: toolsOpen ? "var(--color-cream)" : "#fff",
+            color: "var(--color-muted)",
+            cursor: "pointer",
+          }}
+        >
+          <Zap size={12} />
+          批次快速勾選
+          {toolsOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+
+        {toolsOpen && (
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>套用範圍</div>
+            <div
               style={{
-                ...quickBtnStyle,
-                flex: 1,
-                background: bulkRange === r.k ? "var(--color-primary)" : "#fff",
-                color: bulkRange === r.k ? "#fff" : "var(--color-ink)",
-                borderColor: bulkRange === r.k ? "var(--color-primary)" : "var(--color-border)",
+                display: "flex",
+                gap: 2,
+                marginBottom: 10,
+                background: "var(--color-cream)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-md)",
+                padding: 3,
               }}
             >
-              {r.label}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-          <button onClick={() => bulk((dow) => dow >= 1 && dow <= 5)} style={{ ...quickBtnStyle, flex: 1 }}>
-            全選平日
-          </button>
-          <button onClick={() => bulk((dow) => dow === 0 || dow === 6)} style={{ ...quickBtnStyle, flex: 1 }}>
-            全選週末
-          </button>
-          <button onClick={clearRange} style={{ ...quickBtnStyle, flex: 1, color: "var(--color-muted)" }}>
-            清空範圍
-          </button>
-        </div>
-        <div style={{ display: "flex", gap: 3 }}>
-          {WEEK.map((w, dow) => (
-            <button key={dow} onClick={() => bulk((x) => x === dow)} style={{ ...quickBtnStyle, flex: 1, padding: "6px 0" }}>
-              {w}
-            </button>
-          ))}
-        </div>
+              {RANGE_OPTS.map((r) => (
+                <button
+                  key={r.k}
+                  onClick={() => setBulkRange(r.k)}
+                  style={{
+                    flex: 1,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    padding: "7px 4px",
+                    borderRadius: "var(--radius-sm)",
+                    border: "none",
+                    background: bulkRange === r.k ? "var(--color-primary)" : "transparent",
+                    color: bulkRange === r.k ? "#fff" : "var(--color-ink)",
+                    cursor: "pointer",
+                    transition: "background 150ms ease, color 150ms ease",
+                  }}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>勾選目標</div>
+            <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+              <button onClick={() => bulkAdd(() => true)} style={{ ...quickBtnStyle, flex: 1 }}>
+                全部
+              </button>
+              <button onClick={() => bulkAdd((dow) => dow >= 1 && dow <= 5)} style={{ ...quickBtnStyle, flex: 1 }}>
+                平日
+              </button>
+              <button onClick={() => bulkAdd((dow) => dow === 0 || dow === 6)} style={{ ...quickBtnStyle, flex: 1 }}>
+                週末
+              </button>
+            </div>
+            <div style={{ display: "flex", gap: 4 }}>
+              {WEEK.map((w, dow) => (
+                <button
+                  key={dow}
+                  onClick={() => bulkAdd((x) => x === dow)}
+                  style={{
+                    ...quickBtnStyle,
+                    flex: 1,
+                    color: dow === 0 || dow === 6 ? "var(--color-hot)" : "var(--color-ink)",
+                  }}
+                >
+                  {w}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
