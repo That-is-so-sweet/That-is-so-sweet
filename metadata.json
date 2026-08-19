@@ -1,6 +1,6 @@
 {
-  "name": "揪團聚會時間協調工具",
-  "description": "免登入的聚會時間協調工具，支援日期時間挑選、熱點圖統計、LINE一鍵分享與主揪拍板定案",
+  "name": "揪甘心",
+  "description": "聚會時間協調神器・免登入的聚會時間協調工具，支援日期時間挑選、熱點圖統計、LINE一鍵分享與主揪拍板定案",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
