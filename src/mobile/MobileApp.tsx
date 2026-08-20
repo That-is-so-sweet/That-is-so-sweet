@@ -11,6 +11,7 @@ interface MobileAppProps {
   currentEventId: string | null;
   eventData: EventData | null;
   currentHostToken: string | null;
+  initialTab: "vote" | "heatmap" | "host" | null;
   isLoading: boolean;
   pageError: string | null;
   onGoHome: () => void;
@@ -35,6 +36,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
   currentEventId,
   eventData,
   currentHostToken,
+  initialTab,
   isLoading,
   pageError,
   onGoHome,
@@ -98,6 +100,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
           <EventScreen
             event={eventData}
             isHost={isHost}
+            initialTab={initialTab || undefined}
             onRespond={onRespond}
             onFinalize={onFinalize}
             onReopen={onReopen}

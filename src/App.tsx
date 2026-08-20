@@ -33,6 +33,7 @@ export default function App() {
   const [currentEventId, setCurrentEventId] = useState<string | null>(null);
   const [currentHostToken, setCurrentHostToken] = useState<string | null>(null);
   const [eventData, setEventData] = useState<EventData | null>(null);
+  const [initialTab, setInitialTab] = useState<"vote" | "heatmap" | "host" | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [pageError, setPageError] = useState<string | null>(null);
@@ -65,7 +66,10 @@ export default function App() {
     const params = new URLSearchParams(hash);
     const eventId = params.get("event");
     const token = params.get("hostToken");
-    return { eventId, token };
+    const tabParam = params.get("tab");
+    const tab: "vote" | "heatmap" | "host" | null =
+      tabParam === "vote" || tabParam === "heatmap" || tabParam === "host" ? tabParam : null;
+    return { eventId, token, tab };
   };
 
   const loadEvent = async (id: string, tokenParam?: string) => {
@@ -91,8 +95,9 @@ export default function App() {
   // On mount and on hash change
   useEffect(() => {
     const handleHashChange = () => {
-      const { eventId, token } = parseHashParams();
+      const { eventId, token, tab } = parseHashParams();
       if (eventId) {
+        setInitialTab(tab);
         // Skip re-fetching an event whose data we just set locally
         // (e.g. right after creating it) — the hash update below still
         // fires this listener, and a redundant fetch that happens to
@@ -107,6 +112,7 @@ export default function App() {
         setPageError(null);
         setCurrentEventId(null);
         setEventData(null);
+        setInitialTab(null);
       }
     };
 
@@ -233,6 +239,7 @@ export default function App() {
         currentEventId={currentEventId}
         eventData={eventData}
         currentHostToken={currentHostToken}
+        initialTab={initialTab}
         isLoading={isLoading}
         pageError={pageError}
         onGoHome={handleGoHome}
@@ -300,6 +307,7 @@ export default function App() {
           <EventView
             event={eventData}
             hostToken={currentHostToken || undefined}
+            initialTab={initialTab || undefined}
             onRespond={handleRespond}
             onFinalize={handleFinalize}
             onReopen={handleReopen}

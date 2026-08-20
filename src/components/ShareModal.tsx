@@ -16,7 +16,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, event, 
   if (!isOpen) return null;
 
   const appOrigin = window.location.origin;
-  const shareUrl = `${appOrigin}/#event=${event.id}`;
+  const shareUrl = `${appOrigin}/#event=${event.id}&tab=vote`;
   const lineText = `📢【${event.title}】聚會時間調查邀請！
 主揪：${event.hostName || "熱心朋友"}
 ${event.description ? `說明：${event.description}\n` : ""}${event.responseDeadline ? `⏰ 請於 ${formatDeadline(event.responseDeadline)} 前完成填寫\n` : ""}

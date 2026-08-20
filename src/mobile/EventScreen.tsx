@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Users, Share2, History, Plus, Clock, CalendarDays } from "lucide-react";
 import { EventData, SubmitResponseInput, SubmitCommentInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
@@ -16,6 +16,7 @@ import { iconBtnStyle } from "./mobileStyles";
 interface EventScreenProps {
   event: EventData;
   isHost: boolean;
+  initialTab?: "vote" | "heatmap" | "host";
   onRespond: (input: SubmitResponseInput) => Promise<void>;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
   onReopen: (newDeadline?: string) => Promise<void>;
@@ -37,6 +38,7 @@ const TABS: { id: "vote" | "heatmap" | "host"; label: string }[] = [
 export const EventScreen: React.FC<EventScreenProps> = ({
   event,
   isHost,
+  initialTab,
   onRespond,
   onFinalize,
   onReopen,
@@ -48,9 +50,18 @@ export const EventScreen: React.FC<EventScreenProps> = ({
   onCopySuccess,
   isLoading,
 }) => {
-  const [tab, setTab] = useState<"vote" | "heatmap" | "host">("heatmap");
+  const [tab, setTab] = useState<"vote" | "heatmap" | "host">(initialTab && (initialTab !== "host" || isHost) ? initialTab : "heatmap");
   const [nickname, setNickname] = useState(() => getUserNickname());
   const [email, setEmail] = useState(() => getUserEmail());
+
+  // Re-apply the requested tab whenever the URL asks for one — covers not just the
+  // first mount but also navigating here via a hash-only change (e.g. pasting the
+  // participant link while the app is already open in the same tab).
+  useEffect(() => {
+    if (initialTab && (initialTab !== "host" || isHost)) {
+      setTab(initialTab);
+    }
+  }, [event.id, initialTab, isHost]);
 
   const visibleTabs = isHost ? TABS : TABS.filter((t) => t.id !== "host");
   const lifecycle = getLifecycleStatus(event);
