@@ -3,6 +3,7 @@ import { CheckCircle2, MessageCircle, RotateCcw, Archive, Ban } from "lucide-rea
 import { EventData } from "../types";
 import { formatChineseWeekday, generateGoogleCalendarUrl, downloadIcsFile } from "../lib/calendar";
 import { getMeetupEndInfo } from "../lib/eventStatus";
+import { formatSlotTime } from "../lib/slots";
 import { Button } from "../design-system/components";
 import { cardStyle, SectionLabel } from "./mobileStyles";
 import { ReopenModal } from "./ReopenModal";
@@ -29,7 +30,7 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
 活動名稱：${event.title}
 主揪：${event.hostName || "熱心主揪"}
 📅 日期：${slot.date} (${formatChineseWeekday(slot.date)})
-${isDateOnly ? "" : `⏰ 時間：${slot.time}\n`}${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
+${isDateOnly ? "" : `⏰ 時間：${formatSlotTime(slot.time)}\n`}${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
 👥 出席 (${attending.length}人)：${attending.join("、") || "歡迎大家參與！"}`;
 
   const handleCopy = async () => {
@@ -69,7 +70,7 @@ ${isDateOnly ? "" : `⏰ 時間：${slot.time}\n`}${event.finalNote ? `💬 備�
           {!isDateOnly && (
             <>
               <div style={{ fontSize: 11, opacity: 0.7, marginTop: 8 }}>時段</div>
-              <div style={{ fontSize: 15, fontWeight: 800 }}>{slot.time}</div>
+              <div style={{ fontSize: 15, fontWeight: 800 }}>{formatSlotTime(slot.time)}</div>
             </>
           )}
           {event.finalNote && (

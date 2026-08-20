@@ -3,6 +3,7 @@ import { Zap, RotateCw, ChevronUp, ChevronDown, List, CalendarDays, AlertTriangl
 import { EventData, AvailabilityStatus, SubmitResponseInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { isVotingOpen, formatDeadline } from "../lib/eventStatus";
+import { formatSlotTime } from "../lib/slots";
 import { Button, Input } from "../design-system/components";
 import { cardStyle, MonthNavButton, countInAdjacentMonth, quickBtnStyle, STATUS_META } from "./mobileStyles";
 
@@ -46,7 +47,7 @@ const VoteRow: React.FC<VoteRowProps> = (props) => {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--color-border)", opacity: disabled ? 0.55 : 1 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>{primaryText ?? slot.time}</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>{primaryText ?? formatSlotTime(slot.time)}</div>
         {slot.label && <div style={{ fontSize: 10, color: "var(--color-muted)" }}>{slot.label}</div>}
       </div>
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>

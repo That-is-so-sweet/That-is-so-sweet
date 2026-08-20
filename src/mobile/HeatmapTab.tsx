@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Trophy, Medal, MessageCircle, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp, Clock } from "lucide-react";
 import { EventData, SlotStats } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
-import { computeSlotStats } from "../lib/slots";
+import { computeSlotStats, formatSlotTime } from "../lib/slots";
 import { getLifecycleStatus, formatDeadline, formatRemaining } from "../lib/eventStatus";
 import { Avatar, Badge, Button } from "../design-system/components";
 import { cardStyle, countInAdjacentMonth, MonthNavButton, SectionLabel, STATUS_META } from "./mobileStyles";
@@ -228,7 +228,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
                               ) : (
                                 <Medal size={13} color={medalColors[i] || medalColors[2]} />
                               )}
-                              {s.slot.date} ({formatChineseWeekday(s.slot.date)}){!isDateOnly && ` ${s.slot.time}`}
+                              {s.slot.date} ({formatChineseWeekday(s.slot.date)}){!isDateOnly && ` ${formatSlotTime(s.slot.time)}`}
                               {s.slot.label && <span style={{ fontWeight: 500, color: "var(--color-muted)" }}> · {s.slot.label}</span>}
                             </span>
                             <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-success)" }}>{s.availableCount}/{total} 確定有空</span>
@@ -368,7 +368,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
                             >
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span style={{ fontSize: 11, fontWeight: 800 }}>
-                                  {isDateOnly ? "本日是否有空" : s.slot.time}
+                                  {isDateOnly ? "本日是否有空" : formatSlotTime(s.slot.time)}
                                   {s.slot.label && <span style={{ fontWeight: 500, opacity: 0.85 }}> · {s.slot.label}</span>}
                                 </span>
                                 <span style={{ fontSize: 10, fontWeight: 800, opacity: 0.9 }}>{s.availableCount}/{total} 確定有空</span>

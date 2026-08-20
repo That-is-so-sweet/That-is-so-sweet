@@ -15,6 +15,22 @@ export function calculateSlotDuration(timeStr: string): string | null {
   return `${(diff / 60).toFixed(1)} 小時`;
 }
 
+export function to12Hour(time: string): string {
+  const match = time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return time;
+  let h = parseInt(match[1], 10);
+  const period = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${String(h).padStart(2, "0")}:${match[2]} ${period}`;
+}
+
+// Formats every "HH:mm" occurrence in a slot time string (plain time or a
+// "18:00 - 21:00 (晚餐)" range) as 12-hour with AM/PM, so slot times render
+// consistently regardless of where they're displayed.
+export function formatSlotTime(timeStr: string): string {
+  return timeStr.replace(/\d{1,2}:\d{2}/g, (m) => to12Hour(m));
+}
+
 export function parseSlotTimes(timeStr: string): { start: string; end: string | null; periodLabel: string | null } {
   const match = timeStr.match(/(\d{1,2}:\d{2})\s*[-~～]\s*(\d{1,2}:\d{2})(?:\s*\((.*?)\))?/);
   if (match) {

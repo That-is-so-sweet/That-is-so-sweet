@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 type ButtonVariant = "primary" | "secondary" | "hot" | "ghost" | "dark" | "muted";
-type ButtonSize = "sm" | "md" | "lg";
+type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -15,6 +15,7 @@ interface ButtonProps {
 }
 
 const sizes: Record<ButtonSize, React.CSSProperties> = {
+  xs: { padding: "6px 8px", fontSize: 11, minHeight: 32 },
   sm: { padding: "8px 16px", fontSize: 13, minHeight: 36 },
   md: { padding: "12px 24px", fontSize: 16, minHeight: 44 },
   lg: { padding: "16px 32px", fontSize: 18, minHeight: 52 },

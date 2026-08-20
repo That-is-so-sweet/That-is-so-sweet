@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { AlertTriangle, Ban } from "lucide-react";
 import { EventData } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
-import { computeSlotStats } from "../lib/slots";
+import { computeSlotStats, formatSlotTime } from "../lib/slots";
 import { getLifecycleStatus, formatDeadline } from "../lib/eventStatus";
 import { Button, Input } from "../design-system/components";
 import { cardStyle, SectionLabel } from "./mobileStyles";
@@ -67,7 +67,7 @@ export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, o
               >
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 800 }}>
-                    {s.date} ({formatChineseWeekday(s.date)}){!isDateOnly && ` · ${s.time}`}
+                    {s.date} ({formatChineseWeekday(s.date)}){!isDateOnly && ` · ${formatSlotTime(s.time)}`}
                   </div>
                   {s.label && <div style={{ fontSize: 10, opacity: 0.8 }}>{s.label}</div>}
                 </div>

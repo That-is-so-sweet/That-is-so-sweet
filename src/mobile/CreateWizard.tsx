@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { History, X, AlertTriangle, MapPin, Rocket, Clock, CalendarDays } from "lucide-react";
+import { History, X, AlertTriangle, MapPin, Rocket, Clock, CalendarDays, Plus } from "lucide-react";
 import { CreateEventInput, EventMode, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
-import { calculateSlotDuration, getNextWeekdayDate } from "../lib/slots";
+import { calculateSlotDuration, formatSlotTime, getNextWeekdayDate } from "../lib/slots";
 import { getDefaultDeadlineLocalValue, getNowLocalValue, localValueToIso } from "../lib/eventStatus";
 import { Button, Input } from "../design-system/components";
 import { TopBar } from "./TopBar";
@@ -66,6 +66,14 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
     setSlots(selectedDates.map((date) => ({ date, time: "", label: "" })));
   }, [isDateOnly, selectedDates]);
 
+  // Switching out of "date only" mode leaves behind those placeholder blank-time
+  // slots — drop them so dates without a real time fall into datesMissingSlots
+  // and surface the "!" warning instead of rendering as empty slot rows.
+  useEffect(() => {
+    if (isDateOnly) return;
+    setSlots((prev) => prev.filter((s) => s.time !== ""));
+  }, [isDateOnly]);
+
   const addSlotToDates = (dates: string[], time: string, lbl: string) => {
     if (dates.length === 0 || !time) return;
     setSlots((p) => {
@@ -95,8 +103,9 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
     (acc[s.date] = acc[s.date] || []).push(s);
     return acc;
   }, {} as Record<string, Omit<TimeSlot, "id">[]>);
+  Object.values(grouped).forEach((list) => list.sort((a, b) => a.time.localeCompare(b.time)));
   const groupedEntries = (Object.entries(grouped) as [string, Omit<TimeSlot, "id">[]][]).sort(([a], [b]) => a.localeCompare(b));
-  const activeSlots = slots.filter((s) => s.date === activeDate);
+  const activeSlots = slots.filter((s) => s.date === activeDate).sort((a, b) => a.time.localeCompare(b.time));
   const datesMissingSlots = selectedDates.filter((d) => !slots.some((s) => s.date === d));
 
   const canNext =
@@ -149,43 +158,6 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
               <Input label="活動 / 會議名稱" required placeholder="例如：產品專案週對齊會議" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={30} />
 
               <div>
-                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 6 }}>投票模式</label>
-                <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3 }}>
-                  {([
-                    { k: "date_only" as EventMode, label: "只選日期", Icon: CalendarDays },
-                    { k: "time_slots" as EventMode, label: "需要選時段", Icon: Clock },
-                  ]).map((m) => (
-                    <button
-                      key={m.k}
-                      onClick={() => setMode(m.k)}
-                      style={{
-                        flex: 1,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 5,
-                        padding: "8px 4px",
-                        borderRadius: "var(--radius-sm)",
-                        fontSize: 12,
-                        fontWeight: 800,
-                        border: "none",
-                        cursor: "pointer",
-                        background: mode === m.k ? "var(--color-primary)" : "transparent",
-                        color: mode === m.k ? "#fff" : "var(--color-ink)",
-                        transition: "background 150ms ease, color 150ms ease",
-                      }}
-                    >
-                      <m.Icon size={13} />
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>
-                  {isDateOnly ? "參與者只需勾選日期，不用細分時段" : "參與者可針對每個候選日期勾選細部時段"}
-                </div>
-              </div>
-
-              <div>
                 <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 6 }}>
                   投票截止時間<span style={{ color: "var(--color-primary)", marginLeft: 4 }}>*</span>
                 </label>
@@ -211,6 +183,43 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
 
         {step === 1 && (
           <div style={cardStyle}>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 6 }}>投票模式</label>
+              <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3 }}>
+                {([
+                  { k: "date_only" as EventMode, label: "只選日期", Icon: CalendarDays },
+                  { k: "time_slots" as EventMode, label: "需要選時段", Icon: Clock },
+                ]).map((m) => (
+                  <button
+                    key={m.k}
+                    onClick={() => setMode(m.k)}
+                    style={{
+                      flex: 1,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 5,
+                      padding: "8px 4px",
+                      borderRadius: "var(--radius-sm)",
+                      fontSize: 12,
+                      fontWeight: 800,
+                      border: "none",
+                      cursor: "pointer",
+                      background: mode === m.k ? "var(--color-primary)" : "transparent",
+                      color: mode === m.k ? "#fff" : "var(--color-ink)",
+                      transition: "background 150ms ease, color 150ms ease",
+                    }}
+                  >
+                    <m.Icon size={13} />
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>
+                {isDateOnly ? "參與者只需勾選日期，不用細分時段" : "參與者可針對每個候選日期勾選細部時段"}
+              </div>
+            </div>
+
             <SectionLabel
               title={isDateOnly ? "候選日期" : "候選日期與時段"}
               hint={isDateOnly ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天` : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
@@ -234,11 +243,11 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
 
             {!isDateOnly && activeDate && selectedDates.length > 0 && (
               <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-                <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 8 }}>
-                  {activeDate} ({formatChineseWeekday(activeDate)}) 的候選時段
-                </div>
-
-                <div style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 10, marginBottom: 12 }}>
+                <div style={{ border: "1.5px dashed var(--color-border-strong)", borderRadius: "var(--radius-md)", padding: 10, marginBottom: 14, background: "var(--color-cream)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 8 }}>
+                    <Plus size={12} />
+                    新增候選時段
+                  </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
                     <div>
                       <label style={{ fontSize: 10, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 4 }}>
@@ -262,12 +271,18 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <Button variant="primary" size="sm" fullWidth onClick={addCustom}>+ 加入此時段</Button>
-                    {selectedDates.length > 1 && (
-                      <Button variant="secondary" size="sm" fullWidth onClick={addCustomToAll}>
-                        + 同時加到所有已選日期（{selectedDates.length} 天）
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <div style={{ flex: 1 }}>
+                      <Button variant="primary" size="xs" fullWidth onClick={addCustom}>
+                        + 加入 {activeDate.slice(5).replace("-", "/")} 的時段
                       </Button>
+                    </div>
+                    {selectedDates.length > 1 && (
+                      <div style={{ flex: 1 }}>
+                        <Button variant="secondary" size="xs" fullWidth onClick={addCustomToAll}>
+                          + 加入全部日期（{selectedDates.length} 天）
+                        </Button>
+                      </div>
                     )}
                   </div>
 
@@ -281,7 +296,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                             onClick={() => addPreset(p)}
                             style={{ padding: "7px 10px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", background: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                           >
-                            {p.start}{p.label ? ` · ${p.label}` : ""}
+                            {formatSlotTime(p.start)}{p.label ? ` · ${p.label}` : ""}
                           </button>
                         ))}
                       </div>
@@ -289,7 +304,10 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                   )}
                 </div>
 
-                <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 10 }}>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 6 }}>
+                    已新增時段{activeSlots.length > 0 ? `（${activeSlots.length}）` : ""}
+                  </div>
                   {activeSlots.length === 0 ? (
                     <div style={{ fontSize: 11, color: "var(--color-muted)" }}>此日期尚未設定時段</div>
                   ) : (
@@ -300,7 +318,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                         return (
                           <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}>
                             <span style={{ fontSize: 12, fontWeight: 700 }}>
-                              {s.time}
+                              {formatSlotTime(s.time)}
                               {s.label ? ` · ${s.label}` : ""}
                               {durationStr && <span style={{ color: "var(--color-muted)", fontWeight: 400 }}> ({durationStr})</span>}
                             </span>
@@ -414,7 +432,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                             background: "var(--color-cream)",
                           }}
                         >
-                          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{s.time}</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{formatSlotTime(s.time)}</span>
                           {s.label && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)" }}>{s.label}</span>}
                         </div>
                       ))}

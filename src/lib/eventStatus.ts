@@ -1,14 +1,15 @@
 import { EventData } from "../types.js";
+import { to12Hour } from "./slots";
 
 const DAY_MS = 86400000;
 const EXPIRE_AFTER_DAYS = 7;
 
 // Local YYYY-MM-DDTHH:mm string (in the browser's local timezone) suitable for
-// <input type="datetime-local">, defaulting to "now + 7 days".
+// <input type="datetime-local">, defaulting to "now + 7 days" at 23:59.
 export function getDefaultDeadlineLocalValue(): string {
   const d = new Date(Date.now() + 7 * DAY_MS);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T23:59`;
 }
 
 // Same shape, but for "now" — used as the `min` attribute on the picker.
@@ -109,13 +110,15 @@ export function formatDeadline(iso: string): string {
   if (!iso) return "";
   const d = new Date(iso);
   const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
-  return `${d.getMonth() + 1}/${d.getDate()} (週${weekdays[d.getDay()]}) ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const time = to12Hour(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+  return `${d.getMonth() + 1}/${d.getDate()} (週${weekdays[d.getDay()]}) ${time}`;
 }
 
 export function formatCommentDate(iso: string): string {
   if (!iso) return "";
   const d = new Date(iso);
-  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const time = to12Hour(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+  return `${d.getMonth() + 1}/${d.getDate()} ${time}`;
 }
 
 export function formatRemaining(iso: string): string {
