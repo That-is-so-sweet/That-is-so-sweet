@@ -1,5 +1,5 @@
 import React from "react";
-import { navBtnStyle } from "./mobileStyles";
+import { MonthNavButton, countInAdjacentMonth } from "./mobileStyles";
 import { TimeSlot } from "../types";
 
 interface MiniMonthPickerProps {
@@ -9,6 +9,7 @@ interface MiniMonthPickerProps {
   setViewDate: (d: Date) => void;
   activeDate: string | null;
   setActiveDate: (d: string) => void;
+  isDateOnly?: boolean;
 }
 
 const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
@@ -20,6 +21,7 @@ export const MiniMonthPicker: React.FC<MiniMonthPickerProps> = ({
   setViewDate,
   activeDate,
   setActiveDate,
+  isDateOnly,
 }) => {
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -29,15 +31,18 @@ export const MiniMonthPicker: React.FC<MiniMonthPickerProps> = ({
   const selSet = new Set(selectedDates);
   const countFor = (ds: string) => slots.filter((s) => s.date === ds).length;
   const cells: (number | null)[] = [...Array(startDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  const selectedSlots = slots.filter((s) => selSet.has(s.date));
+  const prevCount = countInAdjacentMonth(selectedSlots, year, month, -1);
+  const nextCount = countInAdjacentMonth(selectedSlots, year, month, 1);
 
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
-        <button style={navBtnStyle} onClick={() => setViewDate(new Date(year, month - 1, 1))}>‹</button>
+        <MonthNavButton direction="prev" onClick={() => setViewDate(new Date(year, month - 1, 1))} badgeCount={prevCount} />
         <div style={{ fontSize: 12, fontWeight: 800, fontFamily: "var(--font-display)" }}>
           {year}年{month + 1}月
         </div>
-        <button style={navBtnStyle} onClick={() => setViewDate(new Date(year, month + 1, 1))}>›</button>
+        <MonthNavButton direction="next" onClick={() => setViewDate(new Date(year, month + 1, 1))} badgeCount={nextCount} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
         {WEEK.map((w, i) => (
@@ -74,7 +79,7 @@ export const MiniMonthPicker: React.FC<MiniMonthPickerProps> = ({
               }}
             >
               {d}
-              {selectable && cnt > 0 && (
+              {selectable && !isDateOnly && cnt > 0 && (
                 <span
                   style={{
                     position: "absolute",

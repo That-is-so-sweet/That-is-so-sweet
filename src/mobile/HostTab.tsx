@@ -23,7 +23,6 @@ export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, o
   const [confirming, setConfirming] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const notifyCount = event.responses.filter((r) => r.email && r.email.trim()).length;
   const stats = computeSlotStats(event.slots, event.responses);
   const isDateOnly = event.mode === "date_only";
   const lifecycle = getLifecycleStatus(event);
@@ -120,7 +119,6 @@ export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, o
       {cancelling && onCancelEvent && (
         <CancelEventModal
           eventTitle={event.title}
-          notifyCount={notifyCount}
           isLoading={isLoading}
           onCancel={() => setCancelling(false)}
           onConfirm={() => {

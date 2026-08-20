@@ -64,3 +64,45 @@ export function SectionLabel({ title, hint }: { title: string; hint?: string }) 
     </div>
   );
 }
+
+// Counts how many of the given dated items fall in the month `offset` steps away
+// from `year`/`month` — used to badge the prev/next month nav arrows so users
+// know there's more to review without having to click through blindly.
+export function countInAdjacentMonth(items: { date: string }[], year: number, month: number, offset: number): number {
+  const d = new Date(year, month + offset, 1);
+  const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return items.filter((i) => i.date.slice(0, 7) === key).length;
+}
+
+export const MonthNavButton: React.FC<{ direction: "prev" | "next"; onClick: () => void; badgeCount?: number }> = ({
+  direction,
+  onClick,
+  badgeCount,
+}) => (
+  <div style={{ position: "relative", display: "inline-flex" }}>
+    <button style={navBtnStyle} onClick={onClick}>{direction === "prev" ? "‹" : "›"}</button>
+    {!!badgeCount && (
+      <span
+        style={{
+          position: "absolute",
+          top: -5,
+          right: -5,
+          minWidth: 15,
+          height: 15,
+          padding: "0 3px",
+          borderRadius: 999,
+          background: "var(--color-hot)",
+          color: "#fff",
+          fontSize: 9,
+          fontWeight: 900,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "1.5px solid var(--color-surface)",
+        }}
+      >
+        {badgeCount > 99 ? "99+" : badgeCount}
+      </span>
+    )}
+  </div>
+);

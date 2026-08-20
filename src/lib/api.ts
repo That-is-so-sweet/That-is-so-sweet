@@ -6,6 +6,7 @@ import {
   SubmitCommentInput,
   EventMode,
 } from "../types.js";
+import * as store from "./localEventStore.js";
 
 const LOCAL_HOST_TOKENS_KEY = "gathertime_host_tokens"; // { [eventId]: hostToken }
 const LOCAL_USER_NICKNAME_KEY = "gathertime_user_nickname";
@@ -13,128 +14,54 @@ const LOCAL_USER_EMAIL_KEY = "gathertime_user_email";
 const LOCAL_MY_EVENTS_KEY = "gathertime_my_events"; // Array of event IDs visited or created
 const LOCAL_RECENT_SLOT_PRESETS_KEY = "gathertime_recent_slot_presets"; // Array of { start, label } from the last created event
 
-export async function fetchEvent(id: string, hostToken?: string): Promise<EventData & { isHost?: boolean }> {
-  const url = hostToken
-    ? `/api/events/${id}?hostToken=${encodeURIComponent(hostToken)}`
-    : `/api/events/${id}`;
+// Everything below reads/writes this browser's localStorage only (see
+// ./localEventStore.ts) — there is no server, so nothing here syncs across
+// devices. Kept as async functions so callers don't need to change.
 
-  const res = await fetch(url);
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || "讀取活動失敗");
-  }
-  const data = await res.json();
+export async function fetchEvent(id: string, hostToken?: string): Promise<EventData & { isHost?: boolean }> {
+  const data = store.getEvent(id, hostToken);
   saveVisitedEvent(data);
   return data;
 }
 
 export async function createEvent(input: CreateEventInput): Promise<{ event: EventData; hostToken: string }> {
-  const res = await fetch("/api/events", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || "產生活動失敗");
-  }
-
-  const data = await res.json();
-  // Save host token locally
+  const data = store.createEvent(input);
   saveHostToken(data.event.id, data.hostToken);
   saveVisitedEvent(data.event);
   return data;
 }
 
 export async function submitResponse(eventId: string, input: SubmitResponseInput): Promise<EventData> {
-  const res = await fetch(`/api/events/${eventId}/respond`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || "送出投票失敗");
-  }
-
-  const data = await res.json();
-  // Remember user nickname and email locally
+  const data = store.submitResponse(eventId, input);
   if (input.nickname) saveUserNickname(input.nickname);
   if (input.email) saveUserEmail(input.email);
   saveVisitedEvent(data.event);
-
   return data.event;
 }
 
 export async function finalizeEvent(eventId: string, input: FinalizeEventInput): Promise<EventData> {
-  const res = await fetch(`/api/events/${eventId}/finalize`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || "拍板定案失敗");
-  }
-
-  const data = await res.json();
-  saveVisitedEvent(data.event);
-  return data.event;
+  const event = store.finalizeEvent(eventId, input);
+  saveVisitedEvent(event);
+  return event;
 }
 
 export async function submitComment(eventId: string, input: SubmitCommentInput): Promise<EventData> {
-  const res = await fetch(`/api/events/${eventId}/comments`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || "送出留言失敗");
-  }
-
-  const data = await res.json();
+  const event = store.submitComment(eventId, input);
   if (input.nickname) saveUserNickname(input.nickname);
-  saveVisitedEvent(data.event);
-  return data.event;
+  saveVisitedEvent(event);
+  return event;
 }
 
 export async function cancelEvent(eventId: string, hostToken: string): Promise<EventData> {
-  const res = await fetch(`/api/events/${eventId}/cancel`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ hostToken }),
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || "取消活動失敗");
-  }
-
-  const data = await res.json();
-  saveVisitedEvent(data.event);
-  return data.event;
+  const event = store.cancelEvent(eventId, hostToken);
+  saveVisitedEvent(event);
+  return event;
 }
 
 export async function reopenEvent(eventId: string, hostToken: string, responseDeadline?: string): Promise<EventData> {
-  const res = await fetch(`/api/events/${eventId}/reopen`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ hostToken, responseDeadline }),
-  });
-
-  if (!res.ok) {
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.error || "重新開放投票失敗");
-  }
-
-  const data = await res.json();
-  saveVisitedEvent(data.event);
-  return data.event;
+  const event = store.reopenEvent(eventId, hostToken, responseDeadline);
+  saveVisitedEvent(event);
+  return event;
 }
 
 // --- LOCAL STORAGE HELPERS --- //

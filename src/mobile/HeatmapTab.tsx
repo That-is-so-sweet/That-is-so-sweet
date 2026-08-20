@@ -4,8 +4,8 @@ import { EventData, SlotStats } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats } from "../lib/slots";
 import { getLifecycleStatus, formatDeadline, formatRemaining } from "../lib/eventStatus";
-import { Avatar, Badge, Button, Tag } from "../design-system/components";
-import { cardStyle, navBtnStyle, SectionLabel, STATUS_META } from "./mobileStyles";
+import { Avatar, Badge, Button } from "../design-system/components";
+import { cardStyle, countInAdjacentMonth, MonthNavButton, SectionLabel, STATUS_META } from "./mobileStyles";
 
 interface HeatmapTabProps {
   event: EventData;
@@ -103,6 +103,8 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
   const calDateStr = (d: number) => `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   const calCells: (number | null)[] = [...Array(calStartDay).fill(null), ...Array.from({ length: calDaysInMonth }, (_, i) => i + 1)];
   const dateSet = new Set(allDates);
+  const calPrevCount = countInAdjacentMonth(event.slots, calYear, calMonth, -1);
+  const calNextCount = countInAdjacentMonth(event.slots, calYear, calMonth, 1);
 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -113,7 +115,6 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
             <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
             狀態：{lifecycle.label}
             <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
-            <Tag size="sm" emoji={isDateOnly ? <CalendarDays size={12} /> : <Clock size={12} />}>{isDateOnly ? "僅選日期" : "含時段"}</Tag>
           </div>
           {event.responseDeadline && (
             <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)" }}>
@@ -289,9 +290,9 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
             {distMode === "calendar" && (
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
-                  <button style={navBtnStyle} onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))}>‹</button>
+                  <MonthNavButton direction="prev" onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))} badgeCount={calPrevCount} />
                   <div style={{ fontSize: 12, fontWeight: 800, fontFamily: "var(--font-display)" }}>{calYear}年{calMonth + 1}月</div>
-                  <button style={navBtnStyle} onClick={() => setCalViewDate(new Date(calYear, calMonth + 1, 1))}>›</button>
+                  <MonthNavButton direction="next" onClick={() => setCalViewDate(new Date(calYear, calMonth + 1, 1))} badgeCount={calNextCount} />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
                   {WEEK.map((w, i) => (

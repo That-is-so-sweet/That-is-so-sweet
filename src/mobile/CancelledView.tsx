@@ -38,7 +38,7 @@ export const CancelledView: React.FC<CancelledViewProps> = ({ event }) => {
       <div style={cardStyle}>
         <SectionLabel title="說明" />
         <div style={{ fontSize: 12, color: "var(--color-muted)", lineHeight: 1.6 }}>
-          主揪已取消此活動，所有投票與拍板功能皆已關閉。若有留下 Email，系統已寄出取消通知。如有疑問請直接聯繫主揪。
+          主揪已取消此活動，所有投票與拍板功能皆已關閉。如有疑問請直接聯繫主揪。
         </div>
       </div>
     </div>

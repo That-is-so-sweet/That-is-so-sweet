@@ -4,7 +4,7 @@ import { CreateEventInput, EventMode, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { calculateSlotDuration, getNextWeekdayDate } from "../lib/slots";
 import { getDefaultDeadlineLocalValue, getNowLocalValue, localValueToIso } from "../lib/eventStatus";
-import { Button, Input, Tag } from "../design-system/components";
+import { Button, Input } from "../design-system/components";
 import { MonthCalendar } from "../mobile/MonthCalendar";
 import { MiniMonthPicker } from "../mobile/MiniMonthPicker";
 import { cardStyle, SectionLabel } from "../mobile/mobileStyles";
@@ -31,13 +31,12 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
   const [hostName, setHostName] = useState("");
   const [hostEmail, setHostEmail] = useState("");
   const [description, setDescription] = useState("");
-  const [mode, setMode] = useState<EventMode>("time_slots");
+  const [mode, setMode] = useState<EventMode>("date_only");
   const [responseDeadline, setResponseDeadline] = useState(() => getDefaultDeadlineLocalValue());
   const [selectedDates, setSelectedDates] = useState<string[]>([SAT, SUN]);
   const [slots, setSlots] = useState<Omit<TimeSlot, "id">[]>(DEFAULT_SLOTS);
   const [startTime, setStartTime] = useState("10:00");
   const [label, setLabel] = useState("");
-  const [applyToAllDates, setApplyToAllDates] = useState(false);
   const [activeDate, setActiveDate] = useState<string | null>(selectedDates[0] || null);
   const [quickPresets] = useState(() => getRecentSlotPresets());
 
@@ -55,8 +54,6 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
     setSlots(selectedDates.map((date) => ({ date, time: "", label: "" })));
   }, [isDateOnly, selectedDates]);
 
-  const targetDates = applyToAllDates ? selectedDates : activeDate ? [activeDate] : [];
-
   const addSlotToDates = (dates: string[], time: string, lbl: string) => {
     if (dates.length === 0 || !time) return;
     setSlots((p) => {
@@ -69,9 +66,11 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
     });
   };
 
-  const addCustom = () => addSlotToDates(targetDates, startTime, label.trim());
+  const addCustom = () => addSlotToDates(activeDate ? [activeDate] : [], startTime, label.trim());
 
-  const addPreset = (p: { start: string; label: string }) => addSlotToDates(targetDates, p.start, p.label);
+  const addCustomToAll = () => addSlotToDates(selectedDates, startTime, label.trim());
+
+  const addPreset = (p: { start: string; label: string }) => addSlotToDates(activeDate ? [activeDate] : [], p.start, p.label);
 
   const removeSlot = (idx: number) => setSlots((p) => p.filter((_, i) => i !== idx));
 
@@ -118,8 +117,8 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                 <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 6 }}>投票模式</label>
                 <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3 }}>
                   {([
-                    { k: "time_slots" as EventMode, label: "需要選時段", Icon: Clock },
                     { k: "date_only" as EventMode, label: "只選日期", Icon: CalendarDays },
+                    { k: "time_slots" as EventMode, label: "需要選時段", Icon: Clock },
                   ]).map((m) => (
                     <button
                       key={m.k}
@@ -189,6 +188,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
               slots={slots}
               activeDate={activeDate}
               onActiveDateChange={setActiveDate}
+              isDateOnly={isDateOnly}
             />
             {selectedDates.length === 0 && (
               <div style={{ marginTop: 12, fontSize: 11, color: "var(--color-hot)", display: "flex", alignItems: "center", gap: 4 }}>
@@ -227,15 +227,14 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                     </div>
                   </div>
 
-                  {selectedDates.length > 1 && (
-                    <div style={{ marginBottom: 10 }}>
-                      <Tag active={applyToAllDates} onClick={() => setApplyToAllDates((v) => !v)} size="sm">
-                        {applyToAllDates ? "✓ " : ""}同時加到所有已選日期（{selectedDates.length} 天）
-                      </Tag>
-                    </div>
-                  )}
-
-                  <Button variant="primary" size="sm" fullWidth onClick={addCustom}>+ 加入此時段</Button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <Button variant="primary" size="sm" fullWidth onClick={addCustom}>+ 加入此時段</Button>
+                    {selectedDates.length > 1 && (
+                      <Button variant="secondary" size="sm" fullWidth onClick={addCustomToAll}>
+                        + 同時加到所有已選日期（{selectedDates.length} 天）
+                      </Button>
+                    )}
+                  </div>
 
                   {quickPresets.length > 0 && (
                     <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
@@ -359,6 +358,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                 setViewDate={setViewDate}
                 activeDate={activeDate}
                 setActiveDate={(d) => setActiveDate(d)}
+                isDateOnly={isDateOnly}
               />
             )}
 

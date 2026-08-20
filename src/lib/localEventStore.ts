@@ -1,7 +1,9 @@
-import express from "express";
-import path from "path";
-import fs from "fs";
-import { createServer as createViteServer } from "vite";
+// Client-only replacement for the old Express + data/events.json backend.
+// GitHub Pages only serves static files, so there is no server to talk to —
+// everything now lives in this browser's localStorage. That means each
+// device/browser has its own independent copy of "demo" data; there is no
+// cross-device sync. Fine for this prototype (see project notes), but a real
+// multi-device deployment would need an actual backend/database instead.
 import {
   EventData,
   CreateEventInput,
@@ -10,64 +12,57 @@ import {
   SubmitCommentInput,
   ParticipantResponse,
   EventComment,
-  TimeSlot
-} from "./src/types.js";
-import { isVotingOpen, isLinkExpired, canComment } from "./src/lib/eventStatus.js";
-import { sendCancellationEmail } from "./src/lib/mailer.server.js";
+  TimeSlot,
+} from "../types.js";
+import { isVotingOpen, isLinkExpired, canComment } from "./eventStatus.js";
 
-const app = express();
-const PORT = 3000;
+const STORAGE_KEY = "gathertime_events_db";
 
-app.use(express.json());
+// Demo events (fixed "demo-*" ids) are only written once, the first time a
+// browser has an empty store. Bump this whenever seedDemoEvents()'s content
+// changes so browsers that already seeded an older version pick up the fix —
+// otherwise the stale localStorage copy would silently outlive any source edit.
+const DEMO_SEED_VERSION_KEY = "gathertime_demo_seed_version";
+const DEMO_SEED_VERSION = "2";
 
-// File persistence setup
-const DATA_DIR = path.join(process.cwd(), "data");
-const DATA_FILE = path.join(DATA_DIR, "events.json");
-
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-let eventsMap: Map<string, EventData> = new Map();
-
-// Helper to generate simple unique IDs
 function generateId(prefix: string = ""): string {
   const randomStr = Math.random().toString(36).substring(2, 10);
   const timeStr = Date.now().toString(36);
   return prefix ? `${prefix}_${timeStr}${randomStr}` : `${timeStr}${randomStr}`;
 }
 
-// Load data from disk
-function loadEvents() {
+function loadEvents(): Map<string, EventData> {
+  const map = new Map<string, EventData>();
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, "utf-8");
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
       const data: EventData[] = JSON.parse(raw);
-      data.forEach((ev) => eventsMap.set(ev.id, ev));
-      console.log(`[Data] Loaded ${eventsMap.size} events from disk.`);
+      data.forEach((ev) => map.set(ev.id, ev));
     }
   } catch (err) {
     console.error("[Data] Failed to load events:", err);
   }
 
-  // If empty, seed a demo event so preview looks instantly alive!
-  if (eventsMap.size === 0) {
-    seedDemoEvent();
+  const seededVersion = localStorage.getItem(DEMO_SEED_VERSION_KEY);
+  if (map.size === 0 || seededVersion !== DEMO_SEED_VERSION) {
+    seedDemoEvents(map);
+    localStorage.setItem(DEMO_SEED_VERSION_KEY, DEMO_SEED_VERSION);
+    persist(map);
   }
+
+  return map;
 }
 
-// Save data to disk
-function saveEvents() {
+function persist(map: Map<string, EventData>) {
   try {
-    const list = Array.from(eventsMap.values());
-    fs.writeFileSync(DATA_FILE, JSON.stringify(list, null, 2), "utf-8");
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(map.values())));
   } catch (err) {
     console.error("[Data] Failed to save events:", err);
   }
 }
 
 // Day-offset helpers so seeded demo data always looks "current" relative to
-// whenever the server actually starts, instead of drifting into the past.
+// whenever the browser first loads it, instead of drifting into the past.
 function addDays(offsetDays: number): string {
   const d = new Date(Date.now() + offsetDays * 86400000);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -78,14 +73,14 @@ function addDaysIso(offsetDays: number, hour = 23, minute = 59): string {
   return d.toISOString();
 }
 
-function seedDemoEvent() {
+function seedDemoEvents(map: Map<string, EventData>) {
   // 1. 進行中・含時段候選 — normal collecting state, deadline still open.
   const slots: TimeSlot[] = [
-    { id: "slot_1", date: addDays(2), time: "12:00 - 14:00 (午餐)", label: "燒肉店聚餐" },
-    { id: "slot_2", date: addDays(2), time: "18:00 - 21:00 (晚餐)", label: "餐酒館小酌" },
-    { id: "slot_3", date: addDays(3), time: "14:00 - 17:00 (下午茶)", label: "甜點咖啡廳" },
-    { id: "slot_4", date: addDays(3), time: "18:00 - 21:00 (晚餐)", label: "火鍋吃到飽" },
-    { id: "slot_5", date: addDays(9), time: "18:00 - 21:00 (晚餐)", label: "週末熱炒夜" },
+    { id: "slot_1", date: addDays(2), time: "12:00", label: "燒肉店聚餐" },
+    { id: "slot_2", date: addDays(2), time: "18:00", label: "餐酒館小酌" },
+    { id: "slot_3", date: addDays(3), time: "14:00", label: "甜點咖啡廳" },
+    { id: "slot_4", date: addDays(3), time: "18:00", label: "火鍋吃到飽" },
+    { id: "slot_5", date: addDays(9), time: "18:00", label: "週末熱炒夜" },
   ];
   const responses: ParticipantResponse[] = [
     {
@@ -114,7 +109,7 @@ function seedDemoEvent() {
     { id: "cmt_2", nickname: "小明", message: "推燒肉店那個時段！", createdAt: new Date(Date.now() - 86400000).toISOString() },
     { id: "cmt_3", nickname: "Lily 莉莉", message: "+1 燒肉，晚餐時段也可以", createdAt: new Date(Date.now() - 3600000 * 5).toISOString() },
   ];
-  eventsMap.set("demo-gathering", {
+  map.set("demo-gathering", {
     id: "demo-gathering", hostToken: "demo-host-token-123",
     title: "八月好友暑期歡聚小酌隊",
     description: "很久沒聚聚囉！挑個週末大家有空的時間吃頓好的 🍻",
@@ -129,7 +124,7 @@ function seedDemoEvent() {
     { id: "d_2", date: addDays(4), time: "", label: "" },
     { id: "d_3", date: addDays(10), time: "", label: "" },
   ];
-  eventsMap.set("demo-date-only", {
+  map.set("demo-date-only", {
     id: "demo-date-only", hostToken: "demo-host-token-date-only",
     title: "部門秋季小旅行敲日期",
     description: "先喬出大家都有空的日子，細節之後再討論",
@@ -145,14 +140,14 @@ function seedDemoEvent() {
   });
 
   // 3. 投票已截止・尚未定案 — deadline already passed, host hasn't finalized yet.
-  eventsMap.set("demo-voting-closed", {
+  map.set("demo-voting-closed", {
     id: "demo-voting-closed", hostToken: "demo-host-token-closed",
     title: "老同學久違聚餐",
     description: "終於要約出來吃飯了！",
     hostName: "阿凱", mode: "time_slots", responseDeadline: addDaysIso(-2),
     slots: [
-      { id: "c_1", date: addDays(6), time: "18:30 - 21:00 (晚餐)", label: "日式居酒屋" },
-      { id: "c_2", date: addDays(7), time: "12:00 - 14:00 (午餐)", label: "義式餐廳" },
+      { id: "c_1", date: addDays(6), time: "18:30", label: "日式居酒屋" },
+      { id: "c_2", date: addDays(7), time: "12:00", label: "義式餐廳" },
     ],
     responses: [
       { id: "cp_1", nickname: "阿凱", availability: { c_1: "available", c_2: "if_needed" }, updatedAt: new Date(Date.now() - 86400000 * 4).toISOString() },
@@ -165,14 +160,14 @@ function seedDemoEvent() {
   });
 
   // 4. 已敲定・尚未舉辦 — finalized, meetup date still in the future.
-  eventsMap.set("demo-finalized-upcoming", {
+  map.set("demo-finalized-upcoming", {
     id: "demo-finalized-upcoming", hostToken: "demo-host-token-upcoming",
     title: "生日慶生趴",
     description: "壽星指定要吃火鍋！",
     hostName: "小雨", mode: "time_slots", responseDeadline: addDaysIso(-1),
     slots: [
-      { id: "u_1", date: addDays(7), time: "18:00 - 21:00 (晚餐)", label: "麻辣鍋" },
-      { id: "u_2", date: addDays(8), time: "18:00 - 21:00 (晚餐)", label: "石頭火鍋" },
+      { id: "u_1", date: addDays(7), time: "18:00", label: "麻辣鍋" },
+      { id: "u_2", date: addDays(8), time: "18:00", label: "石頭火鍋" },
     ],
     responses: [
       { id: "up_1", nickname: "小雨", availability: { u_1: "available", u_2: "if_needed" }, updatedAt: new Date(Date.now() - 86400000 * 3).toISOString() },
@@ -187,14 +182,14 @@ function seedDemoEvent() {
   });
 
   // 5. 活動已結束（3 天前）— finalized, meetup date 3 days in the past, within the 7-day grace window.
-  eventsMap.set("demo-finalized-ended", {
+  map.set("demo-finalized-ended", {
     id: "demo-finalized-ended", hostToken: "demo-host-token-ended",
     title: "週末露營活動",
     description: "新手露營團，裝備不夠可以跟團友借",
     hostName: "阿凱", mode: "time_slots", responseDeadline: addDaysIso(-10),
     slots: [
-      { id: "e_1", date: addDays(-3), time: "14:00 - 隔日 10:00 (過夜)", label: "溪畔營地" },
-      { id: "e_2", date: addDays(-2), time: "14:00 - 隔日 10:00 (過夜)", label: "溪畔營地（備案）" },
+      { id: "e_1", date: addDays(-3), time: "14:00", label: "溪畔營地" },
+      { id: "e_2", date: addDays(-2), time: "14:00", label: "溪畔營地（備案）" },
     ],
     responses: [
       { id: "ep_1", nickname: "阿凱", availability: { e_1: "available", e_2: "if_needed" }, updatedAt: new Date(Date.now() - 86400000 * 12).toISOString() },
@@ -206,13 +201,13 @@ function seedDemoEvent() {
     createdAt: new Date(Date.now() - 86400000 * 14).toISOString(), updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
   });
 
-  // 6. 連結已失效範例 — finalized, meetup date more than 7 days ago -> GET should 404.
-  eventsMap.set("demo-expired-link", {
+  // 6. 連結已失效範例 — finalized, meetup date more than 7 days ago -> lookup should 404.
+  map.set("demo-expired-link", {
     id: "demo-expired-link", hostToken: "demo-host-token-expired",
     title: "上個月的讀書會",
     description: "示範連結過期後的畫面",
     hostName: "書僮", mode: "time_slots", responseDeadline: addDaysIso(-17),
-    slots: [{ id: "x_1", date: addDays(-10), time: "19:00 - 21:00 (晚上)", label: "線上讀書會" }],
+    slots: [{ id: "x_1", date: addDays(-10), time: "19:00", label: "線上讀書會" }],
     responses: [
       { id: "xp_1", nickname: "書僮", availability: { x_1: "available" }, updatedAt: new Date(Date.now() - 86400000 * 19).toISOString() },
       { id: "xp_2", nickname: "小安", availability: { x_1: "available" }, updatedAt: new Date(Date.now() - 86400000 * 18).toISOString() },
@@ -223,12 +218,12 @@ function seedDemoEvent() {
   });
 
   // 7. 主揪已取消範例 — cancelled by the host before the meetup happened.
-  eventsMap.set("demo-cancelled", {
+  map.set("demo-cancelled", {
     id: "demo-cancelled", hostToken: "demo-host-token-cancelled",
     title: "颱風天爬山團",
     description: "臨時取消，改期再約",
     hostName: "阿凱", mode: "time_slots", responseDeadline: addDaysIso(-1),
-    slots: [{ id: "y_1", date: addDays(5), time: "08:00 - 12:00 (早上)", label: "象山步道" }],
+    slots: [{ id: "y_1", date: addDays(5), time: "08:00", label: "象山步道" }],
     responses: [
       { id: "yp_1", nickname: "阿凱", email: "kai@example.com", availability: { y_1: "available" }, updatedAt: new Date(Date.now() - 86400000 * 2).toISOString() },
       { id: "yp_2", nickname: "小玉", email: "yuyu@example.com", availability: { y_1: "available" }, updatedAt: new Date(Date.now() - 86400000).toISOString() },
@@ -239,30 +234,42 @@ function seedDemoEvent() {
     status: "cancelled", cancelledAt: new Date(Date.now() - 3600000 * 3).toISOString(),
     createdAt: new Date(Date.now() - 86400000 * 6).toISOString(), updatedAt: new Date(Date.now() - 3600000 * 3).toISOString(),
   });
-
-  saveEvents();
 }
 
-loadEvents();
+// --- "API" functions, mirroring the old Express routes 1:1 --- //
 
-// --- API ROUTES --- //
+export function getEvent(id: string, hostToken?: string): EventData & { isHost?: boolean } {
+  const events = loadEvents();
+  const event = events.get(id);
+  if (!event) {
+    throw new Error("找不到此活動，可能已被刪除或網址錯誤");
+  }
+  if (isLinkExpired(event)) {
+    throw new Error("此活動連結已失效（活動結束超過 7 天）");
+  }
 
-// 01. Create new event
-app.post("/api/events", (req, res) => {
-  const { title, description, hostName, hostEmail, mode, responseDeadline, slots } = req.body as CreateEventInput;
+  const isHost = Boolean(hostToken && hostToken === event.hostToken);
+  return {
+    ...event,
+    hostToken: isHost ? event.hostToken : undefined,
+    isHost,
+  };
+}
+
+export function createEvent(input: CreateEventInput): { event: EventData; hostToken: string } {
+  const { title, description, hostName, hostEmail, mode, responseDeadline, slots } = input;
 
   if (!title || !title.trim()) {
-    return res.status(400).json({ error: "請輸入活動名稱" });
+    throw new Error("請輸入活動名稱");
   }
-
   if (title.length > 30) {
-    return res.status(400).json({ error: "活動名稱不可超過 30 字" });
+    throw new Error("活動名稱不可超過 30 字");
   }
-
   if (!slots || !Array.isArray(slots) || slots.length === 0) {
-    return res.status(400).json({ error: "請至少新增一個候選時段" });
+    throw new Error("請至少新增一個候選時段");
   }
 
+  const events = loadEvents();
   const id = generateId("event");
   const hostToken = generateId("token");
 
@@ -290,85 +297,46 @@ app.post("/api/events", (req, res) => {
     updatedAt: new Date().toISOString(),
   };
 
-  eventsMap.set(id, newEvent);
-  saveEvents();
+  events.set(id, newEvent);
+  persist(events);
 
-  // Return created event with hostToken
-  return res.status(201).json({
-    event: newEvent,
-    hostToken,
-  });
-});
+  return { event: newEvent, hostToken };
+}
 
-// 02. Get event details
-app.get("/api/events/:id", (req, res) => {
-  const { id } = req.params;
-  const { hostToken } = req.query;
+export function submitResponse(id: string, input: SubmitResponseInput): { event: EventData; participantResponse: ParticipantResponse } {
+  const { participantId, nickname, email, availability, comment } = input;
 
-  const event = eventsMap.get(id);
+  const events = loadEvents();
+  const event = events.get(id);
   if (!event) {
-    return res.status(404).json({ error: "找不到此活動，可能已被刪除或網址錯誤" });
+    throw new Error("找不到此活動");
   }
-
-  if (isLinkExpired(event)) {
-    return res.status(404).json({ error: "此活動連結已失效（活動結束超過 7 天）" });
-  }
-
-  const isHost = Boolean(hostToken && hostToken === event.hostToken);
-
-  // Return event. Hide hostToken from non-host response for security.
-  const responseData = {
-    ...event,
-    hostToken: isHost ? event.hostToken : undefined,
-    isHost,
-  };
-
-  return res.json(responseData);
-});
-
-// 03. Submit / Update participant response
-app.post("/api/events/:id/respond", (req, res) => {
-  const { id } = req.params;
-  const { participantId, nickname, email, availability, comment } = req.body as SubmitResponseInput;
-
-  const event = eventsMap.get(id);
-  if (!event) {
-    return res.status(404).json({ error: "找不到此活動" });
-  }
-
   if (event.status === "cancelled") {
-    return res.status(400).json({ error: "此活動已由主揪取消，暫停接受新投票" });
+    throw new Error("此活動已由主揪取消，暫停接受新投票");
   }
-
   if (event.status === "finalized") {
-    return res.status(400).json({ error: "此活動時間已由主揪拍板定案，暫停接受新投票" });
+    throw new Error("此活動時間已由主揪拍板定案，暫停接受新投票");
   }
-
   if (!isVotingOpen(event)) {
-    return res.status(400).json({ error: "投票已截止，請聯繫主揪重新開放投票" });
+    throw new Error("投票已截止，請聯繫主揪重新開放投票");
   }
-
   if (!nickname || !nickname.trim()) {
-    return res.status(400).json({ error: "請輸入您的暱稱" });
+    throw new Error("請輸入您的暱稱");
   }
 
   const cleanNickname = nickname.trim();
   const now = new Date().toISOString();
 
-  let pId = participantId;
   let existingIndex = -1;
-
-  if (pId) {
-    existingIndex = event.responses.findIndex((r) => r.id === pId);
+  if (participantId) {
+    existingIndex = event.responses.findIndex((r) => r.id === participantId);
   }
-
   if (existingIndex === -1) {
-    // Also check if nickname already exists
     existingIndex = event.responses.findIndex((r) => r.nickname.toLowerCase() === cleanNickname.toLowerCase());
   }
 
   const newResponse: ParticipantResponse = {
-    id: existingIndex >= 0 ? event.responses[existingIndex].id : (pId || generateId("p")),
+    id: existingIndex >= 0 ? event.responses[existingIndex].id : (participantId || generateId("p")),
     nickname: cleanNickname,
     email: email ? email.trim() : "",
     availability: availability || {},
@@ -383,63 +351,30 @@ app.post("/api/events/:id/respond", (req, res) => {
   }
 
   event.updatedAt = now;
-  eventsMap.set(id, event);
-  saveEvents();
+  events.set(id, event);
+  persist(events);
 
-  return res.json({
-    message: "回覆已成功送出！",
-    participantResponse: newResponse,
-    event,
-  });
-});
+  return { event, participantResponse: newResponse };
+}
 
-// Remove a response (e.g. if participant wants to withdraw or host manages)
-app.delete("/api/events/:id/responses/:participantId", (req, res) => {
-  const { id, participantId } = req.params;
-  const { hostToken } = req.query;
+export function finalizeEvent(id: string, input: FinalizeEventInput): EventData {
+  const { hostToken, finalSlotId, finalNote } = input;
 
-  const event = eventsMap.get(id);
+  const events = loadEvents();
+  const event = events.get(id);
   if (!event) {
-    return res.status(404).json({ error: "找不到此活動" });
+    throw new Error("找不到此活動");
   }
-
-  const isHost = Boolean(hostToken && hostToken === event.hostToken);
-
-  const initialLength = event.responses.length;
-  event.responses = event.responses.filter((r) => r.id !== participantId);
-
-  if (event.responses.length === initialLength) {
-    return res.status(404).json({ error: "找不到該填寫紀錄" });
-  }
-
-  event.updatedAt = new Date().toISOString();
-  eventsMap.set(id, event);
-  saveEvents();
-
-  return res.json({ message: "已刪除該填寫紀錄", event });
-});
-
-// 04. Host confirms final time slot
-app.post("/api/events/:id/finalize", (req, res) => {
-  const { id } = req.params;
-  const { hostToken, finalSlotId, finalNote } = req.body as FinalizeEventInput;
-
-  const event = eventsMap.get(id);
-  if (!event) {
-    return res.status(404).json({ error: "找不到此活動" });
-  }
-
   if (event.hostToken !== hostToken) {
-    return res.status(403).json({ error: "主揪驗證失敗，您沒有此活動的管理權限" });
+    throw new Error("主揪驗證失敗，您沒有此活動的管理權限");
   }
-
   if (event.status === "cancelled") {
-    return res.status(400).json({ error: "此活動已取消，無法拍板定案" });
+    throw new Error("此活動已取消，無法拍板定案");
   }
 
   const targetSlot = event.slots.find((s) => s.id === finalSlotId);
   if (!targetSlot) {
-    return res.status(400).json({ error: "選擇的最終時段無效" });
+    throw new Error("選擇的最終時段無效");
   }
 
   event.status = "finalized";
@@ -447,33 +382,23 @@ app.post("/api/events/:id/finalize", (req, res) => {
   event.finalNote = finalNote ? finalNote.trim() : "";
   event.updatedAt = new Date().toISOString();
 
-  eventsMap.set(id, event);
-  saveEvents();
+  events.set(id, event);
+  persist(events);
+  return event;
+}
 
-  return res.json({
-    message: "最終聚會時間已確認定案！",
-    event,
-  });
-});
-
-// 05. Host re-open event (optional)
-app.post("/api/events/:id/reopen", (req, res) => {
-  const { id } = req.params;
-  const { hostToken, responseDeadline } = req.body;
-
-  const event = eventsMap.get(id);
+export function reopenEvent(id: string, hostToken: string, responseDeadline?: string): EventData {
+  const events = loadEvents();
+  const event = events.get(id);
   if (!event) {
-    return res.status(404).json({ error: "找不到此活動" });
+    throw new Error("找不到此活動");
   }
-
   if (event.hostToken !== hostToken) {
-    return res.status(403).json({ error: "主揪驗證失敗" });
+    throw new Error("主揪驗證失敗");
   }
 
   event.status = "active";
   event.finalSlotId = undefined;
-  // Make sure reopening always actually unlocks voting: honor a host-picked
-  // deadline, or push the old one forward if it had already passed.
   if (responseDeadline) {
     event.responseDeadline = new Date(responseDeadline).toISOString();
   } else if (!isVotingOpen({ ...event, status: "active" })) {
@@ -481,43 +406,33 @@ app.post("/api/events/:id/reopen", (req, res) => {
   }
   event.updatedAt = new Date().toISOString();
 
-  eventsMap.set(id, event);
-  saveEvents();
+  events.set(id, event);
+  persist(events);
+  return event;
+}
 
-  return res.json({
-    message: "活動已重新開放投票統計",
-    event,
-  });
-});
+export function submitComment(id: string, input: SubmitCommentInput): EventData {
+  const { nickname, message } = input;
 
-// 06. Post a comment (open to anyone as long as the link isn't expired)
-app.post("/api/events/:id/comments", (req, res) => {
-  const { id } = req.params;
-  const { nickname, message } = req.body as SubmitCommentInput;
-
-  const event = eventsMap.get(id);
+  const events = loadEvents();
+  const event = events.get(id);
   if (!event) {
-    return res.status(404).json({ error: "找不到此活動" });
+    throw new Error("找不到此活動");
   }
-
   if (isLinkExpired(event)) {
-    return res.status(404).json({ error: "此活動連結已失效（活動結束超過 7 天）" });
+    throw new Error("此活動連結已失效（活動結束超過 7 天）");
   }
-
   if (!canComment(event)) {
-    return res.status(400).json({ error: "此活動目前無法留言" });
+    throw new Error("此活動目前無法留言");
   }
-
   if (!nickname || !nickname.trim()) {
-    return res.status(400).json({ error: "請輸入您的暱稱" });
+    throw new Error("請輸入您的暱稱");
   }
-
   if (!message || !message.trim()) {
-    return res.status(400).json({ error: "請輸入留言內容" });
+    throw new Error("請輸入留言內容");
   }
-
   if (message.trim().length > 300) {
-    return res.status(400).json({ error: "留言內容不可超過 300 字" });
+    throw new Error("留言內容不可超過 300 字");
   }
 
   const comment: EventComment = {
@@ -531,32 +446,22 @@ app.post("/api/events/:id/comments", (req, res) => {
   event.comments.push(comment);
   event.updatedAt = comment.createdAt;
 
-  eventsMap.set(id, event);
-  saveEvents();
+  events.set(id, event);
+  persist(events);
+  return event;
+}
 
-  return res.json({
-    message: "留言已送出",
-    comment,
-    event,
-  });
-});
-
-// 07. Host cancels the event at any stage — notifies everyone who left an email
-app.post("/api/events/:id/cancel", async (req, res) => {
-  const { id } = req.params;
-  const { hostToken } = req.body;
-
-  const event = eventsMap.get(id);
+export function cancelEvent(id: string, hostToken: string): EventData {
+  const events = loadEvents();
+  const event = events.get(id);
   if (!event) {
-    return res.status(404).json({ error: "找不到此活動" });
+    throw new Error("找不到此活動");
   }
-
   if (event.hostToken !== hostToken) {
-    return res.status(403).json({ error: "主揪驗證失敗，您沒有此活動的管理權限" });
+    throw new Error("主揪驗證失敗，您沒有此活動的管理權限");
   }
-
   if (event.status === "cancelled") {
-    return res.status(400).json({ error: "此活動已經取消" });
+    throw new Error("此活動已經取消");
   }
 
   const now = new Date().toISOString();
@@ -564,47 +469,7 @@ app.post("/api/events/:id/cancel", async (req, res) => {
   event.cancelledAt = now;
   event.updatedAt = now;
 
-  eventsMap.set(id, event);
-  saveEvents();
-
-  const recipients = event.responses.filter((r) => r.email && r.email.trim());
-  await Promise.all(
-    recipients.map((r) =>
-      sendCancellationEmail({
-        to: r.email!.trim(),
-        nickname: r.nickname,
-        eventTitle: event.title,
-        hostName: event.hostName,
-      })
-    )
-  );
-
-  return res.json({
-    message: "活動已取消，通知已發送給留下 Email 的參與者",
-    event,
-    notifiedCount: recipients.length,
-  });
-});
-
-// Serve frontend / Vite integration
-async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
-  }
-
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`[Server] Gathering Coordinator running on http://localhost:${PORT}`);
-  });
+  events.set(id, event);
+  persist(events);
+  return event;
 }
-
-startServer();

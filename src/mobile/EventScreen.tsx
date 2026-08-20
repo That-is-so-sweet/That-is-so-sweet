@@ -105,9 +105,9 @@ export const EventScreen: React.FC<EventScreenProps> = ({
           <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
           <span style={{ fontSize: 11, fontWeight: 800, color: lifecycle.color, whiteSpace: "nowrap" }}>{lifecycle.label}</span>
           <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
-          <Tag size="sm" emoji={event.mode === "date_only" ? <CalendarDays size={12} /> : <Clock size={12} />}>
+          {/* <Tag size="sm" emoji={event.mode === "date_only" ? <CalendarDays size={12} /> : <Clock size={12} />}>
             {event.mode === "date_only" ? "僅選日期" : "含時段"}
-          </Tag>
+          </Tag> */}
           {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
         </div>
       </div>
@@ -115,25 +115,29 @@ export const EventScreen: React.FC<EventScreenProps> = ({
       {event.status === "cancelled" ? (
         <div style={{ flex: 1, overflowY: "auto" }}>
           <CancelledView event={event} />
-          <div style={{ padding: "0 14px 14px" }}>
+          <div style={{ marginTop: 10, borderTop: "8px solid var(--color-cream)", padding: "16px 14px 14px" }}>
             <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
           </div>
         </div>
       ) : event.status === "finalized" ? (
         <div style={{ flex: 1, overflowY: "auto" }}>
           <FinalizedView event={event} isHost={isHost} onReopen={onReopen} onCancelEvent={isHost ? onCancelEvent : undefined} isLoading={isLoading} onCopySuccess={onCopySuccess} />
-          <div style={{ padding: "0 14px 14px" }}>
+          <div style={{ marginTop: 10, borderTop: "8px solid var(--color-cream)", padding: "16px 14px 14px" }}>
             <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
           </div>
         </div>
       ) : (
         <div style={{ flex: 1, overflowY: "auto" }}>
-          {tab === "vote" && (
-            <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} />
-          )}
-          {tab === "heatmap" && <HeatmapTab event={event} userNickname={nickname} onGoToVote={() => setTab("vote")} />}
-          {tab === "host" && isHost && <HostTab event={event} onFinalize={onFinalize} onReopen={onReopen} onCancelEvent={onCancelEvent} isLoading={isLoading} />}
-          <div style={{ padding: "0 14px 14px" }}>
+          {/* Tab-switchable block: whichever tab is active renders here. Comment board
+              below is a separate block, outside this switch, so it never changes with the tab. */}
+          <div>
+            {tab === "vote" && (
+              <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setTab("heatmap")} />
+            )}
+            {tab === "heatmap" && <HeatmapTab event={event} userNickname={nickname} onGoToVote={() => setTab("vote")} />}
+            {tab === "host" && isHost && <HostTab event={event} onFinalize={onFinalize} onReopen={onReopen} onCancelEvent={onCancelEvent} isLoading={isLoading} />}
+          </div>
+          <div style={{ marginTop: 10, borderTop: "8px solid var(--color-cream)", padding: "16px 14px 14px" }}>
             <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
           </div>
         </div>

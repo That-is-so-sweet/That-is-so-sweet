@@ -12,6 +12,7 @@ interface MonthCalendarProps {
   slots?: Omit<TimeSlot, "id">[];
   activeDate?: string | null;
   onActiveDateChange?: (d: string) => void;
+  isDateOnly?: boolean;
 }
 
 const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
@@ -24,6 +25,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   slots,
   activeDate,
   onActiveDateChange,
+  isDateOnly,
 }) => {
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -223,7 +225,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                   }}
                 />
               )}
-              {active && cnt > 0 && (
+              {active && !isDateOnly && cnt > 0 && (
                 <span
                   style={{
                     position: "absolute",
@@ -245,7 +247,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                   {cnt}
                 </span>
               )}
-              {active && cnt === 0 && (
+              {active && !isDateOnly && cnt === 0 && (
                 <span
                   title="尚未選擇時段"
                   style={{

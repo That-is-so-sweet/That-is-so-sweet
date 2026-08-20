@@ -154,6 +154,7 @@ export default function App() {
       addToast("success", "您的時間已成功記錄與更新！");
     } catch (err: any) {
       addToast("error", err.message || "送出時間失敗");
+      throw err;
     } finally {
       setIsLoading(false);
     }
@@ -197,7 +198,7 @@ export default function App() {
     try {
       const updated = await cancelEvent(currentEventId, currentHostToken);
       setEventData(updated);
-      addToast("info", "活動已取消，通知信已發送給留下 Email 的參與者");
+      addToast("info", "活動已取消");
     } catch (err: any) {
       addToast("error", err.message || "取消活動失敗");
     } finally {

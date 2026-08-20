@@ -4,8 +4,8 @@ export interface DemoEventInfo {
   desc: string;
 }
 
-// Fixed set of seeded scenarios (see server.ts's seedDemoEvent) so people can
-// jump straight into any lifecycle state without having to create it first.
+// Fixed set of seeded scenarios (see localEventStore.ts's seedDemoEvents) so
+// people can jump straight into any lifecycle state without creating it first.
 export const DEMO_EVENTS: DemoEventInfo[] = [
   { id: "demo-gathering", label: "進行中・含時段", desc: "多個候選時段，正在收集投票" },
   { id: "demo-date-only", label: "進行中・僅選日期", desc: "簡化模式：參與者只需勾選日期" },

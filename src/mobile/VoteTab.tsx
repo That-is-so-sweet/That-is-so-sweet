@@ -4,7 +4,7 @@ import { EventData, AvailabilityStatus, SubmitResponseInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { isVotingOpen, formatDeadline } from "../lib/eventStatus";
 import { Button, Input } from "../design-system/components";
-import { cardStyle, navBtnStyle, quickBtnStyle, STATUS_META } from "./mobileStyles";
+import { cardStyle, MonthNavButton, countInAdjacentMonth, quickBtnStyle, STATUS_META } from "./mobileStyles";
 
 interface VoteTabProps {
   event: EventData;
@@ -14,13 +14,14 @@ interface VoteTabProps {
   setEmail: (v: string) => void;
   onSubmit: (input: SubmitResponseInput) => Promise<void>;
   isLoading: boolean;
+  onSubmitted?: () => void;
 }
 
 interface VoteRowProps {
   slot: EventData["slots"][number];
   status: AvailabilityStatus;
   onChange: (id: string, status: AvailabilityStatus) => void;
-  hideTime?: boolean;
+  primaryText?: string;
   disabled?: boolean;
 }
 
@@ -41,11 +42,11 @@ const BULK_TARGETS: BulkTarget[] = [
 ];
 
 const VoteRow: React.FC<VoteRowProps> = (props) => {
-  const { slot, status, onChange, hideTime, disabled } = props;
+  const { slot, status, onChange, primaryText, disabled } = props;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--color-border)", opacity: disabled ? 0.55 : 1 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>{hideTime ? "是否有空？" : slot.time}</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>{primaryText ?? slot.time}</div>
         {slot.label && <div style={{ fontSize: 10, color: "var(--color-muted)" }}>{slot.label}</div>}
       </div>
       <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
@@ -79,7 +80,7 @@ const VoteRow: React.FC<VoteRowProps> = (props) => {
   );
 };
 
-export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, email, setEmail, onSubmit, isLoading }) => {
+export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, email, setEmail, onSubmit, isLoading, onSubmitted }) => {
   const [comment, setComment] = useState("");
   const [availability, setAvailability] = useState<Record<string, AvailabilityStatus>>({});
   const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
@@ -145,15 +146,20 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
 
   const handleChange = (id: string, st: AvailabilityStatus): void => setAvailability((p) => ({ ...p, [id]: st }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!nickname.trim()) return;
-    onSubmit({
-      participantId: editingParticipantId || undefined,
-      nickname: nickname.trim(),
-      email: email.trim(),
-      availability,
-      comment: comment.trim(),
-    });
+    try {
+      await onSubmit({
+        participantId: editingParticipantId || undefined,
+        nickname: nickname.trim(),
+        email: email.trim(),
+        availability,
+        comment: comment.trim(),
+      });
+      onSubmitted?.();
+    } catch {
+      // onSubmit already surfaces the failure (e.g. an error toast); nothing more to do here.
+    }
   };
 
   const calYear = calViewDate.getFullYear();
@@ -163,6 +169,8 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
   const calDateStr = (d: number) => `${calYear}-${String(calMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   const calCells: (number | null)[] = [...Array(calStartDay).fill(null), ...Array.from({ length: calDaysInMonth }, (_, i) => i + 1)];
   const dateSet = new Set(allDates);
+  const calPrevCount = countInAdjacentMonth(event.slots, calYear, calMonth, -1);
+  const calNextCount = countInAdjacentMonth(event.slots, calYear, calMonth, 1);
 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -177,7 +185,145 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
       <Input size="sm" label="您的暱稱" required placeholder="例如：小明" value={nickname} onChange={(e) => setNickname(e.target.value)} />
       <Input size="sm" label="聯絡 Email" placeholder="例如：name@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
 
-      <div>
+      <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3 }}>
+        {[{ k: "list" as const, label: "清單檢視", icon: List }, { k: "calendar" as const, label: "行事曆檢視", icon: CalendarDays }].map((m) => (
+          <button
+            key={m.k}
+            onClick={() => setViewMode(m.k)}
+            style={{
+              flex: 1,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 4,
+              padding: "7px 4px",
+              borderRadius: "var(--radius-sm)",
+              fontSize: 12,
+              fontWeight: 800,
+              border: "none",
+              cursor: "pointer",
+              background: viewMode === m.k ? "var(--color-primary)" : "transparent",
+              color: viewMode === m.k ? "#fff" : "var(--color-ink)",
+              transition: "background 150ms ease, color 150ms ease",
+            }}
+          >
+            <m.icon size={12} />
+            {m.label}
+          </button>
+        ))}
+      </div>
+
+      {viewMode === "list" && (
+        <div style={cardStyle}>
+          {(Object.entries(grouped) as [string, EventData["slots"]][]).map(([date, list]) => (
+            <div key={date} style={{ marginBottom: 6 }}>
+              {!isDateOnly && (
+                <div style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)", padding: "4px 0" }}>
+                  {date} ({formatChineseWeekday(date)})
+                </div>
+              )}
+              {list.map((s) => {
+                const status: AvailabilityStatus = availability[s.id] || "available";
+                return (
+                  <VoteRow
+                    key={s.id}
+                    slot={s}
+                    status={status}
+                    onChange={handleChange}
+                    primaryText={isDateOnly ? `${date} (${formatChineseWeekday(date)})` : undefined}
+                    disabled={votingClosed}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {viewMode === "calendar" && (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
+            <MonthNavButton direction="prev" onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))} badgeCount={calPrevCount} />
+            <div style={{ fontSize: 12, fontWeight: 800, fontFamily: "var(--font-display)" }}>{calYear}年{calMonth + 1}月</div>
+            <MonthNavButton direction="next" onClick={() => setCalViewDate(new Date(calYear, calMonth + 1, 1))} badgeCount={calNextCount} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
+            {WEEK.map((w, i) => (
+              <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-hot)" : "var(--color-muted)" }}>
+                {w}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+            {calCells.map((d, i) => {
+              if (d === null) return <div key={i} />;
+              const ds = calDateStr(d);
+              const hasSlots = dateSet.has(ds);
+              const dateSlots = hasSlots ? grouped[ds] || [] : [];
+              const statuses = dateSlots.map((s) => availability[s.id] || "available");
+              const isActive = ds === calActiveDate;
+              return (
+                <button
+                  key={i}
+                  disabled={!hasSlots}
+                  onClick={() => setCalActiveDate(ds)}
+                  style={{
+                    position: "relative",
+                    aspectRatio: "1",
+                    border: isActive ? "2px solid var(--color-primary)" : "1px solid transparent",
+                    borderRadius: "var(--radius-md)",
+                    background: hasSlots ? "var(--color-cream)" : "transparent",
+                    color: hasSlots ? "var(--color-ink)" : "var(--color-border)",
+                    fontSize: 11,
+                    fontWeight: hasSlots ? 800 : 400,
+                    cursor: hasSlots ? "pointer" : "default",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 3,
+                    padding: "4px 0",
+                  }}
+                >
+                  <span>{d}</span>
+                  {hasSlots && (
+                    <span style={{ display: "flex", gap: 1.5 }}>
+                      {statuses.slice(0, 4).map((st, idx) => (
+                        <span key={idx} style={{ width: 4, height: 4, borderRadius: "50%", background: STATUS_META[st].color }} />
+                      ))}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {calActiveDate && (
+            <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
+              {!isDateOnly && (
+                <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 6 }}>
+                  {calActiveDate} ({formatChineseWeekday(calActiveDate)})
+                </div>
+              )}
+              {(grouped[calActiveDate] || []).map((s) => {
+                const status: AvailabilityStatus = availability[s.id] || "available";
+                return (
+                  <VoteRow
+                    key={s.id}
+                    slot={s}
+                    status={status}
+                    onChange={handleChange}
+                    primaryText={isDateOnly ? `${calActiveDate} (${formatChineseWeekday(calActiveDate)})` : undefined}
+                    disabled={votingClosed}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-md)", overflow: "hidden", background: "#fff" }}>
         <button
           onClick={() => setToolsOpen((v) => !v)}
           style={{
@@ -188,9 +334,9 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
             gap: 5,
             fontSize: 11,
             fontWeight: 700,
-            padding: "7px 0",
-            borderRadius: "var(--radius-md)",
-            border: "1px dashed var(--color-border-strong)",
+            padding: "9px 0",
+            border: "none",
+            borderBottom: toolsOpen ? "1px solid var(--color-border)" : "none",
             background: toolsOpen ? "var(--color-cream)" : "#fff",
             color: "var(--color-muted)",
             cursor: "pointer",
@@ -202,7 +348,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
         </button>
 
         {toolsOpen && (
-          <div style={{ marginTop: 10, ...cardStyle, padding: 10 }}>
+          <div style={{ padding: 10 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>套用對象（依星期批次勾選）</div>
             <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
               {BULK_TARGETS.slice(0, 3).map((t) => {
@@ -279,122 +425,6 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
           </div>
         )}
       </div>
-
-      <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3 }}>
-        {[{ k: "list" as const, label: "清單檢視", icon: List }, { k: "calendar" as const, label: "行事曆檢視", icon: CalendarDays }].map((m) => (
-          <button
-            key={m.k}
-            onClick={() => setViewMode(m.k)}
-            style={{
-              flex: 1,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              padding: "7px 4px",
-              borderRadius: "var(--radius-sm)",
-              fontSize: 12,
-              fontWeight: 800,
-              border: "none",
-              cursor: "pointer",
-              background: viewMode === m.k ? "var(--color-primary)" : "transparent",
-              color: viewMode === m.k ? "#fff" : "var(--color-ink)",
-              transition: "background 150ms ease, color 150ms ease",
-            }}
-          >
-            <m.icon size={12} />
-            {m.label}
-          </button>
-        ))}
-      </div>
-
-      {viewMode === "list" && (
-        <div style={cardStyle}>
-          {(Object.entries(grouped) as [string, EventData["slots"]][]).map(([date, list]) => (
-            <div key={date} style={{ marginBottom: 6 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)", padding: "4px 0" }}>
-                {date} ({formatChineseWeekday(date)})
-              </div>
-              {list.map((s) => {
-                const status: AvailabilityStatus = availability[s.id] || "available";
-                return <VoteRow key={s.id} slot={s} status={status} onChange={handleChange} hideTime={isDateOnly} disabled={votingClosed} />;
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {viewMode === "calendar" && (
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
-            <button style={navBtnStyle} onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))}>‹</button>
-            <div style={{ fontSize: 12, fontWeight: 800, fontFamily: "var(--font-display)" }}>{calYear}年{calMonth + 1}月</div>
-            <button style={navBtnStyle} onClick={() => setCalViewDate(new Date(calYear, calMonth + 1, 1))}>›</button>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
-            {WEEK.map((w, i) => (
-              <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-hot)" : "var(--color-muted)" }}>
-                {w}
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
-            {calCells.map((d, i) => {
-              if (d === null) return <div key={i} />;
-              const ds = calDateStr(d);
-              const hasSlots = dateSet.has(ds);
-              const dateSlots = hasSlots ? grouped[ds] || [] : [];
-              const statuses = dateSlots.map((s) => availability[s.id] || "available");
-              const isActive = ds === calActiveDate;
-              return (
-                <button
-                  key={i}
-                  disabled={!hasSlots}
-                  onClick={() => setCalActiveDate(ds)}
-                  style={{
-                    position: "relative",
-                    aspectRatio: "1",
-                    border: isActive ? "2px solid var(--color-primary)" : "1px solid transparent",
-                    borderRadius: "var(--radius-md)",
-                    background: hasSlots ? "var(--color-cream)" : "transparent",
-                    color: hasSlots ? "var(--color-ink)" : "var(--color-border)",
-                    fontSize: 11,
-                    fontWeight: hasSlots ? 800 : 400,
-                    cursor: hasSlots ? "pointer" : "default",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 3,
-                    padding: "4px 0",
-                  }}
-                >
-                  <span>{d}</span>
-                  {hasSlots && (
-                    <span style={{ display: "flex", gap: 1.5 }}>
-                      {statuses.slice(0, 4).map((st, idx) => (
-                        <span key={idx} style={{ width: 4, height: 4, borderRadius: "50%", background: STATUS_META[st].color }} />
-                      ))}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {calActiveDate && (
-            <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-              <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 6 }}>
-                {calActiveDate} ({formatChineseWeekday(calActiveDate)})
-              </div>
-              {(grouped[calActiveDate] || []).map((s) => {
-                const status: AvailabilityStatus = availability[s.id] || "available";
-                return <VoteRow key={s.id} slot={s} status={status} onChange={handleChange} hideTime={isDateOnly} disabled={votingClosed} />;
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
       <Input size="sm" label="給主揪的話" placeholder="例如：19:00 才能到" value={comment} onChange={(e) => setComment(e.target.value)} />
       <Button variant="dark" fullWidth disabled={!nickname.trim() || isLoading || votingClosed} onClick={handleSubmit}>

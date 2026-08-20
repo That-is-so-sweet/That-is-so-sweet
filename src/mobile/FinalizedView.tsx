@@ -20,7 +20,6 @@ interface FinalizedViewProps {
 export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onReopen, onCancelEvent, isLoading, onCopySuccess }) => {
   const [reopening, setReopening] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const notifyCount = event.responses.filter((r) => r.email && r.email.trim()).length;
   const slot = event.slots.find((s) => s.id === event.finalSlotId) || event.slots[0];
   const attending = event.responses.filter((r) => r.availability[slot.id] === "available").map((r) => r.nickname);
   const isDateOnly = event.mode === "date_only";
@@ -175,7 +174,6 @@ ${isDateOnly ? "" : `⏰ 時間：${slot.time}\n`}${event.finalNote ? `💬 備�
       {cancelling && onCancelEvent && (
         <CancelEventModal
           eventTitle={event.title}
-          notifyCount={notifyCount}
           isLoading={isLoading}
           onCancel={() => setCancelling(false)}
           onConfirm={() => {
