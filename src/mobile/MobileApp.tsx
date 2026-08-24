@@ -1,5 +1,5 @@
 import React from "react";
-import { EventData, CreateEventInput, SubmitResponseInput, SubmitCommentInput, ToastMessage } from "../types";
+import { EventData, CreateEventInput, SubmitResponseInput, SubmitCommentInput, UpdateEventInput, ToastMessage } from "../types";
 import { VisitedEventItem } from "../lib/api";
 import { CreateWizard } from "./CreateWizard";
 import { EventScreen } from "./EventScreen";
@@ -11,7 +11,7 @@ interface MobileAppProps {
   currentEventId: string | null;
   eventData: EventData | null;
   currentHostToken: string | null;
-  initialTab: "vote" | "heatmap" | "host" | null;
+  initialTab: "vote" | "heatmap" | null;
   isLoading: boolean;
   pageError: string | null;
   onGoHome: () => void;
@@ -20,6 +20,7 @@ interface MobileAppProps {
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
   onReopen: (newDeadline?: string) => Promise<void>;
   onCancelEvent: () => Promise<void>;
+  onUpdateEvent?: (input: Omit<UpdateEventInput, "hostToken">) => Promise<void>;
   onSubmitComment: (input: SubmitCommentInput) => Promise<void>;
   isShareModalOpen: boolean;
   setIsShareModalOpen: (open: boolean) => void;
@@ -45,6 +46,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
   onFinalize,
   onReopen,
   onCancelEvent,
+  onUpdateEvent,
   onSubmitComment,
   isShareModalOpen,
   setIsShareModalOpen,
@@ -105,6 +107,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
             onFinalize={onFinalize}
             onReopen={onReopen}
             onCancelEvent={onCancelEvent}
+            onUpdateEvent={onUpdateEvent}
             onSubmitComment={onSubmitComment}
             onNewEvent={onGoHome}
             onOpenShare={() => setIsShareModalOpen(true)}
