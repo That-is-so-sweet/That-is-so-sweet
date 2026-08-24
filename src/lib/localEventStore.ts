@@ -10,6 +10,7 @@ import {
   SubmitResponseInput,
   FinalizeEventInput,
   SubmitCommentInput,
+  UpdateEventInput,
   ParticipantResponse,
   EventComment,
   TimeSlot,
@@ -305,7 +306,7 @@ export function createEvent(input: CreateEventInput): { event: EventData; hostTo
 }
 
 export function submitResponse(id: string, input: SubmitResponseInput): { event: EventData; participantResponse: ParticipantResponse } {
-  const { participantId, nickname, email, availability, comment } = input;
+  const { participantId, nickname, email, password, availability, comment } = input;
 
   const events = loadEvents();
   const event = events.get(id);
@@ -336,10 +337,20 @@ export function submitResponse(id: string, input: SubmitResponseInput): { event:
     existingIndex = event.responses.findIndex((r) => r.nickname.toLowerCase() === cleanNickname.toLowerCase());
   }
 
+  // 比對到既有回覆時，如果那筆回覆有設密碼，送出的密碼必須完全相符才能覆蓋——
+  // 不管是靠 participantId 還是暱稱比對到的，都套用同一個檢查，避免有人偽造
+  // participantId 繞過暱稱層級的密碼保護。
+  const existing = existingIndex >= 0 ? event.responses[existingIndex] : undefined;
+  if (existing?.password && existing.password !== password) {
+    throw new Error("此暱稱已被使用，密碼不正確");
+  }
+
   const newResponse: ParticipantResponse = {
-    id: existingIndex >= 0 ? event.responses[existingIndex].id : (participantId || generateId("p")),
+    id: existing ? existing.id : (participantId || generateId("p")),
     nickname: cleanNickname,
     email: email ? email.trim() : "",
+    // 密碼一旦設定就不可修改：既有回覆一律沿用原本的密碼，只有全新回覆才會採用這次送出的密碼。
+    password: existing ? existing.password : (password ? password.trim() : undefined),
     availability: availability || {},
     comment: comment ? comment.trim() : "",
     updatedAt: now,
@@ -469,6 +480,49 @@ export function cancelEvent(id: string, hostToken: string): EventData {
   event.status = "cancelled";
   event.cancelledAt = now;
   event.updatedAt = now;
+
+  events.set(id, event);
+  persist(events);
+  return event;
+}
+
+export function updateEvent(id: string, input: UpdateEventInput): EventData {
+  const { hostToken, title, description, location, hostName, hostEmail, responseDeadline } = input;
+
+  const events = loadEvents();
+  const event = events.get(id);
+  if (!event) {
+    throw new Error("找不到此活動");
+  }
+  if (event.hostToken !== hostToken) {
+    throw new Error("主揪驗證失敗，您沒有此活動的管理權限");
+  }
+
+  if (title !== undefined) {
+    if (!title.trim()) {
+      throw new Error("請輸入活動名稱");
+    }
+    if (title.length > 30) {
+      throw new Error("活動名稱不可超過 30 字");
+    }
+    event.title = title.trim();
+  }
+  if (description !== undefined) {
+    event.description = description.trim();
+  }
+  if (location !== undefined) {
+    event.location = location.text.trim() ? { text: location.text.trim(), url: location.url } : undefined;
+  }
+  if (hostName !== undefined) {
+    event.hostName = hostName.trim();
+  }
+  if (hostEmail !== undefined) {
+    event.hostEmail = hostEmail.trim();
+  }
+  if (responseDeadline !== undefined) {
+    event.responseDeadline = new Date(responseDeadline).toISOString();
+  }
+  event.updatedAt = new Date().toISOString();
 
   events.set(id, event);
   persist(events);
