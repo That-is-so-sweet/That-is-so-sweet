@@ -13,6 +13,7 @@ export interface ParticipantResponse {
   id: string;
   nickname: string;
   email?: string;
+  password?: string; // 選填，明文防呆用途（非加密驗證），一旦設定不可修改
   availability: Record<string, AvailabilityStatus>; // slotId -> status
   comment?: string;
   updatedAt: string;
@@ -66,6 +67,7 @@ export interface SubmitResponseInput {
   participantId?: string; // If re-editing
   nickname: string;
   email?: string;
+  password?: string;
   availability: Record<string, AvailabilityStatus>;
   comment?: string;
 }
@@ -83,6 +85,16 @@ export interface SubmitCommentInput {
 
 export interface CancelEventInput {
   hostToken: string;
+}
+
+export interface UpdateEventInput {
+  hostToken: string;
+  title?: string;
+  description?: string;
+  location?: EventLocation;
+  hostName?: string;
+  hostEmail?: string;
+  responseDeadline?: string;
 }
 
 export interface ToastMessage {
