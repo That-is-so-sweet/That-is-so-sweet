@@ -65,6 +65,7 @@ export const CommentBoard: React.FC<CommentBoardProps> = ({ event, nickname, set
             <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)" }}>
               留言內容<span style={{ color: "var(--color-primary)", marginLeft: 4 }}>*</span>
             </label>
+            <div style={{ fontSize: 11, color: "var(--color-muted)" }}>在這邊留言會被寄信喔，請留下想讓大家看到的內容。</div>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}

@@ -111,13 +111,11 @@ export const EventView: React.FC<EventViewProps> = ({
           </>
         ) : (
           <>
-            {/* view-switchable block: whichever view is active renders here. Comment board
-                below is a separate block, outside this switch, so it never changes with the view. */}
-            <div>
-              {view === "identify_vote" && (
-                <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} />
-              )}
-              {view === "heatmap" && (
+            {view === "identify_vote" && (
+              <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} />
+            )}
+            {view === "heatmap" && (
+              <>
                 <HeatmapTab
                   event={event}
                   userNickname={nickname}
@@ -129,11 +127,11 @@ export const EventView: React.FC<EventViewProps> = ({
                   onUpdateEvent={onUpdateEvent}
                   isLoading={isLoading}
                 />
-              )}
-            </div>
-            <div style={{ marginTop: 12, borderTop: "8px solid var(--color-cream)", padding: "20px 20px 20px" }}>
-              <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
-            </div>
+                <div style={{ marginTop: 12, borderTop: "8px solid var(--color-cream)", padding: "20px 20px 20px" }}>
+                  <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

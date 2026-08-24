@@ -371,6 +371,9 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
           批次快速勾選
           {toolsOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </button>
+        <div style={{ padding: "6px 10px", fontSize: 10, color: "var(--color-muted)", textAlign: "center", borderTop: toolsOpen ? "none" : "1px solid var(--color-border)" }}>
+          依星期批次套用選項，例如一次把週末都設成「有空」
+        </div>
 
         {toolsOpen && (
           <div style={{ padding: 10 }}>

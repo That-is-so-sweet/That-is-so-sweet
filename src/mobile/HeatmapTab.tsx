@@ -85,6 +85,8 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   const [showAllTop, setShowAllTop] = useState(false);
   const [expandedSlotId, setExpandedSlotId] = useState<string | null>(null);
   const toggleExpand = (id: string) => setExpandedSlotId((cur) => (cur === id ? null : id));
+  const [rosterOpen, setRosterOpen] = useState(false);
+  const [dangerOpen, setDangerOpen] = useState(false);
   // 主辦人操作區塊的 state（原本是 HostTab.tsx 的內容，併入這個檔案）
   const [selectedFinalSlotId, setSelectedFinalSlotId] = useState<string | undefined>(event.slots[0]?.id);
   const noteDefaultLines = [
@@ -137,44 +139,40 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   const calNextCount = countInAdjacentMonth(event.slots, calYear, calMonth, 1);
 
   return (
-    <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={cardStyle}>
-        <SectionLabel title="活動資訊" />
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)", flexWrap: "wrap" }}>
-            <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
-            狀態：{lifecycle.label}
-            <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
-          </div>
+    <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "0 2px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--color-muted)", flexWrap: "wrap" }}>
+          <span style={{ width: 6, height: 6, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
+          {lifecycle.label}
+          <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
           {event.responseDeadline && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)" }}>
-              <Clock size={12} color="var(--color-muted)" style={{ flexShrink: 0 }} />
-              投票截止：{formatDeadline(event.responseDeadline)}
-              <span style={{ color: "var(--color-muted)" }}>（{formatRemaining(event.responseDeadline)}）</span>
-            </div>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+              <Clock size={11} color="var(--color-muted)" style={{ flexShrink: 0 }} />
+              {formatDeadline(event.responseDeadline)}（{formatRemaining(event.responseDeadline)}）
+            </span>
           )}
           {event.hostName && (
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--color-ink)" }}>
-              <User size={12} color="var(--color-muted)" style={{ flexShrink: 0 }} />
-              主揪：{event.hostName}
-            </div>
-          )}
-          {event.location && (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "var(--color-ink)", lineHeight: 1.5 }}>
-              <MapPin size={12} color="var(--color-muted)" style={{ flexShrink: 0, marginTop: 2 }} />
-              {event.location.url ? (
-                <a href={event.location.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-primary)", fontWeight: 700 }}>
-                  {event.location.text}
-                </a>
-              ) : (
-                <span>{event.location.text}</span>
-              )}
-            </div>
-          )}
-          {event.description && (
-            <div style={{ fontSize: 12, color: "var(--color-ink)", lineHeight: 1.5 }}>{event.description}</div>
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
+              <User size={11} color="var(--color-muted)" style={{ flexShrink: 0 }} />
+              {event.hostName}
+            </span>
           )}
         </div>
+        {event.location && (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 5, fontSize: 12, color: "var(--color-ink)", lineHeight: 1.4 }}>
+            <MapPin size={12} color="var(--color-muted)" style={{ flexShrink: 0, marginTop: 2 }} />
+            {event.location.url ? (
+              <a href={event.location.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-primary)", fontWeight: 700 }}>
+                {event.location.text}
+              </a>
+            ) : (
+              <span>{event.location.text}</span>
+            )}
+          </div>
+        )}
+        {event.description && (
+          <div style={{ fontSize: 12, color: "var(--color-ink)", lineHeight: 1.4 }}>{event.description}</div>
+        )}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: "var(--radius-md)", background: "var(--color-cream)", border: "1px solid var(--color-border)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, fontSize: 11, fontWeight: 700, color: "var(--color-muted)" }}>
@@ -240,9 +238,6 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                   <STATUS_META.unavailable.icon size={10} color={STATUS_META.unavailable.color} />
                   不行
                 </span>
-              </div>
-              <div style={{ fontSize: 9, color: "var(--color-muted)", marginTop: 4, lineHeight: 1.5 }}>
-                月曆的顏色深淺僅以「確定有空」人數計算，「可能」不算在內；點選時段可展開查看名單
               </div>
             </div>
 
@@ -428,31 +423,53 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
           </div>
         </>
       )}
-      <div style={cardStyle}>
-        <SectionLabel title={`已填寫名冊 (${event.responses.length} 人)`} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {event.responses.map((r) => {
-            const availCount = Object.values(r.availability).filter((v) => v === "available").length;
-            return (
-              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: "var(--radius-md)", background: "var(--color-cream)" }}>
-                <Avatar name={r.nickname} size="sm" />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800 }}>
-                    {r.nickname}
-                    {r.nickname === userNickname && <span style={{ fontSize: 9, marginLeft: 6, color: "var(--color-primary)" }}>(您)</span>}
-                  </div>
-                  {r.comment && (
-                    <div style={{ fontSize: 10, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 3 }}>
-                      <MessageCircle size={10} />
-                      {r.comment}
+      <div style={{ border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-md)", overflow: "hidden", background: "#fff" }}>
+        <button
+          onClick={() => setRosterOpen((v) => !v)}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 5,
+            fontSize: 11,
+            fontWeight: 700,
+            padding: "9px 0",
+            border: "none",
+            borderBottom: rosterOpen ? "1px solid var(--color-border)" : "none",
+            background: rosterOpen ? "var(--color-cream)" : "#fff",
+            color: "var(--color-muted)",
+            cursor: "pointer",
+          }}
+        >
+          已填寫名冊（{event.responses.length} 人）
+          {rosterOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        </button>
+        {rosterOpen && (
+          <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+            {event.responses.map((r) => {
+              const availCount = Object.values(r.availability).filter((v) => v === "available").length;
+              return (
+                <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: "var(--radius-md)", background: "var(--color-cream)" }}>
+                  <Avatar name={r.nickname} size="sm" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800 }}>
+                      {r.nickname}
+                      {r.nickname === userNickname && <span style={{ fontSize: 9, marginLeft: 6, color: "var(--color-primary)" }}>(您)</span>}
                     </div>
-                  )}
+                    {r.comment && (
+                      <div style={{ fontSize: 10, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+                        <MessageCircle size={10} />
+                        {r.comment}
+                      </div>
+                    )}
+                  </div>
+                  <Badge variant="success" size="sm">{availCount}/{event.slots.length}</Badge>
                 </div>
-                <Badge variant="success" size="sm">{availCount}/{event.slots.length}</Badge>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {isHost && (
@@ -524,15 +541,36 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
             </Button>
           </div>
           {onCancelEvent && (
-            <div style={{ marginTop: 12, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-error-subtle)", border: "1px solid rgba(232,54,26,0.25)" }}>
-              <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 2 }}>危險操作</div>
-              <div style={{ fontSize: 11, color: "var(--color-muted)", marginBottom: 10 }}>取消後活動將無法復原，所有人都會看到取消狀態。</div>
-              <Button variant="hot" fullWidth disabled={isLoading} onClick={() => setCancelling(true)}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                  <Ban size={13} />
-                  取消活動
-                </span>
-              </Button>
+            <div style={{ marginTop: 12 }}>
+              <button
+                onClick={() => setDangerOpen((v) => !v)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  border: "none",
+                  background: "none",
+                  padding: 0,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--color-muted)",
+                  cursor: "pointer",
+                }}
+              >
+                危險操作
+                {dangerOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              </button>
+              {dangerOpen && (
+                <div style={{ marginTop: 8, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-error-subtle)", border: "1px solid rgba(232,54,26,0.25)" }}>
+                  <div style={{ fontSize: 11, color: "var(--color-muted)", marginBottom: 10 }}>取消後活動將無法復原，所有人都會看到取消狀態。</div>
+                  <Button variant="hot" fullWidth disabled={isLoading} onClick={() => setCancelling(true)}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <Ban size={13} />
+                      取消活動
+                    </span>
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
