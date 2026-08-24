@@ -83,6 +83,7 @@ const VoteRow: React.FC<VoteRowProps> = (props) => {
 
 export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, email, setEmail, onSubmit, isLoading, onSubmitted }) => {
   const [comment, setComment] = useState("");
+  const [password, setPassword] = useState("");
   const [availability, setAvailability] = useState<Record<string, AvailabilityStatus>>({});
   const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -91,23 +92,29 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
   const [calViewDate, setCalViewDate] = useState(new Date());
   const [calActiveDate, setCalActiveDate] = useState<string | null>(null);
 
+  const trimmedNickname = nickname.trim();
+  const matchedExisting = trimmedNickname
+    ? event.responses.find((r) => r.nickname.toLowerCase() === trimmedNickname.toLowerCase())
+    : undefined;
+  const needsPassword = !!matchedExisting?.password;
+  // 比對到的既有回覆有設密碼、但目前輸入的密碼不相符時鎖定：不自動帶入既有作答
+  // 內容（避免沒輸對密碼就看到別人的勾選結果），送出按鈕也會被鎖住。
+  const isLocked = needsPassword && password !== matchedExisting?.password;
+
   useEffect(() => {
-    const trimmed = nickname.trim();
-    const existing = trimmed
-      ? event.responses.find((r) => r.nickname.toLowerCase() === trimmed.toLowerCase())
-      : undefined;
-    if (existing) {
-      setEditingParticipantId(existing.id);
-      setAvailability(existing.availability || {});
-      if (existing.email) setEmail(existing.email);
-      if (existing.comment) setComment(existing.comment);
-    } else {
+    if (matchedExisting && !isLocked) {
+      setEditingParticipantId(matchedExisting.id);
+      setAvailability(matchedExisting.availability || {});
+      if (matchedExisting.email) setEmail(matchedExisting.email);
+      if (matchedExisting.comment) setComment(matchedExisting.comment);
+    } else if (!matchedExisting) {
       setEditingParticipantId(null);
       const initial: Record<string, AvailabilityStatus> = {};
       event.slots.forEach((s) => (initial[s.id] = "available"));
       setAvailability(initial);
     }
-  }, [event.id, nickname]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event.id, trimmedNickname, isLocked]);
 
   const allDates: string[] = event.slots
     .map((s) => s.date)
@@ -148,12 +155,13 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
   const handleChange = (id: string, st: AvailabilityStatus): void => setAvailability((p) => ({ ...p, [id]: st }));
 
   const handleSubmit = async () => {
-    if (!nickname.trim()) return;
+    if (!nickname.trim() || isLocked) return;
     try {
       await onSubmit({
         participantId: editingParticipantId || undefined,
         nickname: nickname.trim(),
         email: email.trim(),
+        password: password.trim() || undefined,
         availability,
         comment: comment.trim(),
       });
@@ -185,6 +193,22 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
       )}
       <Input size="sm" label="您的暱稱" required placeholder="例如：小明" value={nickname} onChange={(e) => setNickname(e.target.value)} />
       <Input size="sm" label="聯絡 Email" placeholder="例如：name@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Input
+        size="sm"
+        label="密碼（選填）"
+        placeholder={needsPassword ? "此暱稱已有人使用，請輸入密碼" : "設定密碼可在其他裝置回來編輯"}
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      {isLocked && (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-hot-subtle)", border: "1px solid rgba(214,48,60,0.25)" }}>
+          <AlertTriangle size={14} color="var(--color-hot)" style={{ flexShrink: 0, marginTop: 1 }} />
+          <span style={{ fontSize: 12, color: "var(--color-ink)", lineHeight: 1.5 }}>
+            密碼不正確，暫時無法查看或編輯這個暱稱的既有回覆。
+          </span>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3 }}>
         {[{ k: "list" as const, label: "清單檢視", icon: List }, { k: "calendar" as const, label: "行事曆檢視", icon: CalendarDays }].map((m) => (
@@ -232,7 +256,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
                     status={status}
                     onChange={handleChange}
                     primaryText={isDateOnly ? `${date} (${formatChineseWeekday(date)})` : undefined}
-                    disabled={votingClosed}
+                    disabled={votingClosed || isLocked}
                   />
                 );
               })}
@@ -315,7 +339,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
                     status={status}
                     onChange={handleChange}
                     primaryText={isDateOnly ? `${calActiveDate} (${formatChineseWeekday(calActiveDate)})` : undefined}
-                    disabled={votingClosed}
+                    disabled={votingClosed || isLocked}
                   />
                 );
               })}
@@ -428,7 +452,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
       </div>
 
       <Input size="sm" label="給主揪的話" placeholder="例如：19:00 才能到" value={comment} onChange={(e) => setComment(e.target.value)} />
-      <Button variant="dark" fullWidth disabled={!nickname.trim() || isLoading || votingClosed} onClick={handleSubmit}>
+      <Button variant="dark" fullWidth disabled={!nickname.trim() || isLoading || votingClosed || isLocked} onClick={handleSubmit}>
         {editingParticipantId ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             更新我的回覆
