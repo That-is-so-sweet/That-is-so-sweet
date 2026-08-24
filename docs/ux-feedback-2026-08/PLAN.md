@@ -15,16 +15,16 @@
 - [ ] **3. 降低單一頁面資訊密度**：體驗示範中單一頁面塞了投票、熱點圖、留言板等太多功能，讓人眼花撩亂。不一定要拆頁，但要透過元件尺寸、版面排版、顏色降低壓迫感；移除不必要的（類似 AI 自動生成的）指引小字；Demo 展示挑重點畫面呼應四大核心特點（跨平台免登入、智慧橋時間、資訊同步、自動收尾）即可，不用整個 RWD 流程都展示。→ 歸在**子專案 C**
 - [ ] **4. 留言板提示訊息**：留言板無須登入，使用者可能亂打導致大家收到無意義的信件。應在留言處加提示：「在這邊留言會被寄信喔」。→ 歸在**子專案 C**
 - [ ] **5. 留言板位置調整**：留言板直接呈現在熱力圖下方即可。→ 歸在**子專案 C**
-- [ ] **6. 熱點圖與無登入識別邏輯**：免登入無法自動識別使用者，導致熱點圖頁面一直顯示「您尚未勾選時間」。建議採用 When2meet 式的「暱稱 + Email」識別：勾選時間前強制先填寫，勾選完直接進入熱點圖頁面；要修改再點按鈕跳回勾選頁。藉此取消 vote/heatmap 兩個 Tab 的切換設計。→ 歸在**子專案 B**
-- [ ] **7. 主辦人定案按鈕整合**：主辦人定案按鈕直接做在熱點圖旁邊（看著熱點圖結果直接定案），不需要獨立 Tab。→ 歸在**子專案 B**
+- [x] **6. 熱點圖與無登入識別邏輯**：免登入無法自動識別使用者，導致熱點圖頁面一直顯示「您尚未勾選時間」。建議採用 When2meet 式的「暱稱 + Email」識別：勾選時間前強制先填寫，勾選完直接進入熱點圖頁面；要修改再點按鈕跳回勾選頁。藉此取消 vote/heatmap 兩個 Tab 的切換設計。→ 歸在**子專案 B（已完成）**
+- [x] **7. 主辦人定案按鈕整合**：主辦人定案按鈕直接做在熱點圖旁邊（看著熱點圖結果直接定案），不需要獨立 Tab。→ 歸在**子專案 B（已完成）**
 - [x] **8. 精確地點與地圖超連結**：建立活動時支援輸入精確地點，並偵測 Google Maps 連結；使用者貼上地圖連結時，自動把文字轉成該地點名稱並帶 Hyperlink，避免直接呈現冗長連結。→ 歸在**子專案 D（已完成）**
 - [x] **9. 視覺與警示顏色衝突優化**：主色調橘色跟未選時段提示/危險操作等警示色（紅色）太相近，警示意義會被蓋掉、失去效果。建議微調顏色數值，或定義輔色（輻射色）處理行事曆選取等畫面，不要全部用主色。→ 歸在**子專案 A（已完成）**
 
 以下 3 項來自後續會議紀錄的補充回饋：
 
-- [ ] **10. 主辦人修改活動資訊功能**：與會者提出疑問——建立活動後若活動資訊有誤，主辦人要去哪裡修改？團隊確認目前完全沒有提供修改管道。需要讓主辦人有權限修改已建立的活動資訊。→ 歸在**子專案 B**
+- [x] **10. 主辦人修改活動資訊功能**：與會者提出疑問——建立活動後若活動資訊有誤，主辦人要去哪裡修改？團隊確認目前完全沒有提供修改管道。需要讓主辦人有權限修改已建立的活動資訊。→ 歸在**子專案 B（已完成，範圍僅限基本資訊，不含候選時段）**
 - [ ] **11. 「批次快速勾選」的 onboarding 與引導說明**：有成員提到畫面收合時，「批次快速勾選」這個標籤一開始會讓人困惑（不確定系統要怎麼幫忙勾選），雖然點開後其實好理解。不一定要在 MVP 階段做，但後續可以加上 onboarding／輔助說明引導使用者理解這項功能。→ 歸在**子專案 C**
-- [ ] **12. 熱點圖頁面的視覺重心矛盾**：與會者指出，使用者尚未勾選時間時，頁面標題是「熱點圖」，但畫面最顯眼的區塊卻是一直催促「勾選時間」的按鈕，視覺重心跟頁面主題不一致。跟第 6 項（暱稱+Email 識別、取消 Tab 切換）邏輯相關，但這裡是額外被點出的視覺層面問題。→ 歸在**子專案 B**
+- [x] **12. 熱點圖頁面的視覺重心矛盾**：與會者指出，使用者尚未勾選時間時，頁面標題是「熱點圖」，但畫面最顯眼的區塊卻是一直催促「勾選時間」的按鈕，視覺重心跟頁面主題不一致。跟第 6 項（暱稱+Email 識別、取消 Tab 切換）邏輯相關，但這裡是額外被點出的視覺層面問題。→ 歸在**子專案 B（已完成）**
 
 ---
 
@@ -33,7 +33,7 @@
 | 子專案 | 對應項目 | 狀態 | 依賴 |
 |---|---|---|---|
 | A. 色彩微調 | #9 | ✅ 已完成 | 無 |
-| B. 活動頁面互動重構 | #6、#7、#10、#12 | 🟡 設計已完成，待寫實作計畫 | 無 |
+| B. 活動頁面互動重構 | #6、#7、#10、#12 | ✅ 已完成 | 無 |
 | C. 版面密度與留言板調整 | #3、#4、#5、#11 | ⬜ 未開始 | 依賴 B 先落地 |
 | D. 建立活動流程優化 | #1、#2、#8 | ✅ 已完成（#2 待使用者手動確認） | 無，可獨立插隊 |
 
@@ -63,32 +63,43 @@
 
 ---
 
-## 子專案 B — 活動頁面互動重構 🟡 設計已完成，待寫實作計畫
+## 子專案 B — 活動頁面互動重構 ✅ 已完成
 
 **對應項目**：#6、#7、#10、#12
 
-**設計文件／實作計畫**：[subproject-B-design.md](./subproject-B-design.md)、[subproject-B-plan.md](./subproject-B-plan.md)（透過 superpowers brainstorming → writing-plans 流程產出，待執行）
+**設計文件／實作計畫**：[subproject-B-design.md](./subproject-B-design.md)、[subproject-B-plan.md](./subproject-B-plan.md)（透過 superpowers brainstorming → writing-plans 流程產出；實作前 5 個任務用 superpowers subagent-driven-development 執行並經過 subagent review，後 5 個任務改由主控台直接實作，見下方說明）
 
 **涉及檔案**：
-- `src/mobile/EventScreen.tsx`（行動版容器，含 vote/heatmap/host 三個 Tab 的切換邏輯）
-- `src/components/EventView.tsx`（桌面版容器，直接重用下面幾個 mobile 元件，Tab 邏輯目前是各自獨立實作）
-- `src/mobile/VoteTab.tsx`（勾選時間畫面）
-- `src/mobile/HeatmapTab.tsx`（熱點圖畫面，#12 的視覺重心調整也在這裡）
-- `src/mobile/HostTab.tsx`（主辦人定案畫面，需要整合進 HeatmapTab 或改成熱點圖旁的區塊；#10 的「編輯活動資訊」入口也建議放這裡，跟 finalize/reopen/cancel 等既有主辦人操作放一起）
-- `src/lib/api.ts`（`getUserNickname` / `getUserEmail`，識別資料已有基礎函式）
-- `src/types.ts`（`ParticipantResponse` 已有 `nickname` / `email` 欄位，資料模型應該不用大改）
-- `src/lib/localEventStore.ts`（**#10 需要新增一個 `updateEvent` 類的函式** — 目前只有 `createEvent`/`finalizeEvent`/`reopenEvent`/`cancelEvent`/`submitComment`/`submitResponse`，完全沒有「編輯已建立活動資訊」的寫入路徑，需要新增並比照其他主辦人操作用 `hostToken` 驗證權限）
+- `src/types.ts`（新增 `ParticipantResponse.password`／`SubmitResponseInput.password`、新增 `UpdateEventInput`）
+- `src/lib/localEventStore.ts`（`submitResponse()` 新增密碼比對驗證；新增 `updateEvent()`）
+- `src/lib/api.ts`（新增 `updateEvent()` 薄封裝）
+- `src/mobile/VoteTab.tsx`（新增密碼欄位、鎖定/解鎖邏輯）
+- `src/mobile/EditEventModal.tsx`（新建，主辦人編輯活動基本資訊的手刻 Modal，桌面/行動共用）
+- `src/mobile/HeatmapTab.tsx`（吸收 `HostTab.tsx` 全部內容成常駐主辦人區塊；CTA 提示條降權）
+- `src/mobile/EventScreen.tsx`（行動版容器，移除 Tab 按鈕列，`tab` state 改為推導式 `view` state）
+- `src/components/EventView.tsx`（桌面版容器，同上）
+- `src/mobile/HostTab.tsx`（**已刪除**，內容併入 `HeatmapTab.tsx`）
+- `src/mobile/MobileApp.tsx`（轉傳 `onUpdateEvent`；`initialTab` 型別拿掉 `"host"`）
+- `src/App.tsx`（新增 `handleUpdateEvent`；`initialTab` 型別拿掉 `"host"`）
 
-**要處理的內容**：
-- [ ] 無登入識別：比照 When2meet，在使用者勾選時間前強制先填「暱稱 + Email」
-- [ ] 勾選完成後直接導向熱點圖頁面（不用手動切 Tab）
-- [ ] 要修改回答時，用一個明確的按鈕/動作跳回勾選畫面，而不是常駐 Tab
-- [ ] 取消 vote/heatmap（/host）之間的 Tab 切換設計
-- [ ] 主辦人的「定案」按鈕整合到熱點圖畫面旁邊，不用獨立的 Tab/頁面
-- [ ] **（#10）主辦人可編輯已建立的活動資訊**：新增 `localEventStore.ts` 的更新函式（`hostToken` 驗證）、主辦人視角提供「編輯活動」入口，表單建議直接重用子專案 D 做的 `CreateWizard.tsx`/`CreateEvent.tsx` 欄位（標題、截止時間、地點等），帶入既有資料做編輯而非重新建立
-- [ ] **（#12）修正熱點圖頁面視覺重心**：使用者尚未勾選時間時，畫面不該讓「快去勾選時間」的 CTA 蓋過「熱點圖」這個頁面主題本身；跟上面的識別流程改動一起處理（強制先識別 → 勾選 → 才進熱點圖，這條路徑理順後，「尚未勾選」這個中介狀態的呈現方式要重新設計，不要讓它看起來像頁面的主要內容）
+**處理內容 / 執行紀錄**：
+- [x] **（#6）無登入識別**：比照 When2meet 做成「暱稱（必填）＋ Email（選填）＋ 密碼（選填）」——密碼不強制、也不像暱稱/Email 一樣存進 `localStorage`，每次造訪都要重新輸入。暱稱比對到已有密碼保護的既有回覆時，畫面鎖定（不自動帶入既有作答內容、勾選格與送出按鈕都 disabled），輸入正確密碼才解鎖；沒設密碼的既有暱稱維持原本「直接覆蓋」行為不變。密碼比對同時在前端（UI 鎖定）與 `localEventStore.submitResponse()`（實際寫入前）各做一次
+- [x] **（#6）勾選完成後直接導向熱點圖**、**要修改回答時用明確按鈕跳回勾選畫面**、**取消 vote/heatmap/host 三個 Tab 的切換設計**：`EventScreen.tsx`／`EventView.tsx` 的 `tab` state 整個換成推導式 `view` state（`"identify_vote" | "heatmap"`）——主辦人與已識別參與者預設落在熱點圖，全新訪客強制先進識別＋勾選畫面；URL hash 的 `tab` 參數保留但只剩 `vote`/`heatmap` 兩個值
+- [x] **（#7）主辦人定案按鈕整合進熱點圖**：`HostTab.tsx` 整個刪除，內容（拍板定案時段選擇＋備註、投票截止後的重新開放提示、危險操作取消活動）搬進 `HeatmapTab.tsx`，主辦人造訪時常駐顯示在熱點圖頁面最下方，不需要切換頁籤
+- [x] **（#10）主辦人編輯活動資訊**：範圍**僅限活動基本資訊**（標題、說明、地點、主辦人姓名/Email、投票截止時間），**不含候選時段**——已投票者的 `availability` 綁在 `slotId` 上，開放編輯時段有既有投票失效的風險，設計階段已與使用者確認排除。新建 `EditEventModal.tsx`（手刻 Modal，比照 `ReopenModal`/`CancelEventModal` 既有慣例，沒有共用 Modal 元件可重用），沒有重用子專案 D 的 `CreateWizard`/`CreateEvent`（那兩個是純建立用、無編輯模式、且欄位涵蓋候選時段，直接重用反而更複雜）
+- [x] **（#12）修正熱點圖頁面視覺重心**：「還沒有勾選您的時間？」CTA 從大張 `--color-primary-subtle` 卡片降級成細長單行提示條；搭配上面 #6 的路由改動（全新訪客不會先看到熱點圖），從根本上減少「熱點圖被催投票 CTA 蓋過」的情境
 
-**備註**：這是影響範圍最大的一塊，會改變核心互動流程。因為桌面版的 `EventView.tsx` 是直接重用 mobile 元件，這裡的改動大部分只需要做一次；但兩邊 Tab 容器（`EventScreen.tsx` / `EventView.tsx`）本身的外層排版邏輯要分開處理。#10 的編輯表單如果重用子專案 D 的元件，實作順序上可能需要 D 的表單先完成／可重用。
+**驗證方式**：每個任務都通過 `npm run lint`（`tsc --noEmit`），全部完成後額外跑過一次 `npm run build`（production build）確認整體可正確打包。因為沒有瀏覽器工具可用，**尚未經過真人瀏覽器手動走一遍**——尤其是密碼鎖定/解鎖的互動、主辦人常駐操作區塊、編輯活動資訊表單這幾個新流程，請實際跑 `npm run dev` 驗證。
+
+**執行方式的變化**：前 5 個任務（型別、`localEventStore.ts`、`api.ts`、`VoteTab.tsx`、`EditEventModal.tsx`）依照 superpowers subagent-driven-development 流程執行，每個任務都有獨立 subagent 實作 + 獨立 subagent review（皆通過，review 過程中發現並記錄了幾個 Minor 等級的延後事項，見下方）。使用者在第 5 個任務 review 完成後指示後續不要再透過 superpowers 執行，第 6-10 個任務（`HeatmapTab.tsx` 合併、`EventScreen.tsx`/`EventView.tsx` 路由改動、`MobileApp.tsx`/`App.tsx` 收尾）改由主控台（Claude）直接讀檔、編輯、`npm run lint` 驗證、逐一 commit，過程中每個檔案改完都有重新檢查型別與 diff 範圍再進 commit。
+
+**已知擱置事項**（Minor 等級，來自 subagent review，可日後再處理）：
+- `localEventStore.submitResponse()` 的密碼比對是拿**未 trim** 的輸入密碼去比對已 trim 的儲存值（`localEventStore.ts` 的 `submitResponse` 內）；`VoteTab.tsx` 的 `isLocked` 判斷也有同樣的比對不一致——如果密碼前後不小心多打了空白，會被誤判為密碼錯誤（不影響安全性，只是使用者體驗上的假陰性），兩處都在 review 中被獨立點出，建議之後一併修正成都用 trim 過的值比對
+- `VoteTab.tsx`：切換暱稱時密碼欄位不會自動清空（殘留字元）；解鎖後如果重新輸入錯誤密碼，畫面會回到鎖定狀態，但先前已載入的作答內容不會被清掉（只是變成 disabled，不會外洩新資料，純屬顯示不一致）
+- `localEventStore.updateEvent()` 沒有擋 `cancelled`/`finalized` 狀態的活動——目前技術上允許主辦人在活動取消或已定案後仍編輯基本資訊，是否要擋是產品決策，留待之後評估
+- 因為沒有瀏覽器工具，第 6-10 個任務（合併 `HostTab`、路由改動、`App.tsx` 收尾）只有型別檢查與 production build 驗證過，尚未經過真人瀏覽器手動走一遍——這是這次計畫裡風險最高的一塊，建議下次啟動 dev server 時優先驗證
+
+**備註**：這是子專案 B/C/D 三者裡影響互動流程範圍最大的一塊。因為桌面版的 `EventView.tsx` 直接重用 mobile 元件，`HeatmapTab.tsx`/`VoteTab.tsx`/`EditEventModal.tsx` 的改動都只做了一次、桌面版自動套用；`EventScreen.tsx`/`EventView.tsx` 兩邊各自獨立的路由/外層排版邏輯則分開改過。子專案 C 依賴 B 先落地（見下方建議執行順序），現在可以開始。
 
 ---
 
@@ -148,4 +159,4 @@
 
 B → C → D，或 D 隨時插隊（跟 B/C 無依賴）。C 一定要排在 B 之後。
 
-D 已完成插隊執行（2026-08-24）。接下來建議回到 B → C 的順序繼續。
+D 已完成插隊執行（2026-08-24）。B 已完成（2026-08-24）。接下來建議進行 C（依賴 B 已落地的新版面）。
