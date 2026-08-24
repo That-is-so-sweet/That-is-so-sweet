@@ -162,7 +162,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
               textAlign: "center",
               fontSize: 10,
               fontWeight: 800,
-              color: i === 0 || i === 6 ? "var(--color-hot)" : "var(--color-muted)",
+              color: i === 0 || i === 6 ? "var(--color-weekend)" : "var(--color-muted)",
               padding: "2px 0",
             }}
           >
@@ -201,8 +201,8 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                 border: isToday && !active ? "1.5px solid var(--color-primary)" : "1px solid transparent",
                 boxShadow: isActiveDate ? "0 0 0 2px var(--color-secondary-dark)" : "none",
                 borderRadius: "var(--radius-sm)",
-                background: active ? "var(--color-primary)" : holiday ? "rgba(194,67,26,0.08)" : "transparent",
-                color: isPast ? "var(--color-border)" : active ? "#fff" : isWeekend || holiday ? "var(--color-hot)" : "var(--color-ink)",
+                background: active ? "var(--color-primary)" : holiday ? "var(--color-weekend-subtle)" : "transparent",
+                color: isPast ? "var(--color-border)" : active ? "#fff" : isWeekend || holiday ? "var(--color-weekend)" : "var(--color-ink)",
                 fontSize: 10,
                 fontWeight: isToday ? 900 : 700,
                 cursor: isPast ? "default" : "pointer",
@@ -221,7 +221,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                     width: 3,
                     height: 3,
                     borderRadius: "50%",
-                    background: active ? "#fff" : "var(--color-hot)",
+                    background: active ? "#fff" : "var(--color-weekend)",
                   }}
                 />
               )}
@@ -282,7 +282,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
       {monthHolidays.length > 0 && (
         <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 3 }}>
           {monthHolidays.map(([k, v]) => (
-            <div key={k} style={{ fontSize: 10, color: "var(--color-hot)", display: "flex", gap: 4, alignItems: "center" }}>
+            <div key={k} style={{ fontSize: 10, color: "var(--color-weekend)", display: "flex", gap: 4, alignItems: "center" }}>
               <Flag size={10} />
               <span style={{ fontWeight: 800 }}>{k.slice(5).replace("-", "/")}</span>
               <span>{v}</span>

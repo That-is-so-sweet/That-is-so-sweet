@@ -296,7 +296,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
                   {WEEK.map((w, i) => (
-                    <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-hot)" : "var(--color-muted)" }}>
+                    <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-weekend)" : "var(--color-muted)" }}>
                       {w}
                     </div>
                   ))}

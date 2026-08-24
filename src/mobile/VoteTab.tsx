@@ -176,7 +176,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
       {votingClosed && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-hot-subtle)", border: "1px solid rgba(194,67,26,0.25)" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-hot-subtle)", border: "1px solid rgba(214,48,60,0.25)" }}>
           <AlertTriangle size={14} color="var(--color-hot)" style={{ flexShrink: 0, marginTop: 1 }} />
           <span style={{ fontSize: 12, color: "var(--color-ink)", lineHeight: 1.5 }}>
             投票已於 {formatDeadline(event.responseDeadline)} 截止，如需補投請聯繫主揪重新開放投票。
@@ -250,7 +250,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
             {WEEK.map((w, i) => (
-              <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-hot)" : "var(--color-muted)" }}>
+              <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-weekend)" : "var(--color-muted)" }}>
                 {w}
               </div>
             ))}
@@ -384,7 +384,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
                       flex: 1,
                       border: active ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)",
                       background: active ? "var(--color-primary)" : "#fff",
-                      color: active ? "#fff" : isWeekend ? "var(--color-hot)" : "var(--color-ink)",
+                      color: active ? "#fff" : isWeekend ? "var(--color-weekend)" : "var(--color-ink)",
                     }}
                   >
                     {t.label}

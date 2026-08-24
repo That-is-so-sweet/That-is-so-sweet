@@ -30,7 +30,7 @@ export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, o
   return (
     <div style={{ padding: 14 }}>
       {lifecycle.key === "voting_closed" && onReopen && (
-        <div style={{ ...cardStyle, marginBottom: 12, background: "var(--color-hot-subtle)", borderColor: "rgba(194,67,26,0.25)" }}>
+        <div style={{ ...cardStyle, marginBottom: 12, background: "var(--color-hot-subtle)", borderColor: "rgba(214,48,60,0.25)" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
             <AlertTriangle size={16} color="var(--color-hot)" style={{ flexShrink: 0, marginTop: 1 }} />
             <div style={{ flex: 1, minWidth: 0 }}>

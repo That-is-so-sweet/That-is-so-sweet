@@ -1,20 +1,24 @@
 :root {
   /* Brand Primary — Orange */
-  --color-primary: #E04B28;
-  --color-primary-dark: #C23B1A;
-  --color-primary-light: #F07050;
-  --color-primary-subtle: #FDEEE9;
+  --color-primary: #e06828;
+  --color-primary-dark: #C2551A;
+  --color-primary-light: #F08950;
+  --color-primary-subtle: #FDF1E9;
 
   /* Brand Secondary — Golden Yellow */
-  --color-secondary: #F5C200;
-  --color-secondary-dark: #C9A000;
-  --color-secondary-light: #FFD84A;
-  --color-secondary-subtle: #FFFBE0;
+  --color-secondary: #ffd900;
+  --color-secondary-dark: #D3B400;
+  --color-secondary-light: #FFE454;
+  --color-secondary-subtle: #FFFEEA;
 
-  /* Hot / Urgent — Red-Orange */
-  --color-hot: #C23B1A;
-  --color-hot-dark: #9E2C10;
-  --color-hot-subtle: #FDEEE9;
+  /* Hot / Urgent — Red (kept distinct from the orange primary) */
+  --color-hot: #D6303C;
+  --color-hot-dark: #AC2530;
+  --color-hot-subtle: #FCE9EA;
+
+  /* Weekend / Holiday marker — muted terracotta, decorative only (not a warning) */
+  --color-weekend: #A1493B;
+  --color-weekend-subtle: #F5E1DC;
 
   /* Ink — Near Black (warm) */
   --color-ink: #1A0C04;
@@ -34,8 +38,8 @@
   --color-success-subtle: #EDF6ED;
   --color-warning: #F59E0B;
   --color-warning-subtle: #FFFBEB;
-  --color-error: #E8361A;
-  --color-error-subtle: #FFEEEB;
+  --color-error: #B91C2C;
+  --color-error-subtle: #FBE7E9;
   --color-info: #3B82F6;
   --color-info-subtle: #EFF6FF;
 
