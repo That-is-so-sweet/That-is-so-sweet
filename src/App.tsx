@@ -12,6 +12,7 @@ import {
   CreateEventInput,
   SubmitResponseInput,
   SubmitCommentInput,
+  UpdateEventInput,
   ToastMessage,
 } from "./types";
 import {
@@ -21,6 +22,7 @@ import {
   finalizeEvent,
   reopenEvent,
   cancelEvent,
+  updateEvent,
   submitComment,
   getHostToken,
   getVisitedEvents,
@@ -33,7 +35,7 @@ export default function App() {
   const [currentEventId, setCurrentEventId] = useState<string | null>(null);
   const [currentHostToken, setCurrentHostToken] = useState<string | null>(null);
   const [eventData, setEventData] = useState<EventData | null>(null);
-  const [initialTab, setInitialTab] = useState<"vote" | "heatmap" | "host" | null>(null);
+  const [initialTab, setInitialTab] = useState<"vote" | "heatmap" | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [pageError, setPageError] = useState<string | null>(null);
@@ -67,8 +69,8 @@ export default function App() {
     const eventId = params.get("event");
     const token = params.get("hostToken");
     const tabParam = params.get("tab");
-    const tab: "vote" | "heatmap" | "host" | null =
-      tabParam === "vote" || tabParam === "heatmap" || tabParam === "host" ? tabParam : null;
+    const tab: "vote" | "heatmap" | null =
+      tabParam === "vote" || tabParam === "heatmap" ? tabParam : null;
     return { eventId, token, tab };
   };
 
@@ -212,6 +214,20 @@ export default function App() {
     }
   };
 
+  const handleUpdateEvent = async (input: Omit<UpdateEventInput, "hostToken">) => {
+    if (!currentEventId || !currentHostToken) return;
+    setIsLoading(true);
+    try {
+      const updated = await updateEvent(currentEventId, { hostToken: currentHostToken, ...input });
+      setEventData(updated);
+      addToast("success", "活動資訊已更新");
+    } catch (err: any) {
+      addToast("error", err.message || "更新活動資訊失敗");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmitComment = async (input: SubmitCommentInput) => {
     if (!currentEventId) return;
     try {
@@ -248,6 +264,7 @@ export default function App() {
         onFinalize={handleFinalize}
         onReopen={handleReopen}
         onCancelEvent={handleCancelEvent}
+        onUpdateEvent={handleUpdateEvent}
         onSubmitComment={handleSubmitComment}
         isShareModalOpen={isShareModalOpen}
         setIsShareModalOpen={setIsShareModalOpen}
@@ -312,6 +329,7 @@ export default function App() {
             onFinalize={handleFinalize}
             onReopen={handleReopen}
             onCancelEvent={handleCancelEvent}
+            onUpdateEvent={handleUpdateEvent}
             onSubmitComment={handleSubmitComment}
             onNewEvent={handleGoHome}
             onOpenShareModal={() => setIsShareModalOpen(true)}
