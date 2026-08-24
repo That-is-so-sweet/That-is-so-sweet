@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Users, Share2, History, Plus, Clock, CalendarDays } from "lucide-react";
-import { EventData, SubmitResponseInput, SubmitCommentInput } from "../types";
+import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
 import { getLifecycleStatus } from "../lib/eventStatus";
-import { Badge, Tag } from "../design-system/components";
+import { Badge } from "../design-system/components";
 import { TopBar } from "./TopBar";
 import { VoteTab } from "./VoteTab";
 import { HeatmapTab } from "./HeatmapTab";
-import { HostTab } from "./HostTab";
 import { FinalizedView } from "./FinalizedView";
 import { CancelledView } from "./CancelledView";
 import { CommentBoard } from "./CommentBoard";
@@ -16,11 +15,12 @@ import { iconBtnStyle } from "./mobileStyles";
 interface EventScreenProps {
   event: EventData;
   isHost: boolean;
-  initialTab?: "vote" | "heatmap" | "host";
+  initialTab?: "vote" | "heatmap";
   onRespond: (input: SubmitResponseInput) => Promise<void>;
   onFinalize: (finalSlotId: string, finalNote?: string) => Promise<void>;
   onReopen: (newDeadline?: string) => Promise<void>;
   onCancelEvent: () => Promise<void>;
+  onUpdateEvent?: (input: Omit<UpdateEventInput, "hostToken">) => Promise<void>;
   onSubmitComment: (input: SubmitCommentInput) => Promise<void>;
   onNewEvent: () => void;
   onOpenShare: () => void;
@@ -28,12 +28,6 @@ interface EventScreenProps {
   onCopySuccess: () => void;
   isLoading: boolean;
 }
-
-const TABS: { id: "vote" | "heatmap" | "host"; label: string }[] = [
-  { id: "heatmap", label: "熱點圖" },
-  { id: "vote", label: "勾選時間" },
-  { id: "host", label: "主揪定案" },
-];
 
 export const EventScreen: React.FC<EventScreenProps> = ({
   event,
@@ -43,6 +37,7 @@ export const EventScreen: React.FC<EventScreenProps> = ({
   onFinalize,
   onReopen,
   onCancelEvent,
+  onUpdateEvent,
   onSubmitComment,
   onNewEvent,
   onOpenShare,
@@ -50,20 +45,29 @@ export const EventScreen: React.FC<EventScreenProps> = ({
   onCopySuccess,
   isLoading,
 }) => {
-  const [tab, setTab] = useState<"vote" | "heatmap" | "host">(initialTab && (initialTab !== "host" || isHost) ? initialTab : "heatmap");
   const [nickname, setNickname] = useState(() => getUserNickname());
   const [email, setEmail] = useState(() => getUserEmail());
 
-  // Re-apply the requested tab whenever the URL asks for one — covers not just the
+  // 主辦人一律優先看熱點圖（現在也是主辦人操作面板）；已識別的參與者（本機暱稱
+  // 比對到既有回覆）也直接進熱點圖；全新訪客強制先進識別＋勾選畫面。
+  const isIdentifiedParticipant =
+    !isHost &&
+    !!nickname.trim() &&
+    event.responses.some((r) => r.nickname.toLowerCase() === nickname.trim().toLowerCase());
+  const defaultView: "identify_vote" | "heatmap" = isHost || isIdentifiedParticipant ? "heatmap" : "identify_vote";
+  const [view, setView] = useState<"identify_vote" | "heatmap">(
+    initialTab === "vote" ? "identify_vote" : initialTab === "heatmap" ? "heatmap" : defaultView
+  );
+
+  // Re-apply the requested view whenever the URL asks for one — covers not just the
   // first mount but also navigating here via a hash-only change (e.g. pasting the
   // participant link while the app is already open in the same tab).
   useEffect(() => {
-    if (initialTab && (initialTab !== "host" || isHost)) {
-      setTab(initialTab);
-    }
-  }, [event.id, initialTab, isHost]);
+    if (initialTab === "vote") setView("identify_vote");
+    else if (initialTab === "heatmap") setView("heatmap");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event.id, initialTab]);
 
-  const visibleTabs = isHost ? TABS : TABS.filter((t) => t.id !== "host");
   const lifecycle = getLifecycleStatus(event);
 
   return (
@@ -84,43 +88,11 @@ export const EventScreen: React.FC<EventScreenProps> = ({
           </>
         }
       />
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "0 16px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", flexShrink: 0, overflowX: "auto" }}>
-        {event.status === "active" && (
-          <div style={{ display: "flex", gap: 16, flexShrink: 0 }}>
-            {visibleTabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                style={{
-                  position: "relative",
-                  flexShrink: 0,
-                  whiteSpace: "nowrap",
-                  padding: "9px 0",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  border: "none",
-                  background: "none",
-                  cursor: "pointer",
-                  color: tab === t.id ? "var(--color-primary)" : "var(--color-muted)",
-                }}
-              >
-                {t.label}
-                {tab === t.id && (
-                  <span style={{ position: "absolute", left: 0, right: 0, bottom: -1, height: 2, borderRadius: 2, background: "var(--color-primary)" }} />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 0", flexShrink: 0, marginLeft: "auto" }}>
-          <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
-          <span style={{ fontSize: 11, fontWeight: 800, color: lifecycle.color, whiteSpace: "nowrap" }}>{lifecycle.label}</span>
-          <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
-          {/* <Tag size="sm" emoji={event.mode === "date_only" ? <CalendarDays size={12} /> : <Clock size={12} />}>
-            {event.mode === "date_only" ? "僅選日期" : "含時段"}
-          </Tag> */}
-          {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
-        </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", flexShrink: 0, overflowX: "auto" }}>
+        <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
+        <span style={{ fontSize: 11, fontWeight: 800, color: lifecycle.color, whiteSpace: "nowrap" }}>{lifecycle.label}</span>
+        <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
+        {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
       </div>
 
       {event.status === "cancelled" ? (
@@ -139,14 +111,25 @@ export const EventScreen: React.FC<EventScreenProps> = ({
         </div>
       ) : (
         <div style={{ flex: 1, overflowY: "auto" }}>
-          {/* Tab-switchable block: whichever tab is active renders here. Comment board
-              below is a separate block, outside this switch, so it never changes with the tab. */}
+          {/* view-switchable block: whichever view is active renders here. Comment board
+              below is a separate block, outside this switch, so it never changes with the view. */}
           <div>
-            {tab === "vote" && (
-              <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setTab("heatmap")} />
+            {view === "identify_vote" && (
+              <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} />
             )}
-            {tab === "heatmap" && <HeatmapTab event={event} userNickname={nickname} onGoToVote={() => setTab("vote")} />}
-            {tab === "host" && isHost && <HostTab event={event} onFinalize={onFinalize} onReopen={onReopen} onCancelEvent={onCancelEvent} isLoading={isLoading} />}
+            {view === "heatmap" && (
+              <HeatmapTab
+                event={event}
+                userNickname={nickname}
+                onGoToVote={() => setView("identify_vote")}
+                isHost={isHost}
+                onFinalize={onFinalize}
+                onReopen={onReopen}
+                onCancelEvent={onCancelEvent}
+                onUpdateEvent={onUpdateEvent}
+                isLoading={isLoading}
+              />
+            )}
           </div>
           <div style={{ marginTop: 10, borderTop: "8px solid var(--color-cream)", padding: "16px 14px 14px" }}>
             <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
