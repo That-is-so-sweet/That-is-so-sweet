@@ -25,11 +25,17 @@ export interface EventComment {
   createdAt: string;
 }
 
+export interface EventLocation {
+  text: string;   // 顯示用地點名稱
+  url?: string;   // Google Maps 連結（若使用者貼的是連結）
+}
+
 export interface EventData {
   id: string;
   hostToken: string; // Secret key generated for creator
   title: string;
   description?: string;
+  location?: EventLocation;
   hostName?: string;
   hostEmail?: string;
   mode: EventMode;
@@ -48,6 +54,7 @@ export interface EventData {
 export interface CreateEventInput {
   title: string;
   description?: string;
+  location?: EventLocation;
   hostName?: string;
   hostEmail?: string;
   mode: EventMode;

@@ -129,11 +129,20 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
               主揪：{event.hostName}
             </div>
           )}
-          {event.description && (
+          {event.location && (
             <div style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "var(--color-ink)", lineHeight: 1.5 }}>
               <MapPin size={12} color="var(--color-muted)" style={{ flexShrink: 0, marginTop: 2 }} />
-              <span>{event.description}</span>
+              {event.location.url ? (
+                <a href={event.location.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-primary)", fontWeight: 700 }}>
+                  {event.location.text}
+                </a>
+              ) : (
+                <span>{event.location.text}</span>
+              )}
             </div>
+          )}
+          {event.description && (
+            <div style={{ fontSize: 12, color: "var(--color-ink)", lineHeight: 1.5 }}>{event.description}</div>
           )}
         </div>
       </div>

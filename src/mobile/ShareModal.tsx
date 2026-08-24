@@ -16,7 +16,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ event, hostToken, onClos
   const shareUrl = `${appOrigin}/#event=${event.id}&tab=vote`;
   const lineText = `📢【${event.title}】聚會時間調查邀請！
 主揪：${event.hostName || "熱心朋友"}
-${event.description ? `說明：${event.description}\n` : ""}${event.responseDeadline ? `⏰ 請於 ${formatDeadline(event.responseDeadline)} 前完成填寫\n` : ""}
+${event.location ? `📍 地點：${event.location.text}${event.location.url ? ` ${event.location.url}` : ""}\n` : ""}${event.description ? `說明：${event.description}\n` : ""}${event.responseDeadline ? `⏰ 請於 ${formatDeadline(event.responseDeadline)} 前完成填寫\n` : ""}
 不用註冊登入，點擊連結即可選擇你有空的時間：
 ${shareUrl}`;
 

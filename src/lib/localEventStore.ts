@@ -257,7 +257,7 @@ export function getEvent(id: string, hostToken?: string): EventData & { isHost?:
 }
 
 export function createEvent(input: CreateEventInput): { event: EventData; hostToken: string } {
-  const { title, description, hostName, hostEmail, mode, responseDeadline, slots } = input;
+  const { title, description, location, hostName, hostEmail, mode, responseDeadline, slots } = input;
 
   if (!title || !title.trim()) {
     throw new Error("請輸入活動名稱");
@@ -285,6 +285,7 @@ export function createEvent(input: CreateEventInput): { event: EventData; hostTo
     hostToken,
     title: title.trim(),
     description: description ? description.trim() : "",
+    location: location && location.text.trim() ? { text: location.text.trim(), url: location.url } : undefined,
     hostName: hostName ? hostName.trim() : "",
     hostEmail: hostEmail ? hostEmail.trim() : "",
     mode: mode === "date_only" ? "date_only" : "time_slots",

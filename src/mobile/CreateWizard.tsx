@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { History, X, AlertTriangle, MapPin, Rocket, Clock, CalendarDays, Plus } from "lucide-react";
-import { CreateEventInput, EventMode, TimeSlot } from "../types";
+import React, { useState, useEffect, useRef } from "react";
+import { History, X, AlertTriangle, MapPin, Rocket, Clock, Plus } from "lucide-react";
+import { CreateEventInput, EventLocation, EventMode, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { calculateSlotDuration, formatSlotTime, getNextWeekdayDate } from "../lib/slots";
 import { getDefaultDeadlineLocalValue, getNowLocalValue, localValueToIso } from "../lib/eventStatus";
+import { parseLocationInput, extractPlaceNameFromFullUrl, mockResolveShortLink } from "../lib/location";
 import { Button, Input } from "../design-system/components";
 import { TopBar } from "./TopBar";
 import { MonthCalendar } from "./MonthCalendar";
@@ -44,8 +45,41 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
   const [label, setLabel] = useState("");
   const [activeDate, setActiveDate] = useState<string | null>(selectedDates[0] || null);
   const [quickPresets] = useState(() => getRecentSlotPresets());
+  const [location, setLocation] = useState<EventLocation | undefined>(undefined);
+  const [locationInput, setLocationInput] = useState("");
+  const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+  const locationRequestRef = useRef(0);
 
   const isDateOnly = mode === "date_only";
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setLocationInput(raw);
+    const requestId = ++locationRequestRef.current;
+    const parsed = parseLocationInput(raw);
+
+    if (!parsed) {
+      setIsResolvingLocation(false);
+      setLocation(raw.trim() ? { text: raw.trim() } : undefined);
+      return;
+    }
+
+    if (!parsed.isShortLink) {
+      setIsResolvingLocation(false);
+      const name = extractPlaceNameFromFullUrl(parsed.url);
+      setLocation({ text: name || "Google Maps 地點", url: parsed.url });
+      return;
+    }
+
+    setIsResolvingLocation(true);
+    setLocation({ text: raw.trim(), url: parsed.url });
+    mockResolveShortLink(parsed.url).then((name) => {
+      if (locationRequestRef.current !== requestId) return;
+      setIsResolvingLocation(false);
+      setLocation({ text: name, url: parsed.url });
+      setLocationInput(name);
+    });
+  };
 
   useEffect(() => {
     if (!activeDate || !selectedDates.includes(activeDate)) setActiveDate(selectedDates[0] || null);
@@ -122,6 +156,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
       hostName: hostName.trim(),
       hostEmail: hostEmail.trim(),
       description: description.trim(),
+      location,
       mode,
       responseDeadline: localValueToIso(responseDeadline),
       slots,
@@ -176,54 +211,34 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
 
               <Input label="主揪暱稱" placeholder="例如：阿傑、Wally" value={hostName} onChange={(e) => setHostName(e.target.value)} />
               <Input label="主揪 Email" placeholder="例如：host@example.com" type="email" value={hostEmail} onChange={(e) => setHostEmail(e.target.value)} />
-              <Input label="地點或說明" placeholder="例如：捷運中山站火鍋" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Input
+                label="地點"
+                placeholder="輸入地點，或貼上 Google Maps 連結"
+                value={locationInput}
+                onChange={handleLocationChange}
+                hint={isResolvingLocation ? "解析地點中..." : location?.url ? "已附上 Google Maps 連結" : undefined}
+              />
+              <Input label="活動說明（選填）" placeholder="例如：想吃鍋物，歡迎推薦口袋名單" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
           </div>
         )}
 
         {step === 1 && (
           <div style={cardStyle}>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 6 }}>投票模式</label>
-              <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3 }}>
-                {([
-                  { k: "date_only" as EventMode, label: "只選日期", Icon: CalendarDays },
-                  { k: "time_slots" as EventMode, label: "需要選時段", Icon: Clock },
-                ]).map((m) => (
-                  <button
-                    key={m.k}
-                    onClick={() => setMode(m.k)}
-                    style={{
-                      flex: 1,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 5,
-                      padding: "8px 4px",
-                      borderRadius: "var(--radius-sm)",
-                      fontSize: 12,
-                      fontWeight: 800,
-                      border: "none",
-                      cursor: "pointer",
-                      background: mode === m.k ? "var(--color-primary)" : "transparent",
-                      color: mode === m.k ? "#fff" : "var(--color-ink)",
-                      transition: "background 150ms ease, color 150ms ease",
-                    }}
-                  >
-                    <m.Icon size={13} />
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-              <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>
-                {isDateOnly ? "參與者只需勾選日期，不用細分時段" : "參與者可針對每個候選日期勾選細部時段"}
-              </div>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+              <SectionLabel
+                title={isDateOnly ? "候選日期" : "候選日期與時段"}
+                hint={isDateOnly ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天` : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
+              />
+              {!isDateOnly && (
+                <button
+                  onClick={() => setMode("date_only")}
+                  style={{ border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, padding: 0, whiteSpace: "nowrap" }}
+                >
+                  ◀ 改回只選日期
+                </button>
+              )}
             </div>
-
-            <SectionLabel
-              title={isDateOnly ? "候選日期" : "候選日期與時段"}
-              hint={isDateOnly ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天` : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
-            />
             <MonthCalendar
               selectedDates={selectedDates}
               onChange={handleDatesChange}
@@ -238,6 +253,39 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
               <div style={{ marginTop: 12, fontSize: 11, color: "var(--color-hot)", display: "flex", alignItems: "center", gap: 4 }}>
                 <AlertTriangle size={12} />
                 請至少選擇一個日期
+              </div>
+            )}
+
+            {isDateOnly && selectedDates.length > 0 && (
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 2 }}>
+                  已選日期（{selectedDates.length}）
+                </div>
+                <div style={{ fontSize: 10, color: "var(--color-muted)", marginBottom: 6 }}>
+                  新增時段會套用到所有已選日期
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {[...selectedDates].sort().map((date) => (
+                    <div
+                      key={date}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}
+                    >
+                      <span style={{ fontSize: 12, fontWeight: 700 }}>
+                        {date} ({formatChineseWeekday(date)})
+                      </span>
+                      <button
+                        onClick={() => {
+                          setMode("time_slots");
+                          setActiveDate(date);
+                        }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 800, cursor: "pointer", padding: 0 }}
+                      >
+                        <Plus size={12} />
+                        新增時段
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -348,11 +396,20 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
             <SectionLabel title="確認活動內容" />
             <div style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", marginBottom: 4 }}>{title || "（尚未命名）"}</div>
             {hostName && <div style={{ fontSize: 11, color: "var(--color-muted)" }}>主揪：{hostName}</div>}
-            {description && (
+            {location && (
               <div style={{ fontSize: 11, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 4 }}>
                 <MapPin size={11} />
-                {description}
+                {location.url ? (
+                  <a href={location.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-primary)", fontWeight: 700 }}>
+                    {location.text}
+                  </a>
+                ) : (
+                  location.text
+                )}
               </div>
+            )}
+            {description && (
+              <div style={{ fontSize: 11, color: "var(--color-muted)" }}>{description}</div>
             )}
             <div style={{ fontSize: 11, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
               <Clock size={11} />

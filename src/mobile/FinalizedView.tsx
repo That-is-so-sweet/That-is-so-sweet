@@ -25,6 +25,7 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
   const attending = event.responses.filter((r) => r.availability[slot.id] === "available").map((r) => r.nickname);
   const isDateOnly = event.mode === "date_only";
   const hasEnded = !!getMeetupEndInfo(event)?.hasEnded;
+  const locationDescriptionFallback = [event.location?.text, event.description].filter(Boolean).join("\n");
 
   const broadcast = `🎉【聚會時間正式敲定囉！】
 活動名稱：${event.title}
@@ -87,7 +88,7 @@ ${isDateOnly ? "" : `⏰ 時間：${formatSlotTime(slot.time)}\n`}${event.finalN
             fullWidth
             onClick={() =>
               window.open(
-                generateGoogleCalendarUrl(event.title, slot.date, slot.time, event.finalNote || event.description || "", `主揪：${event.hostName || ""}`, isDateOnly),
+                generateGoogleCalendarUrl(event.title, slot.date, slot.time, event.finalNote || locationDescriptionFallback, `主揪：${event.hostName || ""}`, isDateOnly),
                 "_blank"
               )
             }
@@ -98,7 +99,7 @@ ${isDateOnly ? "" : `⏰ 時間：${formatSlotTime(slot.time)}\n`}${event.finalN
             variant="ghost"
             size="sm"
             fullWidth
-            onClick={() => downloadIcsFile(event.title, slot.date, slot.time, event.finalNote || event.description || "", `主揪：${event.hostName || ""}`, isDateOnly)}
+            onClick={() => downloadIcsFile(event.title, slot.date, slot.time, event.finalNote || locationDescriptionFallback, `主揪：${event.hostName || ""}`, isDateOnly)}
           >
             下載 .ics
           </Button>

@@ -19,7 +19,11 @@ interface HostTabProps {
 
 export const HostTab: React.FC<HostTabProps> = ({ event, onFinalize, onReopen, onCancelEvent, isLoading }) => {
   const [selected, setSelected] = useState<string | undefined>(event.slots[0]?.id);
-  const [note, setNote] = useState(event.description ? `地點/備註：${event.description}` : "");
+  const noteDefaultLines = [
+    event.location ? `地點：${event.location.text}` : null,
+    event.description ? `備註：${event.description}` : null,
+  ].filter((line): line is string => line !== null);
+  const [note, setNote] = useState(noteDefaultLines.join("\n"));
   const [confirming, setConfirming] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [cancelling, setCancelling] = useState(false);
