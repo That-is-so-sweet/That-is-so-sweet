@@ -1,16 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Medal, MessageCircle, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp, Clock } from "lucide-react";
-import { EventData, SlotStats } from "../types";
+import { Trophy, Medal, MessageCircle, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp, Clock, AlertTriangle, Ban } from "lucide-react";
+import { EventData, SlotStats, UpdateEventInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats, formatSlotTime } from "../lib/slots";
 import { getLifecycleStatus, formatDeadline, formatRemaining } from "../lib/eventStatus";
-import { Avatar, Badge, Button } from "../design-system/components";
+import { Avatar, Badge, Button, Input } from "../design-system/components";
 import { cardStyle, countInAdjacentMonth, MonthNavButton, SectionLabel, STATUS_META } from "./mobileStyles";
+import { ReopenModal } from "./ReopenModal";
+import { CancelEventModal } from "./CancelEventModal";
+import { EditEventModal } from "./EditEventModal";
 
 interface HeatmapTabProps {
   event: EventData;
   userNickname: string;
   onGoToVote: () => void;
+  isHost?: boolean;
+  onFinalize?: (finalSlotId: string, finalNote?: string) => Promise<void>;
+  onReopen?: (newDeadline?: string) => Promise<void>;
+  onCancelEvent?: () => Promise<void>;
+  onUpdateEvent?: (input: Omit<UpdateEventInput, "hostToken">) => Promise<void>;
+  isLoading?: boolean;
 }
 
 const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
@@ -59,13 +68,34 @@ const NamesPanel: React.FC<{ s: SlotStats }> = ({ s }) => (
   </div>
 );
 
-export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onGoToVote }) => {
+export const HeatmapTab: React.FC<HeatmapTabProps> = ({
+  event,
+  userNickname,
+  onGoToVote,
+  isHost,
+  onFinalize,
+  onReopen,
+  onCancelEvent,
+  onUpdateEvent,
+  isLoading,
+}) => {
   const [distMode, setDistMode] = useState<"bar" | "calendar">("bar");
   const [calViewDate, setCalViewDate] = useState(new Date());
   const [calActiveDate, setCalActiveDate] = useState<string | null>(null);
   const [showAllTop, setShowAllTop] = useState(false);
   const [expandedSlotId, setExpandedSlotId] = useState<string | null>(null);
   const toggleExpand = (id: string) => setExpandedSlotId((cur) => (cur === id ? null : id));
+  // 主辦人操作區塊的 state（原本是 HostTab.tsx 的內容，併入這個檔案）
+  const [selectedFinalSlotId, setSelectedFinalSlotId] = useState<string | undefined>(event.slots[0]?.id);
+  const noteDefaultLines = [
+    event.location ? `地點：${event.location.text}` : null,
+    event.description ? `備註：${event.description}` : null,
+  ].filter((line): line is string => line !== null);
+  const [finalNote, setFinalNote] = useState(noteDefaultLines.join("\n"));
+  const [confirmingFinalize, setConfirmingFinalize] = useState(false);
+  const [reopening, setReopening] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [editing, setEditing] = useState(false);
   const stats = computeSlotStats(event.slots, event.responses);
   const qualifying = [...stats].filter((s) => s.availableCount + s.ifNeededCount > 0).sort((a, b) => b.score - a.score);
   const top = showAllTop ? qualifying : qualifying.slice(0, 3);
@@ -146,19 +176,19 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
           )}
         </div>
       </div>
-      <div style={{ ...cardStyle, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "var(--color-primary-subtle)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-          <CalendarCheck size={18} color="var(--color-primary)" style={{ flexShrink: 0 }} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)" }}>
-              {hasResponded ? "已收到您的時間紀錄" : "還沒有勾選您的時間？"}
-            </div>
-            <div style={{ fontSize: 10, color: "var(--color-muted)", marginTop: 1 }}>
-              {hasResponded ? "隨時可以回來更新" : "花 30 秒勾選，讓大家更快敲定時間"}
-            </div>
-          </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: "var(--radius-md)", background: "var(--color-cream)", border: "1px solid var(--color-border)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, fontSize: 11, fontWeight: 700, color: "var(--color-muted)" }}>
+          <CalendarCheck size={13} color="var(--color-muted)" style={{ flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {hasResponded ? "已收到您的時間紀錄，隨時可以回來更新" : "還沒有勾選您的時間？花 30 秒讓大家更快敲定"}
+          </span>
         </div>
-        <Button variant="hot" size="sm" onClick={onGoToVote}>{hasResponded ? "更新時間" : "我要勾選時間"}</Button>
+        <button
+          onClick={onGoToVote}
+          style={{ flexShrink: 0, border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 800, cursor: "pointer", padding: 0, whiteSpace: "nowrap" }}
+        >
+          {hasResponded ? "更新時間" : "我要勾選時間"}
+        </button>
       </div>
       {event.responses.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", color: "var(--color-muted)", fontSize: 12 }}>
@@ -424,6 +454,145 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({ event, userNickname, onG
           })}
         </div>
       </div>
+
+      {isHost && (
+        <div style={cardStyle}>
+          <SectionLabel title="主揪操作" hint="拍板定案、管理活動" />
+          {lifecycle.key === "voting_closed" && onReopen && (
+            <div style={{ marginBottom: 12, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-hot-subtle)", border: "1px solid rgba(214,48,60,0.25)" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                <AlertTriangle size={16} color="var(--color-hot)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)" }}>投票已於 {formatDeadline(event.responseDeadline)} 截止</div>
+                  <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 2 }}>參與者暫時無法再送出新的時間，可以重新開放投票或直接拍板定案。</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 10 }}>
+                <Button variant="hot" size="sm" fullWidth onClick={() => setReopening(true)}>重新開放投票</Button>
+              </div>
+            </div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+            {event.slots.map((s) => {
+              const st = stats.find((x) => x.slotId === s.id)!;
+              const active = selectedFinalSlotId === s.id;
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => setSelectedFinalSlotId(s.id)}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "9px 10px",
+                    borderRadius: "var(--radius-md)",
+                    border: active ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
+                    background: active ? "var(--color-primary)" : "#fff",
+                    color: active ? "#fff" : "var(--color-ink)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 800 }}>
+                      {s.date} ({formatChineseWeekday(s.date)}){!isDateOnly && ` · ${formatSlotTime(s.time)}`}
+                    </div>
+                    {s.label && <div style={{ fontSize: 10, opacity: 0.8 }}>{s.label}</div>}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 800,
+                      padding: "3px 8px",
+                      borderRadius: "var(--radius-pill)",
+                      background: active ? "rgba(255,255,255,0.25)" : "rgba(90,158,90,0.15)",
+                      color: active ? "#fff" : "var(--color-success)",
+                    }}
+                  >
+                    {st.availableCount} 人出席
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <Input label="定案備註" placeholder="例如：訂位阿傑，18:00 集合" value={finalNote} onChange={(e) => setFinalNote(e.target.value)} />
+          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            <Button variant="dark" fullWidth disabled={!selectedFinalSlotId || isLoading} onClick={() => setConfirmingFinalize(true)}>
+              確認最終時間並定案
+            </Button>
+            <Button variant="muted" fullWidth disabled={isLoading} onClick={() => setEditing(true)}>
+              編輯活動資訊
+            </Button>
+          </div>
+          {onCancelEvent && (
+            <div style={{ marginTop: 12, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-error-subtle)", border: "1px solid rgba(232,54,26,0.25)" }}>
+              <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 2 }}>危險操作</div>
+              <div style={{ fontSize: 11, color: "var(--color-muted)", marginBottom: 10 }}>取消後活動將無法復原，所有人都會看到取消狀態。</div>
+              <Button variant="hot" fullWidth disabled={isLoading} onClick={() => setCancelling(true)}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <Ban size={13} />
+                  取消活動
+                </span>
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {reopening && onReopen && (
+        <ReopenModal
+          currentDeadline={event.responseDeadline}
+          onCancel={() => setReopening(false)}
+          onConfirm={(newDeadline) => {
+            setReopening(false);
+            onReopen(newDeadline);
+          }}
+        />
+      )}
+      {cancelling && onCancelEvent && (
+        <CancelEventModal
+          eventTitle={event.title}
+          isLoading={isLoading}
+          onCancel={() => setCancelling(false)}
+          onConfirm={() => {
+            setCancelling(false);
+            onCancelEvent();
+          }}
+        />
+      )}
+      {editing && onUpdateEvent && (
+        <EditEventModal
+          event={event}
+          isLoading={isLoading}
+          onCancel={() => setEditing(false)}
+          onConfirm={(input) => {
+            setEditing(false);
+            onUpdateEvent(input);
+          }}
+        />
+      )}
+      {confirmingFinalize && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(26,18,8,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 200 }}>
+          <div style={{ background: "#fff", borderRadius: "var(--radius-modal)", padding: 18, width: "100%" }}>
+            <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 8 }}>確認要拍板定案嗎？</div>
+            <div style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 14, lineHeight: 1.6 }}>
+              定案後活動將轉為「已敲定通知模式」，暫停開放新投票。
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button variant="muted" fullWidth onClick={() => setConfirmingFinalize(false)}>返回修改</Button>
+              <Button
+                variant="hot"
+                fullWidth
+                onClick={() => {
+                  setConfirmingFinalize(false);
+                  if (selectedFinalSlotId && onFinalize) onFinalize(selectedFinalSlotId, finalNote);
+                }}
+              >
+                拍板確定
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
