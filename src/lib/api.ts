@@ -4,6 +4,7 @@ import {
   SubmitResponseInput,
   FinalizeEventInput,
   SubmitCommentInput,
+  UpdateEventInput,
   EventMode,
 } from "../types.js";
 import * as store from "./localEventStore.js";
@@ -60,6 +61,12 @@ export async function cancelEvent(eventId: string, hostToken: string): Promise<E
 
 export async function reopenEvent(eventId: string, hostToken: string, responseDeadline?: string): Promise<EventData> {
   const event = store.reopenEvent(eventId, hostToken, responseDeadline);
+  saveVisitedEvent(event);
+  return event;
+}
+
+export async function updateEvent(eventId: string, input: UpdateEventInput): Promise<EventData> {
+  const event = store.updateEvent(eventId, input);
   saveVisitedEvent(event);
   return event;
 }
