@@ -67,7 +67,7 @@
 
 **對應項目**：#6、#7、#10、#12
 
-**設計文件**：[subproject-B-design.md](./subproject-B-design.md)（透過 superpowers brainstorming 流程產出，已與使用者確認；下一步是 writing-plans 產出實作計畫）
+**設計文件／實作計畫**：[subproject-B-design.md](./subproject-B-design.md)、[subproject-B-plan.md](./subproject-B-plan.md)（透過 superpowers brainstorming → writing-plans 流程產出，待執行）
 
 **涉及檔案**：
 - `src/mobile/EventScreen.tsx`（行動版容器，含 vote/heatmap/host 三個 Tab 的切換邏輯）
