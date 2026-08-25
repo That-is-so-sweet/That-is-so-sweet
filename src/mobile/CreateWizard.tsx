@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { History, X, AlertTriangle, MapPin, Rocket, Clock, Plus } from "lucide-react";
+import { History, X, AlertTriangle, MapPin, Rocket, Clock, Plus, Info } from "lucide-react";
 import { CreateEventInput, EventLocation, EventMode, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { calculateSlotDuration, formatSlotTime, getNextWeekdayDate } from "../lib/slots";
@@ -9,7 +9,7 @@ import { Button, Input } from "../design-system/components";
 import { TopBar } from "./TopBar";
 import { MonthCalendar } from "./MonthCalendar";
 import { MiniMonthPicker } from "./MiniMonthPicker";
-import { cardStyle, iconBtnStyle, SectionLabel } from "./mobileStyles";
+import { cardStyle, iconBtnStyle } from "./mobileStyles";
 import { getRecentSlotPresets, saveRecentSlotPresets } from "../lib/api";
 
 interface CreateWizardProps {
@@ -28,7 +28,7 @@ const DEFAULT_SLOTS: Omit<TimeSlot, "id">[] = [
   { date: SUN, time: "14:00", label: "下午討論" },
 ];
 
-const STEP_LABELS = ["基本資訊", "候選日期與時段", "確認送出"];
+const STEP_LABELS = ["基本資訊", "候選日期與時段", "活動投票預覽"];
 
 export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading, onOpenHistory }) => {
   const [viewDate, setViewDate] = useState(new Date());
@@ -45,6 +45,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
   const [label, setLabel] = useState("");
   const [activeDate, setActiveDate] = useState<string | null>(selectedDates[0] || null);
   const [quickPresets] = useState(() => getRecentSlotPresets());
+  const [openInfo, setOpenInfo] = useState<"hostName" | "hostEmail" | null>(null);
   const [location, setLocation] = useState<EventLocation | undefined>(undefined);
   const [locationInput, setLocationInput] = useState("");
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
@@ -163,7 +164,21 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
     });
   };
 
-  const stepLabels = isDateOnly ? ["基本資訊", "候選日期", "確認送出"] : STEP_LABELS;
+  const stepLabels = isDateOnly ? ["基本資訊", "候選日期", "活動投票預覽"] : STEP_LABELS;
+
+  const infoLabel = (text: string, key: "hostName" | "hostEmail") => (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+      {text}
+      <button
+        type="button"
+        onClick={() => setOpenInfo((p) => (p === key ? null : key))}
+        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", padding: 0 }}
+        aria-label="更多資訊"
+      >
+        <Info size={13} />
+      </button>
+    </span>
+  );
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -171,78 +186,68 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
         title={title.trim() || "未命名活動"}
         right={<button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>}
       />
-      <div style={{ padding: "14px 20px 6px", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start" }}>
+      <div style={{ padding: "10px 20px", flexShrink: 0, background: "var(--color-primary-subtle)" }}>
+        <div style={{ display: "flex", gap: 3 }}>
           {stepLabels.map((stepLabel, i) => {
-            const isActive = i === step;
+            const filled = i <= step;
+            const isClickable = i < step;
             return (
-              <React.Fragment key={stepLabel}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                  <span
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 12,
-                      fontWeight: 900,
-                      fontFamily: "var(--font-display)",
-                      flexShrink: 0,
-                      background: isActive ? "var(--color-primary)" : "transparent",
-                      color: isActive ? "#fff" : "var(--color-muted)",
-                      border: isActive ? "none" : "2px solid var(--color-border-strong)",
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: isActive ? 800 : 600,
-                      color: isActive ? "var(--color-ink)" : "var(--color-muted)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {stepLabel}
-                  </span>
-                </div>
-                {i < stepLabels.length - 1 && (
-                  <div style={{ flex: 1, marginTop: 12, borderTop: "2px dashed var(--color-border-strong)" }} />
-                )}
-              </React.Fragment>
+              <div
+                key={stepLabel}
+                onClick={isClickable ? () => setStep(i) : undefined}
+                style={{
+                  flex: 1,
+                  height: 6,
+                  borderRadius: 999,
+                  background: filled ? "var(--color-primary)" : "rgba(26,12,4,0.12)",
+                  cursor: isClickable ? "pointer" : "default",
+                }}
+              />
             );
           })}
         </div>
+        <div style={{ marginTop: 8, display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{stepLabels[step]}</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)" }}>
+            步驟 {step + 1}/{stepLabels.length}
+          </span>
+        </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: 16, background: step === 0 ? "var(--color-surface)" : undefined }}>
         {step === 0 && (
-          <div style={{ ...cardStyle, background: "var(--color-primary-subtle)", border: "none" }}>
-            <SectionLabel title="基本活動資訊" />
+          <div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <Input label="活動 / 會議名稱" required placeholder="例如：產品專案週對齊會議" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={30} />
+              <Input label="活動名稱" required placeholder="例如：組內聚餐" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={30} />
 
               <div>
                 <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 6 }}>
                   投票截止時間<span style={{ color: "var(--color-primary)", marginLeft: 4 }}>*</span>
                 </label>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Clock size={14} color="var(--color-muted)" style={{ flexShrink: 0 }} />
-                  <input
-                    type="datetime-local"
-                    value={responseDeadline}
-                    min={getNowLocalValue()}
-                    onChange={(e) => setResponseDeadline(e.target.value)}
-                    style={{ flex: 1, padding: "9px 10px", borderRadius: "var(--radius-input)", border: "1.5px solid var(--color-border)", fontSize: 13, fontWeight: 700 }}
-                  />
-                </div>
-                <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>預設為今天起 7 天後，可自行調整日期與時間</div>
+                <input
+                  type="datetime-local"
+                  value={responseDeadline}
+                  min={getNowLocalValue()}
+                  onChange={(e) => setResponseDeadline(e.target.value)}
+                  style={{ width: "100%", padding: "9px 10px", borderRadius: "var(--radius-input)", border: "1.5px solid var(--color-border)", fontSize: 13, fontWeight: 700 }}
+                />
               </div>
 
-              <Input label="主揪暱稱" placeholder="例如：阿傑、Wally" value={hostName} onChange={(e) => setHostName(e.target.value)} />
-              <Input label="主揪 Email" placeholder="例如：host@example.com" type="email" value={hostEmail} onChange={(e) => setHostEmail(e.target.value)} />
+              <Input
+                label={infoLabel("主揪暱稱", "hostName")}
+                placeholder="例如：阿傑、Wally"
+                value={hostName}
+                onChange={(e) => setHostName(e.target.value)}
+                hint={openInfo === "hostName" ? "這個主揪暱稱將會顯示在任何活動名稱的地方，以及之後會使用這個暱稱作為登入的依據" : undefined}
+              />
+              <Input
+                label={infoLabel("主揪 Email", "hostEmail")}
+                placeholder="例如：host@example.com"
+                type="email"
+                value={hostEmail}
+                onChange={(e) => setHostEmail(e.target.value)}
+                hint={openInfo === "hostEmail" ? "後續如果有相對應的內容更新，會從這個 email 來做登入，並且會寄信通知" : undefined}
+              />
               <Input
                 label="地點"
                 placeholder="輸入地點，或貼上 Google Maps 連結"
@@ -256,12 +261,13 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
         )}
 
         {step === 1 && (
-          <div style={cardStyle}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-              <SectionLabel
-                title={isDateOnly ? "候選日期" : "候選日期與時段"}
-                hint={isDateOnly ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天` : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
-              />
+          <div>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: "var(--color-muted)" }}>
+                {isDateOnly
+                  ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天`
+                  : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
+              </div>
               {!isDateOnly && (
                 <button
                   onClick={() => setMode("date_only")}
@@ -271,16 +277,18 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
                 </button>
               )}
             </div>
-            <MonthCalendar
-              selectedDates={selectedDates}
-              onChange={handleDatesChange}
-              viewDate={viewDate}
-              setViewDate={setViewDate}
-              slots={slots}
-              activeDate={activeDate}
-              onActiveDateChange={setActiveDate}
-              isDateOnly={isDateOnly}
-            />
+            <div style={cardStyle}>
+              <MonthCalendar
+                selectedDates={selectedDates}
+                onChange={handleDatesChange}
+                viewDate={viewDate}
+                setViewDate={setViewDate}
+                slots={slots}
+                activeDate={activeDate}
+                onActiveDateChange={setActiveDate}
+                isDateOnly={isDateOnly}
+              />
+            </div>
             {selectedDates.length === 0 && (
               <div style={{ marginTop: 12, fontSize: 11, color: "var(--color-hot)", display: "flex", alignItems: "center", gap: 4 }}>
                 <AlertTriangle size={12} />
@@ -289,7 +297,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
             )}
 
             {isDateOnly && selectedDates.length > 0 && (
-              <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
+              <div style={{ marginTop: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 2 }}>
                   已選日期（{selectedDates.length}）
                 </div>
@@ -322,7 +330,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
             )}
 
             {!isDateOnly && activeDate && selectedDates.length > 0 && (
-              <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
+              <div style={{ marginTop: 16 }}>
                 <div style={{ border: "1.5px dashed var(--color-border-strong)", borderRadius: "var(--radius-md)", padding: 10, marginBottom: 14, background: "var(--color-cream)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 8 }}>
                     <Plus size={12} />
@@ -424,8 +432,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
         )}
 
         {step === 2 && (
-          <div style={cardStyle}>
-            <SectionLabel title="確認活動內容" />
+          <div>
             <div style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", marginBottom: 4 }}>{title || "（尚未命名）"}</div>
             {hostName && <div style={{ fontSize: 11, color: "var(--color-muted)" }}>主揪：{hostName}</div>}
             {location && (

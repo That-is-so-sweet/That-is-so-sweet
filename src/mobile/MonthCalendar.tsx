@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Lightbulb, Flag } from "lucide-react";
-import { navBtnStyle } from "./mobileStyles";
+import { MonthNavButton, countInAdjacentMonth } from "./mobileStyles";
 import { HOLIDAYS_2026 } from "./holidays";
 import { TimeSlot } from "../types";
 
@@ -37,6 +37,9 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   const monthHolidays = Object.entries(HOLIDAYS_2026).filter(([k]) => k.startsWith(monthPrefix));
   const set = new Set(selectedDates);
   const countFor = (ds: string) => (slots ? slots.filter((s) => s.date === ds).length : 0);
+  const adjacentItems = slots && slots.length > 0 ? slots : selectedDates.map((d) => ({ date: d }));
+  const prevMonthCount = countInAdjacentMonth(adjacentItems, year, month, -1);
+  const nextMonthCount = countInAdjacentMonth(adjacentItems, year, month, 1);
 
   // Click-and-drag multi-select: dragging across cells adds/removes them in bulk (decided by the
   // first cell's state), same for mouse drag and touch swipe. A plain tap (no drag movement)
@@ -123,7 +126,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, gap: 6 }}>
-        <button style={navBtnStyle} onClick={() => setViewDate(new Date(year, month - 1, 1))}>‹</button>
+        <MonthNavButton direction="prev" onClick={() => setViewDate(new Date(year, month - 1, 1))} badgeCount={prevMonthCount} />
         <select
           value={`${year}-${month}`}
           onChange={(e) => {
@@ -151,7 +154,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
             );
           })}
         </select>
-        <button style={navBtnStyle} onClick={() => setViewDate(new Date(year, month + 1, 1))}>›</button>
+        <MonthNavButton direction="next" onClick={() => setViewDate(new Date(year, month + 1, 1))} badgeCount={nextMonthCount} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
