@@ -169,25 +169,57 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <TopBar
         title={title.trim() || "未命名活動"}
-        subtitle={`步驟 ${step + 1}/${stepLabels.length} · ${stepLabels[step]}`}
         right={<button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>}
       />
-      <div style={{ padding: "10px 16px 0", flexShrink: 0 }}>
-        <div style={{ height: 4, borderRadius: 4, background: "var(--color-border)", overflow: "hidden" }}>
-          <div
-            style={{
-              height: "100%",
-              width: `${((step + 1) / stepLabels.length) * 100}%`,
-              background: "var(--color-primary)",
-              transition: "width 250ms var(--ease-out)",
-            }}
-          />
+      <div style={{ padding: "14px 20px 6px", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "flex-start" }}>
+          {stepLabels.map((stepLabel, i) => {
+            const isActive = i === step;
+            return (
+              <React.Fragment key={stepLabel}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <span
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      fontFamily: "var(--font-display)",
+                      flexShrink: 0,
+                      background: isActive ? "var(--color-primary)" : "transparent",
+                      color: isActive ? "#fff" : "var(--color-muted)",
+                      border: isActive ? "none" : "2px solid var(--color-border-strong)",
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: isActive ? 800 : 600,
+                      color: isActive ? "var(--color-ink)" : "var(--color-muted)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {stepLabel}
+                  </span>
+                </div>
+                {i < stepLabels.length - 1 && (
+                  <div style={{ flex: 1, marginTop: 12, borderTop: "2px dashed var(--color-border-strong)" }} />
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
         {step === 0 && (
-          <div style={cardStyle}>
+          <div style={{ ...cardStyle, background: "var(--color-primary-subtle)", border: "none" }}>
             <SectionLabel title="基本活動資訊" />
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <Input label="活動 / 會議名稱" required placeholder="例如：產品專案週對齊會議" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={30} />

@@ -56,10 +56,57 @@ export const STATUS_META: Record<string, { icon: LucideIcon; color: string }> = 
   unavailable: { icon: X, color: "var(--color-muted)" },
 };
 
-export function SectionLabel({ title, hint }: { title: string; hint?: string }) {
+export function SectionLabel({
+  title,
+  hint,
+  icon,
+  iconBg = "var(--color-primary)",
+  right,
+}: {
+  title: string;
+  hint?: string;
+  icon?: React.ReactNode;
+  iconBg?: string;
+  right?: React.ReactNode;
+}) {
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{title}</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          {icon && (
+            <span
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "var(--radius-lg)",
+                background: iconBg,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              {icon}
+            </span>
+          )}
+          <span
+            style={{
+              fontFamily: icon ? "var(--font-display)" : undefined,
+              fontWeight: icon ? 900 : 800,
+              fontSize: icon ? 14 : 13,
+              letterSpacing: icon ? "-0.01em" : undefined,
+              color: "var(--color-ink)",
+            }}
+          >
+            {title}
+          </span>
+        </div>
+        {right && (
+          <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)", whiteSpace: "nowrap", flexShrink: 0 }}>
+            {right}
+          </span>
+        )}
+      </div>
       {hint && <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 2 }}>{hint}</div>}
     </div>
   );

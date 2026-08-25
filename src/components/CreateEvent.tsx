@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, AlertTriangle, MapPin, Rocket, Clock, Plus } from "lucide-react";
+import { X, AlertTriangle, MapPin, Rocket, Clock, Plus, Check } from "lucide-react";
 import { CreateEventInput, EventLocation, EventMode, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { calculateSlotDuration, formatSlotTime, getNextWeekdayDate } from "../lib/slots";
-import { getDefaultDeadlineLocalValue, getNowLocalValue, localValueToIso } from "../lib/eventStatus";
+import { getDefaultDeadlineLocalValue, getNowLocalValue, localValueToIso, formatDeadline, formatRemaining } from "../lib/eventStatus";
 import { parseLocationInput, extractPlaceNameFromFullUrl, mockResolveShortLink } from "../lib/location";
 import { Button, Input } from "../design-system/components";
 import { MonthCalendar } from "../mobile/MonthCalendar";
@@ -359,7 +359,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
         {/* Right column: 確認送出 — always visible live preview */}
         <div style={{ position: "sticky", top: 88, display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
           <div style={{ ...cardStyle, background: "var(--color-primary-subtle)", border: "1.5px solid rgba(224,75,40,0.18)" }}>
-            <SectionLabel title="確認活動內容" />
+            <SectionLabel title="確認活動內容" icon={<Check size={13} color="#fff" strokeWidth={2.2} />} />
             <div style={{ fontSize: 15, fontWeight: 900, fontFamily: "var(--font-display)", marginBottom: 4, color: "var(--color-ink)" }}>{title || "（尚未命名）"}</div>
             {hostName && <div style={{ fontSize: 11, color: "var(--color-muted)" }}>主揪：{hostName}</div>}
             {location && (
@@ -377,10 +377,34 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
             {description && (
               <div style={{ fontSize: 11, color: "var(--color-muted)" }}>{description}</div>
             )}
-            <div style={{ fontSize: 11, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
-              <Clock size={11} />
-              投票截止：{responseDeadline ? responseDeadline.replace("T", " ") : "尚未設定"}
-            </div>
+            {responseDeadline ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  padding: "10px 12px",
+                  borderRadius: "var(--radius-md)",
+                  background: "var(--color-hot-subtle)",
+                  border: "1px solid rgba(214,48,60,0.22)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: "var(--color-ink)" }}>
+                  <Clock size={13} color="var(--color-hot)" />
+                  投票截止 {formatDeadline(localValueToIso(responseDeadline))}
+                </div>
+                <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 13, color: "var(--color-hot)", whiteSpace: "nowrap" }}>
+                  {formatRemaining(localValueToIso(responseDeadline))}
+                </span>
+              </div>
+            ) : (
+              <div style={{ fontSize: 11, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+                <Clock size={11} />
+                投票截止：尚未設定
+              </div>
+            )}
 
             <div style={{ display: "flex", gap: 16, margin: "12px 0", paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Users, Share2, History, Plus, Clock, CalendarDays } from "lucide-react";
 import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
-import { getLifecycleStatus } from "../lib/eventStatus";
+import { getLifecycleStatus, formatRemaining } from "../lib/eventStatus";
 import { Badge } from "../design-system/components";
 import { TopBar } from "./TopBar";
 import { VoteTab } from "./VoteTab";
@@ -93,6 +93,12 @@ export const EventScreen: React.FC<EventScreenProps> = ({
         <span style={{ fontSize: 11, fontWeight: 800, color: lifecycle.color, whiteSpace: "nowrap" }}>{lifecycle.label}</span>
         <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
         {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
+        {event.status === "active" && event.responseDeadline && (
+          <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: "var(--color-muted)", flexShrink: 0, whiteSpace: "nowrap" }}>
+            <Clock size={11} color="var(--color-muted)" />
+            {formatRemaining(event.responseDeadline)}
+          </span>
+        )}
       </div>
 
       {event.status === "cancelled" ? (

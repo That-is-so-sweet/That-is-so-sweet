@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Trophy, Medal, MessageCircle, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp, Clock, AlertTriangle, Ban } from "lucide-react";
-import { EventData, SlotStats, UpdateEventInput } from "../types";
+import { MessageCircle, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp, ChevronLeft, X, AlertTriangle, Ban, Check, TrendingUp, Award } from "lucide-react";
+import { AvailabilityStatus, EventData, SlotStats, UpdateEventInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats, formatSlotTime } from "../lib/slots";
-import { getLifecycleStatus, formatDeadline, formatRemaining } from "../lib/eventStatus";
+import { getLifecycleStatus, formatDeadline } from "../lib/eventStatus";
 import { Avatar, Badge, Button, Input } from "../design-system/components";
 import { cardStyle, countInAdjacentMonth, MonthNavButton, SectionLabel, STATUS_META } from "./mobileStyles";
 import { ReopenModal } from "./ReopenModal";
@@ -23,27 +23,67 @@ interface HeatmapTabProps {
 }
 
 const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
-const medalColors = ["#d4a017", "#9aa0a6", "#b06a3d"];
+const rankColors = ["var(--color-primary)", "var(--color-secondary-dark)", "color-mix(in oklch, var(--color-ink), var(--color-primary) 35%)"];
 
 const heatColor = (ratio: number) =>
   ratio >= 0.75 ? "var(--color-success)" : ratio >= 0.4 ? "rgba(90,158,90,0.3)" : ratio > 0 ? "rgba(90,158,90,0.12)" : "var(--color-cream)";
 
-const BreakdownIcons: React.FC<{ s: SlotStats; color?: string; size?: number }> = ({ s, color, size = 10 }) => (
-  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: color || STATUS_META.available.color }}>
-      <STATUS_META.available.icon size={size} color={color || STATUS_META.available.color} />
-      {s.availableCount}
-    </span>
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: color || STATUS_META.if_needed.color }}>
-      <STATUS_META.if_needed.icon size={size} color={color || STATUS_META.if_needed.color} />
-      {s.ifNeededCount}
-    </span>
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 2, color: color || STATUS_META.unavailable.color }}>
-      <STATUS_META.unavailable.icon size={size} color={color || STATUS_META.unavailable.color} />
-      {s.unavailableCount}
-    </span>
-  </div>
+const RankBadge: React.FC<{ rank: number }> = ({ rank }) => (
+  <span
+    style={{
+      width: 18,
+      height: 18,
+      borderRadius: "50%",
+      background: rankColors[(rank - 1) % rankColors.length],
+      color: "#fff",
+      fontSize: 10,
+      fontWeight: 900,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+    }}
+  >
+    {rank}
+  </span>
 );
+
+const BREAKDOWN_ITEMS: { status: AvailabilityStatus; metaKey: "available" | "if_needed" | "unavailable" }[] = [
+  { status: "available", metaKey: "available" },
+  { status: "if_needed", metaKey: "if_needed" },
+  { status: "unavailable", metaKey: "unavailable" },
+];
+
+const BreakdownIcons: React.FC<{ s: SlotStats; color?: string; size?: number; onSelect?: (status: AvailabilityStatus) => void }> = ({ s, color, size = 10, onSelect }) => {
+  const counts: Record<AvailabilityStatus, number> = { available: s.availableCount, if_needed: s.ifNeededCount, unavailable: s.unavailableCount };
+  return (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {BREAKDOWN_ITEMS.map(({ status, metaKey }) => {
+        const meta = STATUS_META[metaKey];
+        const itemColor = color || meta.color;
+        const content = (
+          <>
+            <meta.icon size={size} color={itemColor} />
+            {counts[status]}
+          </>
+        );
+        return onSelect ? (
+          <button
+            key={status}
+            onClick={(e) => { e.stopPropagation(); onSelect(status); }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 2, color: itemColor, background: "none", border: "none", padding: 0, font: "inherit", cursor: "pointer" }}
+          >
+            {content}
+          </button>
+        ) : (
+          <span key={status} style={{ display: "inline-flex", alignItems: "center", gap: 2, color: itemColor }}>
+            {content}
+          </span>
+        );
+      })}
+    </div>
+  );
+};
 
 const NamesPanel: React.FC<{ s: SlotStats }> = ({ s }) => (
   <div style={{ marginTop: 6, padding: 8, background: "var(--color-cream)", borderRadius: "var(--radius-md)", display: "flex", flexDirection: "column", gap: 6 }}>
@@ -85,10 +125,15 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   const [showAllTop, setShowAllTop] = useState(false);
   const [expandedSlotId, setExpandedSlotId] = useState<string | null>(null);
   const toggleExpand = (id: string) => setExpandedSlotId((cur) => (cur === id ? null : id));
+  const [namesPanel, setNamesPanel] = useState<{ slotId: string; status: AvailabilityStatus } | null>(null);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [dangerOpen, setDangerOpen] = useState(false);
+  const stats = computeSlotStats(event.slots, event.responses);
+  const qualifying = [...stats].filter((s) => s.availableCount + s.ifNeededCount > 0).sort((a, b) => b.score - a.score);
   // 主辦人操作區塊的 state（原本是 HostTab.tsx 的內容，併入這個檔案）
-  const [selectedFinalSlotId, setSelectedFinalSlotId] = useState<string | undefined>(event.slots[0]?.id);
+  // Defaults to the top-ranked (most-voted) slot rather than slots[0] so the
+  // pre-selected row is visible in the default top-3 bar-view list.
+  const [selectedFinalSlotId, setSelectedFinalSlotId] = useState<string | undefined>(qualifying[0]?.slotId ?? event.slots[0]?.id);
   const noteDefaultLines = [
     event.location ? `地點：${event.location.text}` : null,
     event.description ? `備註：${event.description}` : null,
@@ -98,8 +143,6 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   const [reopening, setReopening] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [editing, setEditing] = useState(false);
-  const stats = computeSlotStats(event.slots, event.responses);
-  const qualifying = [...stats].filter((s) => s.availableCount + s.ifNeededCount > 0).sort((a, b) => b.score - a.score);
   const top = showAllTop ? qualifying : qualifying.slice(0, 3);
   const moreCount = qualifying.length - 3;
   const grouped = stats.reduce((acc, s) => {
@@ -110,6 +153,19 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   const hasResponded = !!userNickname.trim() && event.responses.some((r) => r.nickname.toLowerCase() === userNickname.trim().toLowerCase());
   const isDateOnly = event.mode === "date_only";
   const lifecycle = getLifecycleStatus(event);
+  const selectedSlot = event.slots.find((s) => s.id === selectedFinalSlotId);
+  const selectedLabel = selectedSlot
+    ? `${selectedSlot.date} (${formatChineseWeekday(selectedSlot.date)})${!isDateOnly ? " " + formatSlotTime(selectedSlot.time) : ""}`
+    : "尚未選擇";
+  const namesPanelSlot = namesPanel ? stats.find((x) => x.slotId === namesPanel.slotId) : undefined;
+  const namesPanelLabel = namesPanel
+    ? namesPanel.status === "available" ? "確定有空" : namesPanel.status === "if_needed" ? "可能／視情況" : "不行"
+    : "";
+  const namesPanelNames = namesPanel && namesPanelSlot
+    ? namesPanel.status === "available" ? namesPanelSlot.availableNames
+      : namesPanel.status === "if_needed" ? namesPanelSlot.ifNeededNames
+      : namesPanelSlot.unavailableNames
+    : [];
 
   const allDates: string[] = event.slots
     .map((s) => s.date)
@@ -141,23 +197,12 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "0 2px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--color-muted)", flexWrap: "wrap" }}>
-          <span style={{ width: 6, height: 6, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
-          {lifecycle.label}
-          <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
-          {event.responseDeadline && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-              <Clock size={11} color="var(--color-muted)" style={{ flexShrink: 0 }} />
-              {formatDeadline(event.responseDeadline)}（{formatRemaining(event.responseDeadline)}）
-            </span>
-          )}
-          {event.hostName && (
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-              <User size={11} color="var(--color-muted)" style={{ flexShrink: 0 }} />
-              {event.hostName}
-            </span>
-          )}
-        </div>
+        {event.hostName && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--color-ink)", lineHeight: 1.4 }}>
+            <User size={12} color="var(--color-muted)" style={{ flexShrink: 0 }} />
+            <span>主揪：{event.hostName}</span>
+          </div>
+        )}
         {event.location && (
           <div style={{ display: "flex", alignItems: "flex-start", gap: 5, fontSize: 12, color: "var(--color-ink)", lineHeight: 1.4 }}>
             <MapPin size={12} color="var(--color-muted)" style={{ flexShrink: 0, marginTop: 2 }} />
@@ -195,7 +240,11 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
       ) : (
         <>
           <div style={cardStyle}>
-            <SectionLabel title="交集時段與熱點分佈" />
+            <SectionLabel
+              title="交集時段與熱點分佈"
+              icon={<TrendingUp size={13} color="#fff" strokeWidth={2.4} />}
+              right={`共 ${total} 人已回覆`}
+            />
             <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3, marginBottom: 10 }}>
               {[{ k: "bar" as const, label: "長條圖檢視", icon: BarChart3 }, { k: "calendar" as const, label: "月曆檢視", icon: CalendarDays }].map((m) => (
                 <button
@@ -249,37 +298,67 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                     const ifNeededPct = total ? (s.ifNeededCount / total) * 100 : 0;
                     const unavailPct = total ? (s.unavailableCount / total) * 100 : 0;
                     const isExpanded = expandedSlotId === s.slotId;
+                    const isFinalizePick = isHost && selectedFinalSlotId === s.slotId;
                     return (
-                      <div key={s.slot.id}>
-                        <button
-                          onClick={() => toggleExpand(s.slotId)}
-                          style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 3 }}>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-ink)", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                              {i === 0 ? (
-                                <Trophy size={13} color={medalColors[0]} />
-                              ) : (
-                                <Medal size={13} color={medalColors[i] || medalColors[2]} />
-                              )}
-                              {s.slot.date} ({formatChineseWeekday(s.slot.date)}){!isDateOnly && ` ${formatSlotTime(s.slot.time)}`}
-                              {s.slot.label && <span style={{ fontWeight: 500, color: "var(--color-muted)" }}> · {s.slot.label}</span>}
-                            </span>
-                            <span style={{ fontSize: 10, fontWeight: 800, color: "var(--color-success)" }}>{s.availableCount}/{total} 確定有空</span>
-                          </div>
-                          <div style={{ width: "100%", height: 14, borderRadius: 999, background: "var(--color-cream)", overflow: "hidden", display: "flex" }}>
-                            {availPct > 0 && <div style={{ width: `${availPct}%`, background: "var(--color-success)", transition: "width 600ms var(--ease-spring)" }} />}
-                            {ifNeededPct > 0 && <div style={{ width: `${ifNeededPct}%`, background: "var(--color-secondary)", transition: "width 600ms var(--ease-spring)" }} />}
-                            {unavailPct > 0 && <div style={{ width: `${unavailPct}%`, background: "var(--color-border-strong)", transition: "width 600ms var(--ease-spring)" }} />}
-                          </div>
-                          <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <BreakdownIcons s={s} size={9} />
-                            <span style={{ fontSize: 9, fontWeight: 700, color: "var(--color-muted)", display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
-                              {isExpanded ? "收合" : "查看名單"}
-                              {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                            </span>
-                          </div>
-                        </button>
+                      <div
+                        key={s.slot.id}
+                        style={{
+                          border: isFinalizePick ? "2px solid var(--color-primary)" : "2px solid transparent",
+                          borderRadius: "var(--radius-md)",
+                          background: isFinalizePick ? "var(--color-primary-subtle)" : "transparent",
+                          padding: isHost ? 6 : 0,
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                          <button
+                            onClick={() => toggleExpand(s.slotId)}
+                            style={{ display: "block", flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                          >
+                            <div style={{ marginBottom: 3 }}>
+                              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-ink)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                <RankBadge rank={i + 1} />
+                                {s.slot.date} ({formatChineseWeekday(s.slot.date)}){!isDateOnly && ` ${formatSlotTime(s.slot.time)}`}
+                                {s.slot.label && <span style={{ fontWeight: 500, color: "var(--color-muted)" }}> · {s.slot.label}</span>}
+                              </span>
+                            </div>
+                            <div style={{ width: "100%", height: 14, borderRadius: 999, background: "var(--color-cream)", overflow: "hidden", display: "flex" }}>
+                              {availPct > 0 && <div style={{ width: `${availPct}%`, background: "var(--color-success)", transition: "width 600ms var(--ease-spring)" }} />}
+                              {ifNeededPct > 0 && <div style={{ width: `${ifNeededPct}%`, background: "var(--color-secondary)", transition: "width 600ms var(--ease-spring)" }} />}
+                              {unavailPct > 0 && <div style={{ width: `${unavailPct}%`, background: "var(--color-border-strong)", transition: "width 600ms var(--ease-spring)" }} />}
+                            </div>
+                          </button>
+                          {isHost && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setSelectedFinalSlotId(s.slotId); }}
+                              title="設為定案時段"
+                              style={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: "50%",
+                                flexShrink: 0,
+                                padding: 0,
+                                cursor: "pointer",
+                                border: isFinalizePick ? "none" : "2px solid var(--color-border-strong)",
+                                background: isFinalizePick ? "var(--color-primary)" : "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              {isFinalizePick && <Check size={12} color="#fff" strokeWidth={3} />}
+                            </button>
+                          )}
+                        </div>
+                        <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <BreakdownIcons s={s} size={9} onSelect={(status) => setNamesPanel({ slotId: s.slotId, status })} />
+                          <button
+                            onClick={() => toggleExpand(s.slotId)}
+                            style={{ fontSize: 9, fontWeight: 700, color: "var(--color-muted)", display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                          >
+                            {isExpanded ? "收合" : "查看名單"}
+                            {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                          </button>
+                        </div>
                         {isExpanded && <NamesPanel s={s} />}
                       </div>
                     );
@@ -384,33 +463,55 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                         const bg = heatColor(ratio);
                         const fg = ratio >= 0.75 ? "#fff" : "var(--color-ink)";
                         const isExpanded = expandedSlotId === s.slotId;
+                        const isFinalizePick = isHost && selectedFinalSlotId === s.slotId;
                         return (
                           <div key={s.slot.id}>
-                            <button
-                              onClick={() => toggleExpand(s.slotId)}
-                              style={{
-                                display: "block",
-                                width: "100%",
-                                textAlign: "left",
-                                borderRadius: "var(--radius-md)",
-                                padding: 8,
-                                background: bg,
-                                color: fg,
-                                border: isExpanded ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
-                                cursor: "pointer",
-                              }}
-                            >
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                              <button
+                                onClick={() => toggleExpand(s.slotId)}
+                                style={{
+                                  display: "block",
+                                  flex: 1,
+                                  minWidth: 0,
+                                  textAlign: "left",
+                                  borderRadius: "var(--radius-md)",
+                                  padding: 8,
+                                  background: bg,
+                                  color: fg,
+                                  border: isExpanded ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
+                                  cursor: "pointer",
+                                }}
+                              >
                                 <span style={{ fontSize: 11, fontWeight: 800 }}>
                                   {isDateOnly ? "本日是否有空" : formatSlotTime(s.slot.time)}
                                   {s.slot.label && <span style={{ fontWeight: 500, opacity: 0.85 }}> · {s.slot.label}</span>}
                                 </span>
-                                <span style={{ fontSize: 10, fontWeight: 800, opacity: 0.9 }}>{s.availableCount}/{total} 確定有空</span>
-                              </div>
-                              <div style={{ marginTop: 4 }}>
-                                <BreakdownIcons s={s} color="currentColor" size={9} />
-                              </div>
-                            </button>
+                              </button>
+                              {isHost && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setSelectedFinalSlotId(s.slotId); }}
+                                  title="設為定案時段"
+                                  style={{
+                                    width: 20,
+                                    height: 20,
+                                    borderRadius: "50%",
+                                    flexShrink: 0,
+                                    padding: 0,
+                                    cursor: "pointer",
+                                    border: isFinalizePick ? "none" : "2px solid var(--color-border-strong)",
+                                    background: isFinalizePick ? "var(--color-primary)" : "#fff",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  {isFinalizePick && <Check size={12} color="#fff" strokeWidth={3} />}
+                                </button>
+                              )}
+                            </div>
+                            <div style={{ marginTop: 4, padding: "0 2px" }}>
+                              <BreakdownIcons s={s} size={9} onSelect={(status) => setNamesPanel({ slotId: s.slotId, status })} />
+                            </div>
                             {isExpanded && <NamesPanel s={s} />}
                           </div>
                         );
@@ -474,7 +575,12 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
 
       {isHost && (
         <div style={cardStyle}>
-          <SectionLabel title="主揪操作" hint="拍板定案、管理活動" />
+          <SectionLabel
+            title="主揪定案"
+            hint="拍板定案、管理活動"
+            icon={<Award size={13} color="var(--color-ink)" strokeWidth={2.2} />}
+            iconBg="var(--color-secondary)"
+          />
           {lifecycle.key === "voting_closed" && onReopen && (
             <div style={{ marginBottom: 12, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-hot-subtle)", border: "1px solid rgba(214,48,60,0.25)" }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
@@ -489,47 +595,8 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
               </div>
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-            {event.slots.map((s) => {
-              const st = stats.find((x) => x.slotId === s.id)!;
-              const active = selectedFinalSlotId === s.id;
-              return (
-                <div
-                  key={s.id}
-                  onClick={() => setSelectedFinalSlotId(s.id)}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "9px 10px",
-                    borderRadius: "var(--radius-md)",
-                    border: active ? "2px solid var(--color-primary)" : "1px solid var(--color-border)",
-                    background: active ? "var(--color-primary)" : "#fff",
-                    color: active ? "#fff" : "var(--color-ink)",
-                    cursor: "pointer",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 12, fontWeight: 800 }}>
-                      {s.date} ({formatChineseWeekday(s.date)}){!isDateOnly && ` · ${formatSlotTime(s.time)}`}
-                    </div>
-                    {s.label && <div style={{ fontSize: 10, opacity: 0.8 }}>{s.label}</div>}
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      padding: "3px 8px",
-                      borderRadius: "var(--radius-pill)",
-                      background: active ? "rgba(255,255,255,0.25)" : "rgba(90,158,90,0.15)",
-                      color: active ? "#fff" : "var(--color-success)",
-                    }}
-                  >
-                    {st.availableCount} 人出席
-                  </span>
-                </div>
-              );
-            })}
+          <div style={{ fontSize: 11, color: "var(--color-muted)", marginBottom: 10 }}>
+            目前已選：<span style={{ fontWeight: 800, color: "var(--color-ink)" }}>{selectedLabel}</span>
           </div>
           <Input label="定案備註" placeholder="例如：訂位阿傑，18:00 集合" value={finalNote} onChange={(e) => setFinalNote(e.target.value)} />
           <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -628,6 +695,27 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                 拍板確定
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+      {namesPanel && (
+        <div style={{ position: "absolute", inset: 0, background: "#fff", zIndex: 60, display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid var(--color-border)", flexShrink: 0 }}>
+            <button onClick={() => setNamesPanel(null)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center" }}>
+              <ChevronLeft size={20} color="var(--color-ink)" />
+            </button>
+            <span style={{ fontSize: 15, fontWeight: 800, color: "var(--color-ink)" }}>{namesPanelLabel}（{namesPanelNames.length}）</span>
+            <button onClick={() => setNamesPanel(null)} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center" }}>
+              <X size={18} color="var(--color-ink)" />
+            </button>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {namesPanelNames.map((n) => (
+              <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--color-border)" }}>
+                <Avatar name={n} size="sm" />
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-ink)" }}>{n}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
