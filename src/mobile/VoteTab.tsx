@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Zap, RotateCw, ChevronUp, ChevronDown, List, CalendarDays, AlertTriangle } from "lucide-react";
+import { Zap, RotateCw, ChevronUp, ChevronDown, List, CalendarDays, AlertTriangle, Info } from "lucide-react";
 import { EventData, AvailabilityStatus, SubmitResponseInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { isVotingOpen, formatDeadline } from "../lib/eventStatus";
@@ -45,7 +45,7 @@ const BULK_TARGETS: BulkTarget[] = [
 const VoteRow: React.FC<VoteRowProps> = (props) => {
   const { slot, status, onChange, primaryText, disabled } = props;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid var(--color-border)", opacity: disabled ? 0.55 : 1 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", borderBottom: "1px solid var(--color-border)", opacity: disabled ? 0.55 : 1 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>{primaryText ?? formatSlotTime(slot.time)}</div>
         {slot.label && <div style={{ fontSize: 10, color: "var(--color-muted)" }}>{slot.label}</div>}
@@ -87,6 +87,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
   const [availability, setAvailability] = useState<Record<string, AvailabilityStatus>>({});
   const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [showEmailInfo, setShowEmailInfo] = useState(false);
   const [bulkTargetKey, setBulkTargetKey] = useState("all");
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [calViewDate, setCalViewDate] = useState(new Date());
@@ -181,6 +182,109 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
   const calPrevCount = countInAdjacentMonth(event.slots, calYear, calMonth, -1);
   const calNextCount = countInAdjacentMonth(event.slots, calYear, calMonth, 1);
 
+  const bulkToolsButton = (
+    <button
+      onClick={() => setToolsOpen((v) => !v)}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 3,
+        padding: "4px 8px",
+        borderRadius: "var(--radius-pill)",
+        border: toolsOpen ? "1.5px solid var(--color-muted)" : "1px solid var(--color-border-strong)",
+        background: toolsOpen ? "var(--color-muted)" : "#fff",
+        color: toolsOpen ? "#fff" : "var(--color-muted)",
+        fontSize: 10,
+        fontWeight: 800,
+        cursor: "pointer",
+        flexShrink: 0,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <Zap size={10} />
+      批次勾選
+      {toolsOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+    </button>
+  );
+
+  const bulkToolsPanel = toolsOpen && (
+    <div style={{ marginBottom: 10, padding: 10, border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-md)", background: "var(--color-cream)" }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>套用對象（依星期批次勾選）</div>
+      <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+        {BULK_TARGETS.slice(0, 3).map((t) => {
+          const active = bulkTargetKey === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setBulkTargetKey(t.key)}
+              style={{
+                ...quickBtnStyle,
+                flex: 1,
+                border: active ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)",
+                background: active ? "var(--color-primary)" : "#fff",
+                color: active ? "#fff" : "var(--color-ink)",
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+        {BULK_TARGETS.slice(3).map((t) => {
+          const active = bulkTargetKey === t.key;
+          const isWeekend = t.key === "dow-0" || t.key === "dow-6";
+          return (
+            <button
+              key={t.key}
+              onClick={() => setBulkTargetKey(t.key)}
+              style={{
+                ...quickBtnStyle,
+                flex: 1,
+                border: active ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)",
+                background: active ? "var(--color-primary)" : "#fff",
+                color: active ? "#fff" : isWeekend ? "var(--color-weekend)" : "var(--color-ink)",
+              }}
+            >
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>設定為</div>
+      <div style={{ display: "flex", gap: 4 }}>
+        {(["available", "if_needed", "unavailable"] as AvailabilityStatus[]).map((k) => {
+          const meta = STATUS_META[k];
+          return (
+            <button
+              key={k}
+              onClick={() => applyBulk(k)}
+              style={{
+                flex: 1,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 4,
+                fontSize: 11,
+                fontWeight: 800,
+                padding: "7px 4px",
+                borderRadius: "var(--radius-md)",
+                border: `1.5px solid ${meta.color}`,
+                background: "#fff",
+                color: "var(--color-ink)",
+                cursor: "pointer",
+              }}
+            >
+              <meta.icon size={11} color={meta.color} />
+              {STATUS_LABEL[k]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
       {votingClosed && (
@@ -191,17 +295,41 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
           </span>
         </div>
       )}
-      <Input size="sm" label="您的暱稱" required placeholder="例如：小明" value={nickname} onChange={(e) => setNickname(e.target.value)} />
-      <Input size="sm" label="聯絡 Email" placeholder="例如：name@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <Input
-        size="sm"
-        label="密碼（選填）"
-        placeholder={needsPassword ? "此暱稱已有人使用，請輸入密碼" : "設定密碼可在其他裝置回來編輯"}
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      {isLocked && (
+      {!votingClosed && (
+        <>
+          <Input size="sm" label="您的暱稱" required placeholder="例如：小明" value={nickname} onChange={(e) => setNickname(e.target.value)} />
+          <Input
+            size="sm"
+            label={
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                聯絡 Email
+                <button
+                  type="button"
+                  onClick={() => setShowEmailInfo((v) => !v)}
+                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", padding: 0 }}
+                  aria-label="更多資訊"
+                >
+                  <Info size={13} />
+                </button>
+              </span>
+            }
+            placeholder="例如：name@example.com"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            hint={showEmailInfo ? "後續如果有留言、活動內容更新，或活動確定時間，會寄信通知這個 email" : undefined}
+          />
+          <Input
+            size="sm"
+            label="密碼（選填）"
+            placeholder={needsPassword ? "此暱稱已有人使用，請輸入密碼" : "設定密碼可在其他裝置回來編輯"}
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </>
+      )}
+      {!votingClosed && isLocked && (
         <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-hot-subtle)", border: "1px solid rgba(214,48,60,0.25)" }}>
           <AlertTriangle size={14} color="var(--color-hot)" style={{ flexShrink: 0, marginTop: 1 }} />
           <span style={{ fontSize: 12, color: "var(--color-ink)", lineHeight: 1.5 }}>
@@ -240,10 +368,14 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
 
       {viewMode === "list" && (
         <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
+            {bulkToolsButton}
+          </div>
+          {bulkToolsPanel}
           {(Object.entries(grouped) as [string, EventData["slots"]][]).map(([date, list]) => (
-            <div key={date} style={{ marginBottom: 6 }}>
+            <div key={date} style={{ marginBottom: 3 }}>
               {!isDateOnly && (
-                <div style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)", padding: "4px 0" }}>
+                <div style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)", padding: "3px 0 1px" }}>
                   {date} ({formatChineseWeekday(date)})
                 </div>
               )}
@@ -267,6 +399,10 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
 
       {viewMode === "calendar" && (
         <div style={cardStyle}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
+            {bulkToolsButton}
+          </div>
+          {bulkToolsPanel}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
             <MonthNavButton direction="prev" onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))} badgeCount={calPrevCount} />
             <div style={{ fontSize: 12, fontWeight: 800, fontFamily: "var(--font-display)" }}>{calYear}年{calMonth + 1}月</div>
@@ -348,113 +484,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
         </div>
       )}
 
-      <div style={{ border: "1px solid var(--color-border-strong)", borderRadius: "var(--radius-md)", overflow: "hidden", background: "#fff" }}>
-        <button
-          onClick={() => setToolsOpen((v) => !v)}
-          style={{
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 5,
-            fontSize: 11,
-            fontWeight: 700,
-            padding: "9px 0",
-            border: "none",
-            borderBottom: toolsOpen ? "1px solid var(--color-border)" : "none",
-            background: toolsOpen ? "var(--color-cream)" : "#fff",
-            color: "var(--color-muted)",
-            cursor: "pointer",
-          }}
-        >
-          <Zap size={12} />
-          批次快速勾選
-          {toolsOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        </button>
-        <div style={{ padding: "6px 10px", fontSize: 10, color: "var(--color-muted)", textAlign: "center", borderTop: toolsOpen ? "none" : "1px solid var(--color-border)" }}>
-          依星期批次套用選項，例如一次把週末都設成「有空」
-        </div>
-
-        {toolsOpen && (
-          <div style={{ padding: 10 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>套用對象（依星期批次勾選）</div>
-            <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
-              {BULK_TARGETS.slice(0, 3).map((t) => {
-                const active = bulkTargetKey === t.key;
-                return (
-                  <button
-                    key={t.key}
-                    onClick={() => setBulkTargetKey(t.key)}
-                    style={{
-                      ...quickBtnStyle,
-                      flex: 1,
-                      border: active ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)",
-                      background: active ? "var(--color-primary)" : "#fff",
-                      color: active ? "#fff" : "var(--color-ink)",
-                    }}
-                  >
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
-              {BULK_TARGETS.slice(3).map((t) => {
-                const active = bulkTargetKey === t.key;
-                const isWeekend = t.key === "dow-0" || t.key === "dow-6";
-                return (
-                  <button
-                    key={t.key}
-                    onClick={() => setBulkTargetKey(t.key)}
-                    style={{
-                      ...quickBtnStyle,
-                      flex: 1,
-                      border: active ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)",
-                      background: active ? "var(--color-primary)" : "#fff",
-                      color: active ? "#fff" : isWeekend ? "var(--color-weekend)" : "var(--color-ink)",
-                    }}
-                  >
-                    {t.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>設定為</div>
-            <div style={{ display: "flex", gap: 4 }}>
-              {(["available", "if_needed", "unavailable"] as AvailabilityStatus[]).map((k) => {
-                const meta = STATUS_META[k];
-                return (
-                  <button
-                    key={k}
-                    onClick={() => applyBulk(k)}
-                    style={{
-                      flex: 1,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 4,
-                      fontSize: 11,
-                      fontWeight: 800,
-                      padding: "7px 4px",
-                      borderRadius: "var(--radius-md)",
-                      border: `1.5px solid ${meta.color}`,
-                      background: "#fff",
-                      color: "var(--color-ink)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <meta.icon size={11} color={meta.color} />
-                    {STATUS_LABEL[k]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <Input size="sm" label="給主揪的話" placeholder="例如：19:00 才能到" value={comment} onChange={(e) => setComment(e.target.value)} />
+      <Input size="sm" label="對此發起此次投票的留言" placeholder="例如：19:00 才能到" value={comment} onChange={(e) => setComment(e.target.value)} />
       <Button variant="dark" fullWidth disabled={!nickname.trim() || isLoading || votingClosed || isLocked} onClick={handleSubmit}>
         {editingParticipantId ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>

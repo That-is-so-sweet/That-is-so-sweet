@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MessageCircle, BarChart3, CalendarDays, CalendarCheck, MapPin, User, ChevronDown, ChevronUp, ChevronLeft, X, AlertTriangle, Ban, Check, TrendingUp, Award } from "lucide-react";
+import { MessageCircle, BarChart3, CalendarDays, CalendarCheck, ChevronDown, ChevronUp, ChevronLeft, X, AlertTriangle, Ban, Check, TrendingUp, Award } from "lucide-react";
 import { AvailabilityStatus, EventData, SlotStats, UpdateEventInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats, formatSlotTime } from "../lib/slots";
@@ -196,29 +196,6 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "0 2px" }}>
-        {event.hostName && (
-          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--color-ink)", lineHeight: 1.4 }}>
-            <User size={12} color="var(--color-muted)" style={{ flexShrink: 0 }} />
-            <span>主揪：{event.hostName}</span>
-          </div>
-        )}
-        {event.location && (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 5, fontSize: 12, color: "var(--color-ink)", lineHeight: 1.4 }}>
-            <MapPin size={12} color="var(--color-muted)" style={{ flexShrink: 0, marginTop: 2 }} />
-            {event.location.url ? (
-              <a href={event.location.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-primary)", fontWeight: 700 }}>
-                {event.location.text}
-              </a>
-            ) : (
-              <span>{event.location.text}</span>
-            )}
-          </div>
-        )}
-        {event.description && (
-          <div style={{ fontSize: 12, color: "var(--color-ink)", lineHeight: 1.4 }}>{event.description}</div>
-        )}
-      </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: "var(--radius-md)", background: "var(--color-cream)", border: "1px solid var(--color-border)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, fontSize: 11, fontWeight: 700, color: "var(--color-muted)" }}>
           <CalendarCheck size={13} color="var(--color-muted)" style={{ flexShrink: 0 }} />
@@ -226,12 +203,11 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
             {hasResponded ? "已收到您的時間紀錄，隨時可以回來更新" : "還沒有勾選您的時間？花 30 秒讓大家更快敲定"}
           </span>
         </div>
-        <button
-          onClick={onGoToVote}
-          style={{ flexShrink: 0, border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 800, cursor: "pointer", padding: 0, whiteSpace: "nowrap" }}
-        >
-          {hasResponded ? "更新時間" : "我要勾選時間"}
-        </button>
+        <div style={{ flexShrink: 0 }}>
+          <Button variant="primary" size="xs" onClick={onGoToVote}>
+            {hasResponded ? "更新時間" : "我要投票"}
+          </Button>
+        </div>
       </div>
       {event.responses.length === 0 ? (
         <div style={{ ...cardStyle, textAlign: "center", color: "var(--color-muted)", fontSize: 12 }}>
@@ -310,23 +286,27 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                          <button
-                            onClick={() => toggleExpand(s.slotId)}
-                            style={{ display: "block", flex: 1, minWidth: 0, textAlign: "left", background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                          >
-                            <div style={{ marginBottom: 3 }}>
-                              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-ink)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div
+                              onClick={() => toggleExpand(s.slotId)}
+                              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 3, cursor: "pointer" }}
+                            >
+                              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-ink)", display: "inline-flex", alignItems: "center", gap: 4, minWidth: 0 }}>
                                 <RankBadge rank={i + 1} />
                                 {s.slot.date} ({formatChineseWeekday(s.slot.date)}){!isDateOnly && ` ${formatSlotTime(s.slot.time)}`}
                                 {s.slot.label && <span style={{ fontWeight: 500, color: "var(--color-muted)" }}> · {s.slot.label}</span>}
                               </span>
+                              <BreakdownIcons s={s} size={10} onSelect={(status) => setNamesPanel({ slotId: s.slotId, status })} />
                             </div>
-                            <div style={{ width: "100%", height: 14, borderRadius: 999, background: "var(--color-cream)", overflow: "hidden", display: "flex" }}>
+                            <div
+                              onClick={() => toggleExpand(s.slotId)}
+                              style={{ width: "100%", height: 14, borderRadius: 999, background: "var(--color-cream)", overflow: "hidden", display: "flex", cursor: "pointer" }}
+                            >
                               {availPct > 0 && <div style={{ width: `${availPct}%`, background: "var(--color-success)", transition: "width 600ms var(--ease-spring)" }} />}
                               {ifNeededPct > 0 && <div style={{ width: `${ifNeededPct}%`, background: "var(--color-secondary)", transition: "width 600ms var(--ease-spring)" }} />}
                               {unavailPct > 0 && <div style={{ width: `${unavailPct}%`, background: "var(--color-border-strong)", transition: "width 600ms var(--ease-spring)" }} />}
                             </div>
-                          </button>
+                          </div>
                           {isHost && (
                             <button
                               onClick={(e) => { e.stopPropagation(); setSelectedFinalSlotId(s.slotId); }}
@@ -348,16 +328,6 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                               {isFinalizePick && <Check size={12} color="#fff" strokeWidth={3} />}
                             </button>
                           )}
-                        </div>
-                        <div style={{ marginTop: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <BreakdownIcons s={s} size={9} onSelect={(status) => setNamesPanel({ slotId: s.slotId, status })} />
-                          <button
-                            onClick={() => toggleExpand(s.slotId)}
-                            style={{ fontSize: 9, fontWeight: 700, color: "var(--color-muted)", display: "inline-flex", alignItems: "center", gap: 2, flexShrink: 0, background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                          >
-                            {isExpanded ? "收合" : "查看名單"}
-                            {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                          </button>
                         </div>
                         {isExpanded && <NamesPanel s={s} />}
                       </div>

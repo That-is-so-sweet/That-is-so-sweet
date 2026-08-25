@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { History, X, AlertTriangle, MapPin, Rocket, Clock, Plus, Info } from "lucide-react";
+import { History, X, AlertTriangle, Rocket, Plus, Info } from "lucide-react";
 import { CreateEventInput, EventLocation, EventMode, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { calculateSlotDuration, formatSlotTime, getNextWeekdayDate } from "../lib/slots";
@@ -9,6 +9,7 @@ import { Button, Input } from "../design-system/components";
 import { TopBar } from "./TopBar";
 import { MonthCalendar } from "./MonthCalendar";
 import { MiniMonthPicker } from "./MiniMonthPicker";
+import { EventInfoCard } from "./EventInfoCard";
 import { cardStyle, iconBtnStyle } from "./mobileStyles";
 import { getRecentSlotPresets, saveRecentSlotPresets } from "../lib/api";
 
@@ -186,7 +187,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
         title={title.trim() || "未命名活動"}
         right={<button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>}
       />
-      <div style={{ padding: "10px 20px", flexShrink: 0, background: "var(--color-primary-subtle)" }}>
+      <div style={{ padding: "8px 16px", flexShrink: 0, background: "var(--color-primary-subtle)" }}>
         <div style={{ display: "flex", gap: 3 }}>
           {stepLabels.map((stepLabel, i) => {
             const filled = i <= step;
@@ -207,7 +208,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
           })}
         </div>
         <div style={{ marginTop: 8, display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{stepLabels[step]}</span>
+          <span style={{ fontSize: 16, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-primary)", letterSpacing: "-0.01em" }}>{stepLabels[step]}</span>
           <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)" }}>
             步驟 {step + 1}/{stepLabels.length}
           </span>
@@ -265,8 +266,8 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
               <div style={{ fontSize: 11, color: "var(--color-muted)" }}>
                 {isDateOnly
-                  ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天`
-                  : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
+                  ? `點選日期新增候選，再點一次可取消`
+                  : `點選日期新增候選，再點一次可切換／取消`}
               </div>
               {!isDateOnly && (
                 <button
@@ -331,92 +332,87 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
 
             {!isDateOnly && activeDate && selectedDates.length > 0 && (
               <div style={{ marginTop: 16 }}>
-                <div style={{ border: "1.5px dashed var(--color-border-strong)", borderRadius: "var(--radius-md)", padding: 10, marginBottom: 14, background: "var(--color-cream)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 8 }}>
-                    <Plus size={12} />
-                    新增候選時段
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-                    <div>
-                      <label style={{ fontSize: 10, fontWeight: 700, color: "var(--color-ink)", display: "block", marginBottom: 4 }}>
-                        開始時間<span style={{ color: "var(--color-primary)", marginLeft: 3 }}>*</span>
-                      </label>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        style={{ width: "100%", padding: "7px 8px", borderRadius: "var(--radius-input)", border: "1.5px solid var(--color-border)", fontSize: 13, fontWeight: 700 }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: 10, fontWeight: 500, color: "var(--color-muted)", display: "block", marginBottom: 4 }}>標籤</label>
-                      <input
-                        value={label}
-                        onChange={(e) => setLabel(e.target.value)}
-                        placeholder="例：午餐、討論"
-                        style={{ width: "100%", padding: "7px 8px", borderRadius: "var(--radius-input)", border: "1.5px solid var(--color-border)", fontSize: 13 }}
-                      />
-                    </div>
-                  </div>
+                <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 8 }}>
+                  {activeDate} ({formatChineseWeekday(activeDate)})
+                </div>
 
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <div style={{ flex: 1 }}>
-                      <Button variant="primary" size="xs" fullWidth onClick={addCustom}>
-                        + 加入 {activeDate.slice(5).replace("-", "/")} 的時段
-                      </Button>
-                    </div>
-                    {selectedDates.length > 1 && (
-                      <div style={{ flex: 1 }}>
-                        <Button variant="secondary" size="xs" fullWidth onClick={addCustomToAll}>
-                          + 加入全部日期（{selectedDates.length} 天）
-                        </Button>
-                      </div>
-                    )}
+                {activeSlots.length === 0 ? (
+                  <div style={{ fontSize: 11, color: "var(--color-muted)", marginBottom: 10 }}>此日期尚未設定時段</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+                    {activeSlots.map((s, i) => {
+                      const originalIndex = slots.indexOf(s);
+                      const durationStr = calculateSlotDuration(s.time);
+                      return (
+                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}>
+                          <span style={{ fontSize: 12, fontWeight: 700 }}>
+                            {formatSlotTime(s.time)}
+                            {s.label ? ` · ${s.label}` : ""}
+                            {durationStr && <span style={{ color: "var(--color-muted)", fontWeight: 400 }}> ({durationStr})</span>}
+                          </span>
+                          <button onClick={() => removeSlot(originalIndex)} style={{ border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}><X size={14} /></button>
+                        </div>
+                      );
+                    })}
                   </div>
+                )}
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: 8, borderRadius: "var(--radius-md)", background: "var(--color-primary-subtle)", border: "1.5px solid var(--color-primary-light)" }}>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      style={{ flex: 1, minWidth: 0, padding: "7px 8px", borderRadius: "var(--radius-input)", border: "1.5px solid var(--color-border)", background: "var(--color-surface)", fontSize: 13, fontWeight: 700 }}
+                    />
+                    <Button
+                      variant="primary"
+                      size="xs"
+                      onClick={() => {
+                        addCustom();
+                        setLabel("");
+                      }}
+                    >
+                      <Plus size={14} />
+                    </Button>
+                  </div>
+                  <input
+                    value={label}
+                    onChange={(e) => setLabel(e.target.value)}
+                    placeholder="標籤（選填，例：午餐）"
+                    style={{ width: "100%", padding: "7px 8px", borderRadius: "var(--radius-input)", border: "1.5px solid var(--color-border)", background: "var(--color-surface)", fontSize: 13 }}
+                  />
 
                   {quickPresets.length > 0 && (
-                    <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", marginBottom: 6 }}>一鍵常用時段（上次使用）</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {quickPresets.map((p, i) => (
-                          <button
-                            key={i}
-                            onClick={() => addPreset(p)}
-                            style={{ padding: "7px 10px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", background: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
-                          >
-                            {formatSlotTime(p.start)}{p.label ? ` · ${p.label}` : ""}
-                          </button>
-                        ))}
-                      </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {quickPresets.map((p, i) => (
+                        <button
+                          key={i}
+                          onClick={() => addPreset(p)}
+                          style={{ padding: "6px 10px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", background: "var(--color-surface)", fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                        >
+                          {formatSlotTime(p.start)}{p.label ? ` · ${p.label}` : ""}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 6 }}>
-                    已新增時段{activeSlots.length > 0 ? `（${activeSlots.length}）` : ""}
+                {selectedDates.length > 1 && (
+                  <div style={{ marginTop: 14, paddingTop: 10, borderTop: "1px dashed var(--color-border)" }}>
+                    <Button
+                      variant="secondary"
+                      size="xs"
+                      fullWidth
+                      onClick={() => {
+                        addCustomToAll();
+                        setLabel("");
+                      }}
+                    >
+                      + 套用目前時段到全部已選日期（{selectedDates.length} 天）
+                    </Button>
                   </div>
-                  {activeSlots.length === 0 ? (
-                    <div style={{ fontSize: 11, color: "var(--color-muted)" }}>此日期尚未設定時段</div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      {activeSlots.map((s, i) => {
-                        const originalIndex = slots.indexOf(s);
-                        const durationStr = calculateSlotDuration(s.time);
-                        return (
-                          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}>
-                            <span style={{ fontSize: 12, fontWeight: 700 }}>
-                              {formatSlotTime(s.time)}
-                              {s.label ? ` · ${s.label}` : ""}
-                              {durationStr && <span style={{ color: "var(--color-muted)", fontWeight: 400 }}> ({durationStr})</span>}
-                            </span>
-                            <button onClick={() => removeSlot(originalIndex)} style={{ border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}><X size={14} /></button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             )}
             {selectedDates.length > 0 && datesMissingSlots.length > 0 && (
@@ -432,110 +428,76 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
         )}
 
         {step === 2 && (
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", marginBottom: 4 }}>{title || "（尚未命名）"}</div>
-            {hostName && <div style={{ fontSize: 11, color: "var(--color-muted)" }}>主揪：{hostName}</div>}
-            {location && (
-              <div style={{ fontSize: 11, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 4 }}>
-                <MapPin size={11} />
-                {location.url ? (
-                  <a href={location.url} target="_blank" rel="noopener noreferrer" style={{ color: "var(--color-primary)", fontWeight: 700 }}>
-                    {location.text}
-                  </a>
-                ) : (
-                  location.text
-                )}
-              </div>
-            )}
-            {description && (
-              <div style={{ fontSize: 11, color: "var(--color-muted)" }}>{description}</div>
-            )}
-            <div style={{ fontSize: 11, color: "var(--color-muted)", display: "flex", alignItems: "center", gap: 4, marginTop: 4 }}>
-              <Clock size={11} />
-              投票截止：{responseDeadline ? responseDeadline.replace("T", " ") : "尚未設定"}
-            </div>
-
-            <div style={{ display: "flex", gap: 16, margin: "12px 0", paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: "50%",
-                    background: "var(--color-primary)",
-                    color: "#fff",
-                    fontSize: 12,
-                    fontWeight: 900,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {groupedEntries.length}
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)" }}>天</span>
-              </div>
-              {!isDateOnly && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: "50%",
-                      background: "var(--color-primary)",
-                      color: "#fff",
-                      fontSize: 12,
-                      fontWeight: 900,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {slots.length}
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)" }}>個時段</span>
-                </div>
-              )}
-            </div>
-
-            <MiniMonthPicker
-              selectedDates={selectedDates}
-              slots={slots}
-              viewDate={viewDate}
-              setViewDate={setViewDate}
-              activeDate={activeDate}
-              setActiveDate={setActiveDate}
-              isDateOnly={isDateOnly}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <EventInfoCard
+              title={title}
+              hostName={hostName}
+              location={location}
+              description={description}
+              responseDeadlineIso={responseDeadline ? localValueToIso(responseDeadline) : undefined}
             />
 
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--color-border)", display: "flex", flexDirection: "column", gap: 14 }}>
-              {groupedEntries.map(([date, list]) => (
-                <div key={date}>
-                  <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 6 }}>
-                    {date} ({formatChineseWeekday(date)})
+            <div style={cardStyle}>
+              <MiniMonthPicker
+                selectedDates={selectedDates}
+                slots={slots}
+                viewDate={viewDate}
+                setViewDate={setViewDate}
+                activeDate={activeDate}
+                setActiveDate={setActiveDate}
+                isDateOnly={isDateOnly}
+              />
+
+              {isDateOnly ? (
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--color-border)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 8 }}>
+                    候選日期（{selectedDates.length}）
                   </div>
-                  {!isDateOnly && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {list.map((s, i) => (
-                        <div
-                          key={i}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "9px 12px",
-                            borderRadius: "var(--radius-md)",
-                            background: "var(--color-cream)",
-                          }}
-                        >
-                          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{formatSlotTime(s.time)}</span>
-                          {s.label && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)" }}>{s.label}</span>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {[...selectedDates].sort().map((date) => (
+                      <div
+                        key={date}
+                        style={{ padding: "6px 10px", borderRadius: "var(--radius-md)", background: "var(--color-cream)", fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}
+                      >
+                        {date.slice(5).replace("-", "/")}（{formatChineseWeekday(date)}）
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+              ) : (
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--color-border)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 8 }}>
+                    候選時段（共 {groupedEntries.length} 天・{slots.length} 個時段）
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {groupedEntries.map(([date, list]) => (
+                      <div key={date}>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 6 }}>
+                          {date} ({formatChineseWeekday(date)})
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {list.map((s, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "9px 12px",
+                                borderRadius: "var(--radius-md)",
+                                background: "var(--color-cream)",
+                              }}
+                            >
+                              <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{formatSlotTime(s.time)}</span>
+                              {s.label && <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)" }}>{s.label}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

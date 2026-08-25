@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, Share2, History, Plus, Clock, CalendarDays } from "lucide-react";
+import { Users, Share2, History, Plus, Clock, CalendarDays, ChevronLeft } from "lucide-react";
 import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
 import { getLifecycleStatus, formatRemaining } from "../lib/eventStatus";
@@ -10,6 +10,7 @@ import { HeatmapTab } from "./HeatmapTab";
 import { FinalizedView } from "./FinalizedView";
 import { CancelledView } from "./CancelledView";
 import { CommentBoard } from "./CommentBoard";
+import { EventInfoCard } from "./EventInfoCard";
 import { iconBtnStyle } from "./mobileStyles";
 
 interface EventScreenProps {
@@ -48,15 +49,10 @@ export const EventScreen: React.FC<EventScreenProps> = ({
   const [nickname, setNickname] = useState(() => getUserNickname());
   const [email, setEmail] = useState(() => getUserEmail());
 
-  // 主辦人一律優先看熱點圖（現在也是主辦人操作面板）；已識別的參與者（本機暱稱
-  // 比對到既有回覆）也直接進熱點圖；全新訪客強制先進識別＋勾選畫面。
-  const isIdentifiedParticipant =
-    !isHost &&
-    !!nickname.trim() &&
-    event.responses.some((r) => r.nickname.toLowerCase() === nickname.trim().toLowerCase());
-  const defaultView: "identify_vote" | "heatmap" = isHost || isIdentifiedParticipant ? "heatmap" : "identify_vote";
+  // 第一次進來一律先看熱點圖（目前大家的投票狀態）；只有明確點了「我要投票」
+  // 或透過帶 tab=vote 的邀請連結進來，才會直接顯示投票輸入畫面。
   const [view, setView] = useState<"identify_vote" | "heatmap">(
-    initialTab === "vote" ? "identify_vote" : initialTab === "heatmap" ? "heatmap" : defaultView
+    initialTab === "vote" ? "identify_vote" : "heatmap"
   );
 
   // Re-apply the requested view whenever the URL asks for one — covers not just the
@@ -117,8 +113,38 @@ export const EventScreen: React.FC<EventScreenProps> = ({
         </div>
       ) : (
         <div style={{ flex: 1, overflowY: "auto" }}>
+          <div style={{ padding: "14px 14px 0" }}>
+            <EventInfoCard
+              title={event.title}
+              hostName={event.hostName}
+              location={event.location}
+              description={event.description}
+              responseDeadlineIso={event.responseDeadline}
+            />
+          </div>
           {view === "identify_vote" && (
-            <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} />
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "12px 14px",
+                  background: "var(--color-primary-subtle)",
+                  borderBottom: "1px solid var(--color-primary-light)",
+                  boxShadow: "0 2px 6px rgba(224,104,40,0.08)",
+                }}
+              >
+                <button
+                  onClick={() => setView("heatmap")}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "var(--radius-md)", border: "1px solid var(--color-primary-light)", background: "#fff", color: "var(--color-primary)", cursor: "pointer", flexShrink: 0 }}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span style={{ fontSize: 15, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-primary-dark)" }}>填寫我的時間</span>
+              </div>
+              <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} />
+            </div>
           )}
           {view === "heatmap" && (
             <>
