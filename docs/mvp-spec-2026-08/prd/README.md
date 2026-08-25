@@ -1,6 +1,6 @@
 # 揪甘心 — Product Requirements Document (PRD)
 
-> 依 `product-manager-skills` 外掛的 `prd-development` workflow skill（`skills/prd-development/SKILL.md` + `template.md`）產出，並用 `jobs-to-be-done`、`product-strategy-session`、`prioritization-advisor`、`roadmap-planning`、`user-story`（BDD／Gherkin 格式）五個技能補強對應段落。標記方式沿用這些 skill 共用的規範：🔶 **Assumption**（合理推論但尚未驗證）／🔵 **Open Question**（未知，需要進一步討論或研究才能回答）。
+> 依 `product-manager-skills` 外掛的 `prd-development` workflow skill（`skills/prd-development/SKILL.md` + `template.md`）產出，並用 `jobs-to-be-done`、`product-strategy-session`、`prioritization-advisor`、`roadmap-planning`、`user-story`（BDD／Gherkin 格式）五個技能補強對應段落。文件正文以確定要執行的規格為主，不在段落中穿插標記；還沒驗證的假設、還沒拍板的問題統一收在[第三部分](./03-planning.md)的「還沒決定的事」與「這份文件哪裡強哪裡弱」兩個表格，方便一次看完，不干擾正文的閱讀動線。
 >
 > **關於 `product-strategy-session`／`roadmap-planning`／`prioritization-advisor` 的重要說明**：這三個技能原本的設計是跨 1-4 週、由 PM＋工程＋設計＋利害關係人共同參與的工作坊流程（訪談、共同評分、簡報對齊）。這裡沒有真實團隊可以協作，因此對應內容是**我（協助草擬者）依現有素材（產品規劃簡報、SPEC.md、prototype 程式碼）單獨完成的第一版產出**，對應到 `prioritization-advisor` 自己列出的「Pitfall 4: Solo PM Scoring」——所有評分與排序都需要之後找工程／設計一起重新過一次，不能直接當作定案依據。
 

@@ -8,7 +8,7 @@
 
 ## 7. User Stories & Requirements
 
-> 依 `user-story` skill 的格式產出：Mike Cohn 的 Use Case（As a / I want to / so that）＋ Gherkin 風格 Acceptance Criteria（Scenario / Given / and Given / When / Then）。每個 Scenario 只有一個 When、一個 Then；需要涵蓋的例外情境拆成獨立 Scenario，而不是塞進同一個 When/Then。驗證規則（例如長度限制、狀態阻擋條件）對應現有 prototype [`src/lib/localEventStore.ts`](../../../src/lib/localEventStore.ts) 與 [`src/lib/eventStatus.ts`](../../../src/lib/eventStatus.ts) 裡已經實作的邏輯，屬於延續既有行為的需求，而非新的假設。
+> 依 `user-story` skill 的格式產出：Mike Cohn 的 Use Case（As a / I want to / so that）＋ Gherkin 風格 Acceptance Criteria（Scenario / Given / and Given / When / Then）。每個 Scenario 只有一個 When、一個 Then；需要涵蓋的例外情境拆成獨立 Scenario，而不是塞進同一個 When/Then。以下的驗證規則（長度限制、狀態阻擋條件等）是團隊已經確認過的既有行為，而非新的假設，因此可以直接照此開發與測試，不需要再另外驗證。
 
 ### Epic Hypothesis
 
@@ -23,17 +23,17 @@
 #### Use Case
 
 - **As a** 主揪
-- **I want to** 填寫活動名稱與候選時段後送出
+- **I want to** 填寫活動名稱、我的姓名、候選時段與回覆截止時間後送出
 - **so that** 我能立即拿到一個可以直接分享出去的連結，不用自己整理時間表傳給朋友
 
 #### Acceptance Criteria
 
 **Scenario 1：成功建立活動並取得連結**
 - **Given** 我是第一次使用揪甘心的主揪（未登入）
-- **and Given** 我已經填寫活動名稱「八月聚餐」
-- **and Given** 我已經新增至少 1 個候選時段
+- **and Given** 我已經填寫活動名稱「八月聚餐」、我的姓名，並選擇了候選時段模式（純日期或指定時間，兩者擇一）
+- **and Given** 我已經新增至少 1 個候選時段，並填寫了回覆截止時間
 - **When** 我點擊「建立活動」送出表單
-- **Then** 系統立即產生一個可分享的活動連結，以及只有我看得到的主揪管理權限
+- **Then** 系統立即產生一個可分享的活動連結；之後可用我填寫的姓名（若有填 Email 則需一併核對）取得管理權限
 
 **Scenario 2：活動名稱為空時阻擋送出**
 - **Given** 我在建立活動表單中
@@ -52,6 +52,23 @@
 - **and Given** 我尚未新增任何候選時段
 - **When** 我點擊「建立活動」
 - **Then** 系統阻擋送出，並提示「請至少新增一個候選時段」
+
+**Scenario 5：主揪姓名為空時阻擋送出**
+- **Given** 我在建立活動表單中
+- **and Given** 主揪姓名欄位是空的
+- **When** 我點擊「建立活動」
+- **Then** 系統阻擋送出，並提示「請輸入您的姓名」（此欄位日後將用於身分驗證，見 Story 004）
+
+**Scenario 6：回覆截止時間未填時阻擋送出**
+- **Given** 我在建立活動表單中
+- **and Given** 回覆截止時間欄位是空的
+- **When** 我點擊「建立活動」
+- **Then** 系統阻擋送出，並提示「請設定回覆截止時間」（此欄位為必填，所有時間以台灣時間認定）
+
+**Scenario 7：填寫主揪 Email 時系統寄送通知信**
+- **Given** 我在建立活動表單中額外填寫了 Email
+- **When** 我點擊「建立活動」且成功送出
+- **Then** 系統寄送一封含活動分享連結的通知信到我填寫的 Email
 
 ---
 
@@ -78,7 +95,7 @@
 - **Given** 我先前已經用暱稱「小明」送出過一次回覆
 - **and Given** 我再次點開同一個活動連結並輸入同樣的暱稱「小明」
 - **When** 我修改其中一個時段的勾選狀態並送出
-- **Then** 系統更新我原本的那筆回覆，而不是新增一筆重複紀錄（🔵 見[第三部分開放問題](./03-planning.md)：暱稱比對是否足夠嚴謹）
+- **Then** 系統更新我原本的那筆回覆，而不是新增一筆重複紀錄（暱稱比對的嚴謹度目前仍是待決事項，見[第三部分開放問題](./03-planning.md)）
 
 **Scenario 3：活動已取消時阻擋投票**
 - **Given** 活動狀態已經是「已取消」
@@ -141,15 +158,15 @@
 #### Acceptance Criteria
 
 **Scenario 1：主揪成功定案**
-- **Given** 我通過主揪身分驗證（持有正確的管理憑證）
+- **Given** 我輸入的姓名（若活動有登記 Email，則加上 Email）與建立活動時登記的資料完全相符（區分大小寫）
 - **and Given** 我選定了一個屬於此活動候選清單中的時段
 - **When** 我點擊「確認定案」（可選填備註）
 - **Then** 活動狀態變更為「已定案」，且該時段被記錄為最終時段
 
 **Scenario 2：非主揪嘗試定案被拒絕**
-- **Given** 我沒有這個活動的主揪管理憑證
+- **Given** 我輸入的姓名（或 Email）與這個活動登記的主揪資料不相符
 - **When** 我嘗試呼叫定案操作
-- **Then** 系統拒絕操作，並回應身分驗證失敗
+- **Then** 系統拒絕操作，並回應身分驗證失敗（此為 Phase 1 刻意採用的低安全性設計，未登記 Email 的活動僅以姓名核對，見 [SPEC.md 第 5.6 節](../SPEC.md#56-安全性設計)）
 
 **Scenario 3：選擇了不存在於候選清單的時段**
 - **Given** 我通過主揪身分驗證
@@ -193,7 +210,7 @@
 - **When** 系統偵測到這次發送失敗
 - **Then** 系統記錄這筆失敗（可供之後排查），而不是靜默略過或讓整個定案操作失敗回滾
 
-> 🔵 Open Question：通知管道（Email／LINE Notify）尚未選定，見下方 Dependencies。上述 Scenario 是通知邏輯本身的需求，不預設特定管道的實作細節。
+> 通知管道（Email／LINE Notify）尚未選定，見下方 Dependencies；上述 Scenario 是通知邏輯本身的需求，不預設特定管道的實作細節。
 
 ---
 
@@ -282,15 +299,16 @@
 
 - **快閃聊天室、AI 選餐廳、分帳功能** — 屬於 Phase 2「減輕主揪壓力」，Phase 1 只驗證核心喬時間假設，避免資源分散
 - **飲食護照、菜單翻譯、邀請函等進階功能** — 屬於 Phase 3「提升聚會體驗」，需等核心成團問題解決、假設驗證成立後再評估
-- **跨平台行事曆自動同步** — 明確排除；單向「加入行事曆」匯出連結不在排除範圍內（prototype 已有的小功能，可視資源併入 Phase 1）
+- **跨平台行事曆自動同步** — 明確排除；單向「加入行事曆」匯出連結不在排除範圍內，是可視資源併入 Phase 1 的小功能
 
 ### Future Considerations（Should-have，視 Phase 1 資源決定是否納入，非必要不做）
 
 - 未回覆者的提醒通知
-- 「可能可以／暫定」的彈性回覆選項（降低承諾壓力）
 - 時段衝突時的次佳選項建議
 
-> 這三項的評分與排序、以及 Phase 2／Phase 3 六個候選 Epic 的完整展開，見[第三部分](./03-planning.md)。
+> 這兩項的評分與排序、以及 Phase 2／Phase 3 六個候選 Epic 的完整展開，見[第三部分](./03-planning.md)。
+
+> 「可能可以／暫定」的彈性回覆選項已確定為 Phase 1 must-have，不在此候選清單中，詳見 Story 002 與 [SPEC.md FR-3](../SPEC.md)。
 
 ---
 
@@ -298,9 +316,9 @@
 
 ### Dependencies
 
-- **Technical**：需要新建後端 API 服務與關聯式資料庫（現有 prototype 完全沒有，見 [SPEC.md 第 5 節](../SPEC.md#5-建議技術架構草案待工程團隊定案)的建議架構草案）
+- **Technical**：需要新建後端 API 服務與關聯式資料庫，見 [SPEC.md 第 5 節](../SPEC.md#5-建議技術架構草案待工程團隊定案)的建議架構草案
 - **External**：通知寄送服務尚未選定（Email provider，或是否也要支援 LINE Notify）——見[第三部分開放問題](./03-planning.md)
-- **Team**：工程團隊 kickoff 需要對齊 SPEC.md 的技術架構建議；設計端需確認是否要在現有 prototype UI 基礎上重新出正式視覺稿
+- **Team**：工程團隊 kickoff 需要對齊 SPEC.md 的技術架構建議；設計端需確認是否要出一版正式視覺稿
 
 ### Risks & Mitigations
 
@@ -310,6 +328,8 @@
   - **Mitigation**：對應 [docs/ux-feedback-2026-08/PLAN.md](../../ux-feedback-2026-08/PLAN.md) 子專案 B 正在處理的項目，Phase 1 開發時需要一併納入設計
 - **Feasibility risk**：目前沒有任何後端／資料庫／通知機制，屬於從零建置
   - **Mitigation**：依 SPEC.md 建議架構分階段實作，優先做出最小可行後端，不追求一次到位
+- **Security risk**：主揪身分驗證採用姓名（＋Email，若有登記）核對，不是帳號密碼或高熵憑證；未登記 Email 的活動，任何知道主揪姓名與活動連結的人都能取得管理權限，這是 Phase 1 刻意接受的風險（見 [SPEC.md 第 5.6 節](../SPEC.md#56-安全性設計)）
+  - **Mitigation**：上線後留意是否發生管理權限被冒用的實際案例，若發生率高於預期，優先評估加上簡單的驗證信流程（見[第三部分開放問題](./03-planning.md)）
 - **Viability risk**：商業模式與資源投入尚未定案（見[第一部分](./01-overview.md)、[第三部分](./03-planning.md)開放問題）
   - **Mitigation**：與利害關係人確認 Phase 1 的資源與時程承諾後，再正式排入工程排程
 
