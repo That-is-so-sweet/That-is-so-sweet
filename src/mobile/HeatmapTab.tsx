@@ -748,7 +748,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
               <X size={18} color="var(--color-ink)" />
             </button>
           </div>
-          <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>
+          <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain" }}>
             {namesPanelNames.map((n) => (
               <div key={n} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: "1px solid var(--color-border)" }}>
                 <Avatar name={n} size="sm" />

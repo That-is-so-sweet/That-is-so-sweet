@@ -35,7 +35,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ event, hostToken, onClos
 
   return (
     <div style={{ position: "absolute", inset: 0, background: "rgba(26,18,8,0.6)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 200 }}>
-      <div style={{ background: "#fff", borderRadius: "var(--radius-modal)", padding: 20, width: "100%", maxHeight: "85%", overflowY: "auto", overscrollBehavior: "contain", position: "relative" }}>
+      <div style={{ background: "#fff", borderRadius: "var(--radius-modal)", padding: 20, width: "100%", maxHeight: "85%", overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain", position: "relative" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", alignItems: "center" }}><X size={18} /></button>
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div

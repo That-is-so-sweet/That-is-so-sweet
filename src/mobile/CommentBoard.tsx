@@ -34,7 +34,7 @@ export const CommentBoard: React.FC<CommentBoardProps> = ({ event, nickname, set
     <div style={cardStyle}>
       <SectionLabel title="留言板" hint={open ? "參與者與主揪都可以在這裡留言討論" : "此活動已無法再留言"} />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: open ? 14 : 0, maxHeight: 320, overflowY: "auto", overscrollBehavior: "contain" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: open ? 14 : 0, maxHeight: 320, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain" }}>
         {comments.length === 0 ? (
           <div style={{ fontSize: 12, color: "var(--color-muted)", textAlign: "center", padding: "10px 0" }}>
             <MessageSquare size={16} style={{ display: "block", margin: "0 auto 6px", opacity: 0.5 }} />

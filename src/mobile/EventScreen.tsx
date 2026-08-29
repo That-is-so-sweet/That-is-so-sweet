@@ -94,21 +94,21 @@ export const EventScreen: React.FC<EventScreenProps> = ({
       )}
 
       {event.status === "cancelled" ? (
-        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain" }}>
           <CancelledView event={event} />
           <div style={{ marginTop: 10, borderTop: "8px solid var(--color-cream)", padding: "16px 14px 14px" }}>
             <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
           </div>
         </div>
       ) : event.status === "finalized" ? (
-        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain" }}>
           <FinalizedView event={event} isHost={isHost} onReopen={onReopen} onCancelEvent={isHost ? onCancelEvent : undefined} isLoading={isLoading} onCopySuccess={onCopySuccess} />
           <div style={{ marginTop: 10, borderTop: "8px solid var(--color-cream)", padding: "16px 14px 14px" }}>
             <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain" }}>
           {view === "identify_vote" && (
             <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} />
           )}

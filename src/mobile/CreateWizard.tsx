@@ -240,7 +240,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain", padding: 16, background: step === 0 ? "var(--color-surface)" : undefined }}>
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain", padding: 16, background: step === 0 ? "var(--color-surface)" : undefined }}>
         {step === 0 && (
           <div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

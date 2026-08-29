@@ -22,4 +22,14 @@
     overflow: hidden;
     overscroll-behavior: none;
   }
+
+  /* iOS Safari and Chrome for Android both auto-zoom the page on focus when a
+     form field's font-size is under 16px. Several inputs across the mobile
+     tree render smaller than that via inline styles (design-system Input at
+     size="sm"/"md", plus ad-hoc inputs/selects/textareas at 11-15px), so an
+     inline-style-beating override here is the one place that fixes all of
+     them instead of bumping every call site's font-size individually. */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
 }
