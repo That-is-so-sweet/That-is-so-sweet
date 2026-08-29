@@ -1,7 +1,7 @@
 import React from "react";
-import { X, Check, Crown } from "lucide-react";
+import { X, Check, Clock, PartyPopper, Ban, Crown } from "lucide-react";
 import { EventData } from "../types";
-import { formatDeadline } from "../lib/eventStatus";
+import { getEventShareUrl, getShareContent, ShareKind } from "../lib/shareText";
 import { Button } from "../design-system/components";
 
 interface ShareModalProps {
@@ -12,16 +12,20 @@ interface ShareModalProps {
   onCopySuccess: () => void;
 }
 
+const KIND_STYLE: Record<ShareKind, { icon: React.ReactNode; color: string; bg: string }> = {
+  collecting: { icon: <Check size={26} />, color: "var(--color-success)", bg: "rgba(90,158,90,0.12)" },
+  voting_closed: { icon: <Clock size={26} />, color: "var(--color-hot)", bg: "var(--color-hot-subtle)" },
+  finalized: { icon: <PartyPopper size={26} />, color: "var(--color-primary)", bg: "var(--color-primary-subtle)" },
+  cancelled: { icon: <Ban size={26} />, color: "var(--color-error)", bg: "var(--color-error-subtle)" },
+};
+
 export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, event, hostToken, onCopySuccess }) => {
   if (!isOpen) return null;
 
   const appOrigin = window.location.origin;
-  const shareUrl = `${appOrigin}/#event=${event.id}&tab=vote`;
-  const lineText = `📢【${event.title}】聚會時間調查邀請！
-主揪：${event.hostName || "熱心朋友"}
-${event.location ? `📍 地點：${event.location.text}${event.location.url ? ` ${event.location.url}` : ""}\n` : ""}${event.description ? `說明：${event.description}\n` : ""}${event.responseDeadline ? `⏰ 請於 ${formatDeadline(event.responseDeadline)} 前完成填寫\n` : ""}
-不用註冊登入，點擊連結即可選擇你有空的時間：
-${shareUrl}`;
+  const shareUrl = getEventShareUrl(event, appOrigin);
+  const content = getShareContent(event, shareUrl);
+  const style = KIND_STYLE[content.kind];
 
   const copy = async (text: string, msg: string) => {
     try {
@@ -47,25 +51,28 @@ ${shareUrl}`;
               width: 52,
               height: 52,
               borderRadius: "var(--radius-pill)",
-              background: "rgba(90,158,90,0.12)",
-              color: "var(--color-success)",
+              background: style.bg,
+              color: style.color,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               margin: "0 auto 10px",
             }}
           >
-            <Check size={26} />
+            {style.icon}
           </div>
-          <div style={{ fontSize: 19, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>活動建立成功！</div>
+          <div style={{ fontSize: 19, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{content.headline}</div>
           <div style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4 }}>{event.title}</div>
         </div>
-        <Button variant="primary" fullWidth onClick={() => copy(lineText, "複製 LINE 分享文字：")}>複製 LINE 分享文字</Button>
+        <Button variant="primary" fullWidth onClick={() => copy(content.copyText, `${content.copyButtonLabel}：`)}>{content.copyButtonLabel}</Button>
         <div style={{ background: "var(--color-cream)", borderRadius: "var(--radius-md)", padding: 14, marginTop: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "var(--color-ink)" }}>專屬參與者填寫連結</div>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "var(--color-ink)" }}>本活動專屬連結</div>
           <div style={{ display: "flex", gap: 8 }}>
             <input readOnly value={shareUrl} style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "var(--radius-input)", border: "1px solid var(--color-border)", fontSize: 12, background: "#fff", color: "var(--color-ink)" }} />
             <Button variant="dark" size="sm" onClick={() => copy(shareUrl, "複製活動連結：")}>複製</Button>
+          </div>
+          <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 8, lineHeight: 1.5 }}>
+            這個連結在整個活動期間都有效，打開都會看到活動/投票進行的狀態喔！
           </div>
         </div>
         {hostToken && (
@@ -75,7 +82,7 @@ ${shareUrl}`;
           </div>
         )}
         <div style={{ marginTop: 16 }}>
-          <Button variant="ghost" fullWidth onClick={onClose}>進入活動統計頁面</Button>
+          <Button variant="ghost" fullWidth onClick={onClose}>{content.kind === "collecting" ? "進入活動統計頁面" : "返回活動頁面"}</Button>
         </div>
       </div>
     </div>

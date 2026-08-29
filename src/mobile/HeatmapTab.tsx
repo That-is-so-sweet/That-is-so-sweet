@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MessageCircle, BarChart3, CalendarDays, CalendarCheck, ChevronDown, ChevronUp, ChevronLeft, X, AlertTriangle, Ban, Check, Award } from "lucide-react";
+import { MessageCircle, BarChart3, CalendarDays, CalendarCheck, ChevronDown, ChevronUp, ChevronLeft, X, AlertTriangle, Ban, Check, Award, Info } from "lucide-react";
 import { AvailabilityStatus, EventData, SlotStats, UpdateEventInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats, formatSlotTime } from "../lib/slots";
@@ -119,7 +119,7 @@ interface HeatSlotRowProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   onSelectFinalize: () => void;
-  onSelectBreakdown: (status: AvailabilityStatus) => void;
+  onSelectBreakdown?: (status: AvailabilityStatus) => void;
 }
 
 const HeatSlotRow: React.FC<HeatSlotRowProps> = ({ s, primaryLabel, rank, total, isHost, isFinalizePick, isExpanded, onToggleExpand, onSelectFinalize, onSelectBreakdown }) => {
@@ -207,6 +207,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   const toggleExpand = (id: string) => setExpandedSlotId((cur) => (cur === id ? null : id));
   const [namesPanel, setNamesPanel] = useState<{ slotId: string; status: AvailabilityStatus } | null>(null);
   const [rosterOpen, setRosterOpen] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(false);
   const [dangerOpen, setDangerOpen] = useState(false);
   const stats = computeSlotStats(event.slots, event.responses);
   const qualifying = [...stats].filter((s) => s.availableCount + s.ifNeededCount > 0).sort((a, b) => b.score - a.score);
@@ -373,7 +374,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
             isExpanded={expandedSlotId === s.slotId}
             onToggleExpand={() => toggleExpand(s.slotId)}
             onSelectFinalize={() => setSelectedFinalSlotId(s.slotId)}
-            onSelectBreakdown={(status) => setNamesPanel({ slotId: s.slotId, status })}
+            onSelectBreakdown={layout === "desktop" ? undefined : (status) => setNamesPanel({ slotId: s.slotId, status })}
           />
         ))}
       </div>
@@ -381,7 +382,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   );
 
   return (
-    <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ padding: layout === "desktop" ? 20 : 14, display: "flex", flexDirection: "column", gap: 10 }}>
       <div
         onClick={onGoToVote}
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: "var(--radius-md)", background: "var(--color-cream)", border: "1px solid var(--color-border)", cursor: "pointer" }}
@@ -409,6 +410,28 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
             <SectionLabel
               title="交集時段與熱點分佈"
               right={`共 ${total} 人已回覆`}
+              titleExtra={
+                <button
+                  onClick={() => setLegendOpen((v) => !v)}
+                  aria-label="說明"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    background: legendOpen ? "var(--color-ink-10)" : "transparent",
+                    color: "var(--color-muted)",
+                  }}
+                >
+                  <Info size={13} />
+                </button>
+              }
             />
             <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3, marginBottom: 10 }}>
               {[{ k: "bar" as const, label: "長條圖檢視", icon: BarChart3 }, { k: "calendar" as const, label: "月曆檢視", icon: CalendarDays }].map((m) => (
@@ -427,7 +450,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                     fontWeight: 800,
                     border: "none",
                     cursor: "pointer",
-                    background: distMode === m.k ? "var(--color-ink)" : "transparent",
+                    background: distMode === m.k ? "var(--color-ink-60)" : "transparent",
                     color: distMode === m.k ? "#fff" : "var(--color-ink)",
                     transition: "background 150ms ease, color 150ms ease",
                   }}
@@ -438,25 +461,27 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
               ))}
             </div>
 
-            <div style={{ background: "var(--color-cream)", borderRadius: "var(--radius-md)", padding: "8px 10px", marginBottom: 10 }}>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 10, fontWeight: 700 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: STATUS_META.available.color }}>
-                  <STATUS_META.available.icon size={10} color={STATUS_META.available.color} />
-                  確定有空
-                </span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: STATUS_META.if_needed.color }}>
-                  <STATUS_META.if_needed.icon size={10} color={STATUS_META.if_needed.color} />
-                  可能／視情況
-                </span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: STATUS_META.unavailable.color }}>
-                  <STATUS_META.unavailable.icon size={10} color={STATUS_META.unavailable.color} />
-                  不行
-                </span>
+            {legendOpen && (
+              <div style={{ background: "var(--color-cream)", borderRadius: "var(--radius-md)", padding: "8px 10px", marginBottom: 10 }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", fontSize: 10, fontWeight: 700 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: STATUS_META.available.color }}>
+                    <STATUS_META.available.icon size={10} color={STATUS_META.available.color} />
+                    確定有空
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: STATUS_META.if_needed.color }}>
+                    <STATUS_META.if_needed.icon size={10} color={STATUS_META.if_needed.color} />
+                    可能／視情況
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 3, color: STATUS_META.unavailable.color }}>
+                    <STATUS_META.unavailable.icon size={10} color={STATUS_META.unavailable.color} />
+                    不行
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             {distMode === "bar" && (
-              <>
+              <div style={layout === "desktop" ? { width: "66.6667%", margin: "0 auto", padding: "16px 0" } : undefined}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {top.map((s, i) => (
                     <HeatSlotRow
@@ -470,7 +495,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                       isExpanded={expandedSlotId === s.slotId}
                       onToggleExpand={() => toggleExpand(s.slotId)}
                       onSelectFinalize={() => setSelectedFinalSlotId(s.slotId)}
-                      onSelectBreakdown={(status) => setNamesPanel({ slotId: s.slotId, status })}
+                      onSelectBreakdown={layout === "desktop" ? undefined : (status) => setNamesPanel({ slotId: s.slotId, status })}
                     />
                   ))}
                 </div>
@@ -507,13 +532,15 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                     )}
                   </button>
                 )}
-              </>
+              </div>
             )}
 
             {distMode === "calendar" && (
               layout === "desktop" ? (
                 <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-                  <div style={{ width: 260, flexShrink: 0 }}>{calendarGrid}</div>
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}>
+                    <div style={{ width: 260, maxWidth: "100%" }}>{calendarGrid}</div>
+                  </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {calendarDetail || (
                       <div style={{ fontSize: 12, color: "var(--color-muted)", textAlign: "center", padding: "20px 0" }}>

@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Share2, History, Plus, CalendarDays, ChevronLeft } from "lucide-react";
+import { CalendarDays, ChevronLeft } from "lucide-react";
 import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
 import { getLifecycleStatus } from "../lib/eventStatus";
 import { Badge } from "../design-system/components";
-import { TopBar } from "../mobile/TopBar";
 import { VoteTab } from "../mobile/VoteTab";
 import { HeatmapTab } from "../mobile/HeatmapTab";
 import { FinalizedView } from "../mobile/FinalizedView";
 import { CancelledView } from "../mobile/CancelledView";
 import { CommentBoard } from "../mobile/CommentBoard";
 import { EventInfoCard } from "../mobile/EventInfoCard";
-import { iconBtnStyle } from "../mobile/mobileStyles";
 
 interface EventViewProps {
   event: EventData;
@@ -23,9 +21,6 @@ interface EventViewProps {
   onCancelEvent: () => Promise<void>;
   onUpdateEvent?: (input: Omit<UpdateEventInput, "hostToken">) => Promise<void>;
   onSubmitComment: (input: SubmitCommentInput) => Promise<void>;
-  onNewEvent: () => void;
-  onOpenShareModal: () => void;
-  onOpenHistory: () => void;
   onCopySuccess: () => void;
   isLoading: boolean;
 }
@@ -40,9 +35,6 @@ export const EventView: React.FC<EventViewProps> = ({
   onCancelEvent,
   onUpdateEvent,
   onSubmitComment,
-  onNewEvent,
-  onOpenShareModal,
-  onOpenHistory,
   onCopySuccess,
   isLoading,
 }) => {
@@ -73,16 +65,6 @@ export const EventView: React.FC<EventViewProps> = ({
   return (
     <div style={{ maxWidth: 760, margin: "0 auto", padding: "24px 24px 60px" }}>
       <div style={{ position: "relative", borderRadius: "var(--radius-card)", overflow: "hidden", border: "1px solid var(--color-border)", boxShadow: "var(--shadow-md)", background: "var(--color-surface)" }}>
-        <TopBar
-          title={event.title}
-          right={
-            <>
-              <button style={iconBtnStyle} onClick={onNewEvent} title="新增活動"><Plus size={15} /></button>
-              <button style={iconBtnStyle} onClick={onOpenShareModal}><Share2 size={15} /></button>
-              <button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>
-            </>
-          }
-        />
         {(view === "identify_vote" || isHost) && (
           <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", overflowX: "auto" }}>
             {view === "identify_vote" && (

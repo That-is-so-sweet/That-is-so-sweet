@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { X, AlertTriangle, MapPin, Rocket, Clock, Plus, Check } from "lucide-react";
+import { X, AlertTriangle, MapPin, Rocket, Clock, Plus, Check, Info } from "lucide-react";
 import { CreateEventInput, EventLocation, EventMode, TimeSlot } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
 import { calculateSlotDuration, formatSlotTime, getNextWeekdayDate } from "../lib/slots";
@@ -43,6 +43,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
   const [location, setLocation] = useState<EventLocation | undefined>(undefined);
   const [locationInput, setLocationInput] = useState("");
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
+  const [showDateHint, setShowDateHint] = useState(false);
   const locationRequestRef = useRef(0);
 
   const isDateOnly = mode === "date_only";
@@ -192,7 +193,29 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
           <div style={cardStyle}>
             <SectionLabel
               title={isDateOnly ? "候選日期" : "候選日期與時段"}
-              hint={isDateOnly ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天` : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
+              titleExtra={
+                <button
+                  onClick={() => setShowDateHint((v) => !v)}
+                  aria-label="說明"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 18,
+                    height: 18,
+                    borderRadius: "50%",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    background: showDateHint ? "var(--color-primary-subtle)" : "transparent",
+                    color: "var(--color-primary)",
+                  }}
+                >
+                  <Info size={13} />
+                </button>
+              }
+              hint={showDateHint ? "點擊或拖曳即可新增／取消" : undefined}
             />
             <MonthCalendar
               selectedDates={selectedDates}
@@ -408,47 +431,10 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 16, margin: "12px 0", paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: "50%",
-                    background: "var(--color-primary)",
-                    color: "#fff",
-                    fontSize: 12,
-                    fontWeight: 900,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {groupedEntries.length}
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)" }}>天</span>
+            <div style={{ margin: "12px 0", paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
+              <div style={{ fontSize: 13, fontWeight: 900, color: "var(--color-primary)" }}>
+                {isDateOnly ? `目前已選取 ${groupedEntries.length} 天作為投票候選時段` : `目前已選取 ${slots.length} 個時段作為投票候選時段`}
               </div>
-              {!isDateOnly && (
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: "50%",
-                      background: "var(--color-primary)",
-                      color: "#fff",
-                      fontSize: 12,
-                      fontWeight: 900,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {slots.length}
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)" }}>個時段</span>
-                </div>
-              )}
             </div>
 
             {selectedDates.length > 0 && (

@@ -245,8 +245,8 @@ export default function App() {
     setEventData(null);
   };
 
-  const handleLoadDemo = (id: string = "demo-gathering") => {
-    window.location.hash = `event=${id}`;
+  const handleLoadDemo = (id: string = "demo-gathering", hostToken?: string) => {
+    window.location.hash = hostToken ? `event=${id}&hostToken=${hostToken}` : `event=${id}`;
   };
 
   if (isMobile) {
@@ -287,7 +287,7 @@ export default function App() {
       <Header
         onNewEvent={handleGoHome}
         onOpenHistory={() => setIsHistoryOpen(true)}
-        onLoadDemo={handleLoadDemo}
+        onOpenShareModal={eventData ? () => setIsShareModalOpen(true) : undefined}
         activeEventTitle={eventData?.title}
       />
 
@@ -331,9 +331,6 @@ export default function App() {
             onCancelEvent={handleCancelEvent}
             onUpdateEvent={handleUpdateEvent}
             onSubmitComment={handleSubmitComment}
-            onNewEvent={handleGoHome}
-            onOpenShareModal={() => setIsShareModalOpen(true)}
-            onOpenHistory={() => setIsHistoryOpen(true)}
             onCopySuccess={() => addToast("success", "已成功複製到剪貼簿！")}
             isLoading={isLoading}
           />
@@ -344,9 +341,6 @@ export default function App() {
       <footer style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-surface)", padding: "20px 0", textAlign: "center", fontSize: 11, color: "var(--color-muted)" }}>
         <p style={{ fontWeight: 700, color: "var(--color-ink)", margin: 0 }}>
           聚會時間協調神器 • 免註冊免登入 • 快速搞定朋友聚餐
-        </p>
-        <p style={{ marginTop: 4, margin: 0 }}>
-          支援跨裝置熱點圖、LINE 群組廣播與 Google 日曆匯出
         </p>
       </footer>
 

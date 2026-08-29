@@ -4,6 +4,7 @@ import { EventData } from "../types";
 import { formatChineseWeekday, generateGoogleCalendarUrl, downloadIcsFile } from "../lib/calendar";
 import { getMeetupEndInfo } from "../lib/eventStatus";
 import { formatSlotTime } from "../lib/slots";
+import { buildFinalizedBroadcast } from "../lib/shareText";
 import { Button } from "../design-system/components";
 import { cardStyle, SectionLabel } from "./mobileStyles";
 import { ReopenModal } from "./ReopenModal";
@@ -27,12 +28,7 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
   const hasEnded = !!getMeetupEndInfo(event)?.hasEnded;
   const locationDescriptionFallback = [event.location?.text, event.description].filter(Boolean).join("\n");
 
-  const broadcast = `🎉【聚會時間正式敲定囉！】
-活動名稱：${event.title}
-主揪：${event.hostName || "熱心主揪"}
-📅 日期：${slot.date} (${formatChineseWeekday(slot.date)})
-${isDateOnly ? "" : `⏰ 時間：${formatSlotTime(slot.time)}\n`}${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
-👥 出席 (${attending.length}人)：${attending.join("、") || "歡迎大家參與！"}`;
+  const broadcast = buildFinalizedBroadcast(event);
 
   const handleCopy = async () => {
     try {

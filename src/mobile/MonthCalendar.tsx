@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Lightbulb, Flag } from "lucide-react";
+import { Flag } from "lucide-react";
 import { MonthNavButton, countInAdjacentMonth } from "./mobileStyles";
 import { HOLIDAYS_2026 } from "./holidays";
 import { TimeSlot } from "../types";
@@ -274,12 +274,6 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
             </button>
           );
         })}
-      </div>
-      <div style={{ fontSize: 9, color: "var(--color-muted)", marginTop: 4, display: "flex", alignItems: "center", gap: 3 }}>
-        <Lightbulb size={10} />
-        {onActiveDateChange
-          ? "拖曳可一次選取/取消多天；點日期切換編輯時段，再點一次作用中日期可取消"
-          : "可直接按住拖曳，一次選取或取消多天"}
       </div>
 
       {monthHolidays.length > 0 && (

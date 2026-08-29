@@ -62,12 +62,14 @@ export function SectionLabel({
   icon,
   iconBg = "var(--color-primary)",
   right,
+  titleExtra,
 }: {
   title: string;
   hint?: string;
   icon?: React.ReactNode;
   iconBg?: string;
   right?: React.ReactNode;
+  titleExtra?: React.ReactNode;
 }) {
   return (
     <div style={{ marginBottom: 10 }}>
@@ -100,6 +102,7 @@ export function SectionLabel({
           >
             {title}
           </span>
+          {titleExtra}
         </div>
         {right && (
           <span style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)", whiteSpace: "nowrap", flexShrink: 0 }}>

@@ -28,7 +28,7 @@ interface MobileAppProps {
   setIsHistoryOpen: (open: boolean) => void;
   historyList: VisitedEventItem[];
   onSelectEvent: (id: string) => void;
-  onLoadDemo: (id: string) => void;
+  onLoadDemo: (id: string, hostToken?: string) => void;
   onCopySuccess: () => void;
   toasts: ToastMessage[];
 }

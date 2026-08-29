@@ -47,6 +47,7 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
   const [activeDate, setActiveDate] = useState<string | null>(selectedDates[0] || null);
   const [quickPresets] = useState(() => getRecentSlotPresets());
   const [openInfo, setOpenInfo] = useState<"hostName" | "hostEmail" | null>(null);
+  const [showDateHint, setShowDateHint] = useState(false);
   const [location, setLocation] = useState<EventLocation | undefined>(undefined);
   const [locationInput, setLocationInput] = useState("");
   const [isResolvingLocation, setIsResolvingLocation] = useState(false);
@@ -208,7 +209,31 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
           })}
         </div>
         <div style={{ marginTop: 8, display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-          <span style={{ fontSize: 16, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-primary)", letterSpacing: "-0.01em" }}>{stepLabels[step]}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <span style={{ fontSize: 16, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-primary)", letterSpacing: "-0.01em" }}>{stepLabels[step]}</span>
+            {step === 1 && (
+              <button
+                onClick={() => setShowDateHint((v) => !v)}
+                aria-label="說明"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  background: showDateHint ? "var(--color-primary-subtle)" : "transparent",
+                  color: "var(--color-primary)",
+                }}
+              >
+                <Info size={13} />
+              </button>
+            )}
+          </span>
           <span style={{ fontSize: 11, fontWeight: 600, color: "var(--color-muted)" }}>
             步驟 {step + 1}/{stepLabels.length}
           </span>
@@ -263,11 +288,11 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
 
         {step === 1 && (
           <div>
-            <div style={{ fontSize: 11, color: "var(--color-muted)", marginBottom: 10 }}>
-              {isDateOnly
-                ? `點選日期新增候選，再點一次可取消`
-                : `點選日期新增候選，再點一次可切換／取消`}
-            </div>
+            {showDateHint && (
+              <div style={{ fontSize: 11, color: "var(--color-muted)", marginBottom: 10 }}>
+                點擊或拖曳即可新增／取消
+              </div>
+            )}
             <div style={cardStyle}>
               <MonthCalendar
                 selectedDates={selectedDates}

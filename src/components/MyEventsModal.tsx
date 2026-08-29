@@ -2,7 +2,7 @@ import React from "react";
 import { X } from "lucide-react";
 import { VisitedEventItem } from "../lib/api";
 import { getLifecycleStatusFromSnapshot } from "../lib/eventStatus";
-import { DEMO_EVENTS } from "../lib/demoEvents";
+import { DEMO_EVENTS, getDemoEventBadge } from "../lib/demoEvents";
 import { Badge, Button } from "../design-system/components";
 
 interface MyEventsModalProps {
@@ -10,7 +10,7 @@ interface MyEventsModalProps {
   onClose: () => void;
   eventsList: VisitedEventItem[];
   onSelectEvent: (id: string) => void;
-  onLoadDemo: (id: string) => void;
+  onLoadDemo: (id: string, hostToken?: string) => void;
 }
 
 export const MyEventsModal: React.FC<MyEventsModalProps> = ({
@@ -66,19 +66,26 @@ export const MyEventsModal: React.FC<MyEventsModalProps> = ({
         <div style={{ marginTop: 16, fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>示範活動</div>
         <div style={{ fontSize: 10, color: "var(--color-muted)", marginTop: 2, marginBottom: 8 }}>不用真的建立活動，直接預覽各種狀態的畫面</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {DEMO_EVENTS.map((d) => (
-            <div
-              key={d.id}
-              onClick={() => {
-                onLoadDemo(d.id);
-                onClose();
-              }}
-              style={{ padding: "9px 12px", borderRadius: "var(--radius-md)", border: "1px dashed var(--color-border-strong)", cursor: "pointer" }}
-            >
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>{d.label}</div>
-              <div style={{ fontSize: 10, color: "var(--color-muted)", marginTop: 2 }}>{d.desc}</div>
-            </div>
-          ))}
+          {DEMO_EVENTS.map((d) => {
+            const badge = getDemoEventBadge(d.id);
+            return (
+              <div
+                key={d.id + (d.hostToken || "")}
+                onClick={() => {
+                  onLoadDemo(d.id, d.hostToken);
+                  onClose();
+                }}
+                style={{ padding: "9px 12px", borderRadius: "var(--radius-md)", border: "1px dashed var(--color-border-strong)", cursor: "pointer" }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: "var(--color-ink)" }}>{d.label}</span>
+                  {d.hostToken && <Badge variant="secondary" size="sm">主揪</Badge>}
+                  {badge && <Badge variant={badge.variant} size="sm">{badge.label}</Badge>}
+                </div>
+                <div style={{ fontSize: 10, color: "var(--color-muted)", marginTop: 2 }}>{d.desc}</div>
+              </div>
+            );
+          })}
         </div>
 
         <div style={{ marginTop: 16 }}>

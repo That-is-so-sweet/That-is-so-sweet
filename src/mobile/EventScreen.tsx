@@ -72,9 +72,9 @@ export const EventScreen: React.FC<EventScreenProps> = ({
         title={event.title}
         right={
           <>
-            <button style={iconBtnStyle} onClick={onNewEvent} title="新增活動"><Plus size={15} /></button>
             <button style={iconBtnStyle} onClick={onOpenShare}><Share2 size={15} /></button>
             <button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>
+            <button style={iconBtnStyle} onClick={onNewEvent} title="新增活動"><Plus size={15} /></button>
           </>
         }
       />

@@ -1,10 +1,10 @@
 import React from "react";
-import { CalendarHeart, PlusCircle, History, Sparkles } from "lucide-react";
+import { CalendarHeart, PlusCircle, History, Share2 } from "lucide-react";
 
 interface HeaderProps {
   onNewEvent: () => void;
   onOpenHistory: () => void;
-  onLoadDemo: () => void;
+  onOpenShareModal?: () => void;
   activeEventTitle?: string;
 }
 
@@ -25,7 +25,7 @@ const pillBtnStyle: React.CSSProperties = {
   transition: "background 150ms ease",
 };
 
-export const Header: React.FC<HeaderProps> = ({ onNewEvent, onOpenHistory, onLoadDemo, activeEventTitle }) => {
+export const Header: React.FC<HeaderProps> = ({ onNewEvent, onOpenHistory, onOpenShareModal, activeEventTitle }) => {
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--color-primary)", color: "#fff", boxShadow: "var(--shadow-sm)" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -78,14 +78,12 @@ export const Header: React.FC<HeaderProps> = ({ onNewEvent, onOpenHistory, onLoa
         )}
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <button
-            onClick={() => onLoadDemo()}
-            style={pillBtnStyle}
-            title="查看範例活動體驗功能"
-          >
-            <Sparkles size={14} />
-            體驗示範
-          </button>
+          {onOpenShareModal && (
+            <button onClick={onOpenShareModal} style={pillBtnStyle} title="分享這個活動的連結">
+              <Share2 size={14} />
+              分享
+            </button>
+          )}
           <button onClick={onOpenHistory} style={pillBtnStyle} title="查看瀏覽或建立過的活動紀錄">
             <History size={14} />
             我的聚會

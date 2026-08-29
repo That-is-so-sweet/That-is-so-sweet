@@ -239,6 +239,12 @@ function seedDemoEvents(map: Map<string, EventData>) {
 
 // --- "API" functions, mirroring the old Express routes 1:1 --- //
 
+// Raw read with no hostToken redaction and no expired-link throw — used to
+// preview a demo event's current lifecycle badge before actually opening it.
+export function peekEvent(id: string): EventData | undefined {
+  return loadEvents().get(id);
+}
+
 export function getEvent(id: string, hostToken?: string): EventData & { isHost?: boolean } {
   const events = loadEvents();
   const event = events.get(id);

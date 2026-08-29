@@ -56,7 +56,6 @@ export const MiniMonthPicker: React.FC<MiniMonthPickerProps> = ({
           if (d === null) return <div key={i} />;
           const ds = dateStr(d);
           const selectable = selSet.has(ds);
-          const active = ds === activeDate;
           const cnt = countFor(ds);
           return (
             <button
@@ -66,10 +65,10 @@ export const MiniMonthPicker: React.FC<MiniMonthPickerProps> = ({
               style={{
                 position: "relative",
                 aspectRatio: "1",
-                border: active ? "2px solid var(--color-primary)" : "1px solid transparent",
+                border: "1px solid transparent",
                 borderRadius: "var(--radius-md)",
-                background: active ? "var(--color-primary)" : selectable ? "var(--color-cream)" : "transparent",
-                color: active ? "#fff" : selectable ? "var(--color-ink)" : "var(--color-border)",
+                background: selectable ? "var(--color-primary)" : "transparent",
+                color: selectable ? "#fff" : "var(--color-ink)",
                 fontSize: 11,
                 fontWeight: selectable ? 800 : 400,
                 cursor: selectable ? "pointer" : "default",
@@ -90,8 +89,8 @@ export const MiniMonthPicker: React.FC<MiniMonthPickerProps> = ({
                     fontSize: 7,
                     fontWeight: 900,
                     borderRadius: 999,
-                    background: active ? "#fff" : "var(--color-hot)",
-                    color: active ? "var(--color-primary)" : "#fff",
+                    background: "#fff",
+                    color: "var(--color-primary)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
