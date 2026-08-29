@@ -31,8 +31,10 @@ ${isDateOnly ? "" : `⏰ 時間：${formatSlotTime(slot.time)}\n`}${event.finalN
 
 // One link for the whole lifecycle — no "&tab=vote" — so it keeps working
 // (and showing the right screen) whether voting is open, closed, or finalized.
+// import.meta.env.BASE_URL mirrors vite.config.ts's `base` (e.g. "/That-is-so-sweet/"
+// on GitHub Pages, "/" in dev) — without it the link 404s on Pages.
 export function getEventShareUrl(event: Pick<EventData, "id">, appOrigin: string): string {
-  return `${appOrigin}/#event=${event.id}`;
+  return `${appOrigin}${import.meta.env.BASE_URL}#event=${event.id}`;
 }
 
 export function getShareContent(event: EventData, shareUrl: string): ShareContent {
