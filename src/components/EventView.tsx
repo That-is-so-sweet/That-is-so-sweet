@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Users, Share2, History, Plus, Clock, CalendarDays } from "lucide-react";
+import { Share2, History, Plus, CalendarDays, ChevronLeft } from "lucide-react";
 import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
-import { getLifecycleStatus, formatRemaining } from "../lib/eventStatus";
+import { getLifecycleStatus } from "../lib/eventStatus";
 import { Badge } from "../design-system/components";
 import { TopBar } from "../mobile/TopBar";
 import { VoteTab } from "../mobile/VoteTab";
@@ -10,6 +10,7 @@ import { HeatmapTab } from "../mobile/HeatmapTab";
 import { FinalizedView } from "../mobile/FinalizedView";
 import { CancelledView } from "../mobile/CancelledView";
 import { CommentBoard } from "../mobile/CommentBoard";
+import { EventInfoCard } from "../mobile/EventInfoCard";
 import { iconBtnStyle } from "../mobile/mobileStyles";
 
 interface EventViewProps {
@@ -74,12 +75,6 @@ export const EventView: React.FC<EventViewProps> = ({
       <div style={{ position: "relative", borderRadius: "var(--radius-card)", overflow: "hidden", border: "1px solid var(--color-border)", boxShadow: "var(--shadow-md)", background: "var(--color-surface)" }}>
         <TopBar
           title={event.title}
-          subtitle={
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Users size={11} />
-              {event.responses.length} 人已回覆
-            </span>
-          }
           right={
             <>
               <button style={iconBtnStyle} onClick={onNewEvent} title="新增活動"><Plus size={15} /></button>
@@ -89,16 +84,18 @@ export const EventView: React.FC<EventViewProps> = ({
           }
         />
         <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", overflowX: "auto" }}>
+          {view === "identify_vote" && (
+            <button
+              onClick={() => setView("heatmap")}
+              style={{ display: "inline-flex", alignItems: "center", gap: 2, border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, padding: 0, whiteSpace: "nowrap" }}
+            >
+              <ChevronLeft size={13} />
+              返回統計頁面
+            </button>
+          )}
           <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
           <span style={{ fontSize: 11, fontWeight: 800, color: lifecycle.color, whiteSpace: "nowrap" }}>{lifecycle.label}</span>
-          <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
           {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
-          {event.status === "active" && event.responseDeadline && (
-            <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: "var(--color-muted)", flexShrink: 0, whiteSpace: "nowrap" }}>
-              <Clock size={11} color="var(--color-muted)" />
-              {formatRemaining(event.responseDeadline)}
-            </span>
-          )}
         </div>
 
         {event.status === "cancelled" ? (
@@ -118,10 +115,20 @@ export const EventView: React.FC<EventViewProps> = ({
         ) : (
           <>
             {view === "identify_vote" && (
-              <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} />
+              <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} stickyFooter={false} />
             )}
             {view === "heatmap" && (
               <>
+                <div style={{ padding: "20px 20px 0" }}>
+                  <EventInfoCard
+                    title={event.title}
+                    hostName={event.hostName}
+                    location={event.location}
+                    description={event.description}
+                    responseDeadlineIso={event.responseDeadline}
+                    responseCount={event.responses.length}
+                  />
+                </div>
                 <HeatmapTab
                   event={event}
                   userNickname={nickname}

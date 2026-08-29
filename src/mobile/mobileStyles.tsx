@@ -24,8 +24,8 @@ export const iconBtnStyle: React.CSSProperties = {
 };
 
 export const navBtnStyle: React.CSSProperties = {
-  width: 26,
-  height: 26,
+  width: 38,
+  height: 30,
   borderRadius: "var(--radius-md)",
   border: "1px solid var(--color-border)",
   background: "#fff",
@@ -138,14 +138,16 @@ export const MonthNavButton: React.FC<{ direction: "prev" | "next"; onClick: () 
           height: 15,
           padding: "0 3px",
           borderRadius: 999,
-          background: "var(--color-hot)",
+          background: "var(--color-primary)",
           color: "#fff",
           fontSize: 9,
           fontWeight: 900,
+          lineHeight: 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           border: "1.5px solid var(--color-surface)",
+          boxSizing: "border-box",
         }}
       >
         {badgeCount > 99 ? "99+" : badgeCount}

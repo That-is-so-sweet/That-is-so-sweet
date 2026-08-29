@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "hot" | "ghost" | "dark" | "muted";
+type ButtonVariant = "primary" | "secondary" | "hot" | "ghost" | "dark" | "muted" | "danger";
 type ButtonSize = "xs" | "sm" | "md" | "lg";
 
 interface ButtonProps {
@@ -36,6 +36,11 @@ const variants: Record<ButtonVariant, React.CSSProperties> = {
     background: "var(--color-hot)",
     color: "var(--text-on-hot)",
     boxShadow: "0 4px 16px rgba(194,59,26,0.35)",
+  },
+  danger: {
+    background: "var(--color-error)",
+    color: "var(--text-on-error)",
+    boxShadow: "0 4px 16px rgba(185,28,44,0.35)",
   },
   ghost: {
     background: "transparent",

@@ -6,6 +6,7 @@ import { isVotingOpen, formatDeadline } from "../lib/eventStatus";
 import { formatSlotTime } from "../lib/slots";
 import { Button, Input } from "../design-system/components";
 import { cardStyle, MonthNavButton, countInAdjacentMonth, quickBtnStyle, STATUS_META } from "./mobileStyles";
+import { EventInfoCard } from "./EventInfoCard";
 
 interface VoteTabProps {
   event: EventData;
@@ -16,6 +17,8 @@ interface VoteTabProps {
   onSubmit: (input: SubmitResponseInput) => Promise<void>;
   isLoading: boolean;
   onSubmitted?: () => void;
+  /** The desktop shell wraps this in an `overflow: hidden` card, which breaks `position: sticky`. */
+  stickyFooter?: boolean;
 }
 
 interface VoteRowProps {
@@ -81,13 +84,14 @@ const VoteRow: React.FC<VoteRowProps> = (props) => {
   );
 };
 
-export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, email, setEmail, onSubmit, isLoading, onSubmitted }) => {
+export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, email, setEmail, onSubmit, isLoading, onSubmitted, stickyFooter = true }) => {
   const [comment, setComment] = useState("");
   const [password, setPassword] = useState("");
   const [availability, setAvailability] = useState<Record<string, AvailabilityStatus>>({});
   const [editingParticipantId, setEditingParticipantId] = useState<string | null>(null);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [showEmailInfo, setShowEmailInfo] = useState(false);
+  const [showPasswordInfo, setShowPasswordInfo] = useState(false);
   const [bulkTargetKey, setBulkTargetKey] = useState("all");
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [calViewDate, setCalViewDate] = useState(new Date());
@@ -287,6 +291,14 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+      <EventInfoCard
+        title={event.title}
+        hostName={event.hostName}
+        location={event.location}
+        description={event.description}
+        responseDeadlineIso={event.responseDeadline}
+        responseCount={event.responses.length}
+      />
       {votingClosed && (
         <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-hot-subtle)", border: "1px solid rgba(214,48,60,0.25)" }}>
           <AlertTriangle size={14} color="var(--color-hot)" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -295,6 +307,10 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
           </span>
         </div>
       )}
+      {!votingClosed && (
+        <span style={{ fontSize: 15, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>填寫我的時間</span>
+      )}
+      <div style={{ ...cardStyle, display: "flex", flexDirection: "column", gap: 10 }}>
       {!votingClosed && (
         <>
           <Input size="sm" label="您的暱稱" required placeholder="例如：小明" value={nickname} onChange={(e) => setNickname(e.target.value)} />
@@ -321,11 +337,24 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
           />
           <Input
             size="sm"
-            label="密碼（選填）"
+            label={
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                密碼（選填）
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordInfo((v) => !v)}
+                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", padding: 0 }}
+                  aria-label="更多資訊"
+                >
+                  <Info size={13} />
+                </button>
+              </span>
+            }
             placeholder={needsPassword ? "此暱稱已有人使用，請輸入密碼" : "設定密碼可在其他裝置回來編輯"}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            hint={showPasswordInfo ? "設定密碼後，就可以在其他裝置回來編輯；下次要用同樣的暱稱登入時，也需要輸入這組密碼。" : undefined}
           />
         </>
       )}
@@ -355,7 +384,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
               fontWeight: 800,
               border: "none",
               cursor: "pointer",
-              background: viewMode === m.k ? "var(--color-primary)" : "transparent",
+              background: viewMode === m.k ? "var(--color-ink)" : "transparent",
               color: viewMode === m.k ? "#fff" : "var(--color-ink)",
               transition: "background 150ms ease, color 150ms ease",
             }}
@@ -367,7 +396,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
       </div>
 
       {viewMode === "list" && (
-        <div style={cardStyle}>
+        <div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
             {bulkToolsButton}
           </div>
@@ -398,65 +427,95 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
       )}
 
       {viewMode === "calendar" && (
-        <div style={cardStyle}>
+        <div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
             {bulkToolsButton}
           </div>
           {bulkToolsPanel}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
-            <MonthNavButton direction="prev" onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))} badgeCount={calPrevCount} />
-            <div style={{ fontSize: 12, fontWeight: 800, fontFamily: "var(--font-display)" }}>{calYear}年{calMonth + 1}月</div>
-            <MonthNavButton direction="next" onClick={() => setCalViewDate(new Date(calYear, calMonth + 1, 1))} badgeCount={calNextCount} />
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
-            {WEEK.map((w, i) => (
-              <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-weekend)" : "var(--color-muted)" }}>
-                {w}
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
-            {calCells.map((d, i) => {
-              if (d === null) return <div key={i} />;
-              const ds = calDateStr(d);
-              const hasSlots = dateSet.has(ds);
-              const dateSlots = hasSlots ? grouped[ds] || [] : [];
-              const statuses = dateSlots.map((s) => availability[s.id] || "available");
-              const isActive = ds === calActiveDate;
-              return (
-                <button
-                  key={i}
-                  disabled={!hasSlots}
-                  onClick={() => setCalActiveDate(ds)}
-                  style={{
-                    position: "relative",
-                    aspectRatio: "1",
-                    border: isActive ? "2px solid var(--color-primary)" : "1px solid transparent",
-                    borderRadius: "var(--radius-md)",
-                    background: hasSlots ? "var(--color-cream)" : "transparent",
-                    color: hasSlots ? "var(--color-ink)" : "var(--color-border)",
-                    fontSize: 11,
-                    fontWeight: hasSlots ? 800 : 400,
-                    cursor: hasSlots ? "pointer" : "default",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 3,
-                    padding: "4px 0",
-                  }}
-                >
-                  <span>{d}</span>
-                  {hasSlots && (
-                    <span style={{ display: "flex", gap: 1.5 }}>
-                      {statuses.slice(0, 4).map((st, idx) => (
-                        <span key={idx} style={{ width: 4, height: 4, borderRadius: "50%", background: STATUS_META[st].color }} />
-                      ))}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          <div style={{ maxWidth: 260, margin: "0 auto" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
+              <MonthNavButton direction="prev" onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))} badgeCount={calPrevCount} />
+              <select
+                value={`${calYear}-${calMonth}`}
+                onChange={(e) => {
+                  const [y, m] = e.target.value.split("-").map(Number);
+                  setCalViewDate(new Date(y, m, 1));
+                }}
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  fontFamily: "var(--font-display)",
+                  border: "none",
+                  background: "transparent",
+                  color: "var(--color-ink)",
+                  textAlign: "center",
+                }}
+              >
+                {Array.from({ length: 14 }).map((_, i) => {
+                  const d = new Date();
+                  d.setDate(1);
+                  d.setMonth(d.getMonth() - 1 + i);
+                  return (
+                    <option key={i} value={`${d.getFullYear()}-${d.getMonth()}`}>
+                      {d.getFullYear()}年{d.getMonth() + 1}月
+                    </option>
+                  );
+                })}
+              </select>
+              <MonthNavButton direction="next" onClick={() => setCalViewDate(new Date(calYear, calMonth + 1, 1))} badgeCount={calNextCount} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 2 }}>
+              {WEEK.map((w, i) => (
+                <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-weekend)" : "var(--color-muted)" }}>
+                  {w}
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+              {calCells.map((d, i) => {
+                if (d === null) return <div key={i} />;
+                const ds = calDateStr(d);
+                const hasSlots = dateSet.has(ds);
+                const dateSlots = hasSlots ? grouped[ds] || [] : [];
+                const statuses = dateSlots.map((s) => availability[s.id] || "available");
+                const isActive = ds === calActiveDate;
+                return (
+                  <button
+                    key={i}
+                    disabled={!hasSlots}
+                    onClick={() => setCalActiveDate(ds)}
+                    style={{
+                      position: "relative",
+                      aspectRatio: "1",
+                      border: hasSlots ? "1px solid var(--color-border)" : "1px solid transparent",
+                      outline: isActive ? "2px solid var(--color-primary)" : "none",
+                      outlineOffset: isActive ? 2 : 0,
+                      borderRadius: "var(--radius-md)",
+                      background: hasSlots ? "var(--color-cream)" : "transparent",
+                      color: hasSlots ? "var(--color-ink)" : "var(--color-border)",
+                      fontSize: 10,
+                      fontWeight: hasSlots ? 800 : 400,
+                      cursor: hasSlots ? "pointer" : "default",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 3,
+                      padding: "4px 0",
+                    }}
+                  >
+                    <span>{d}</span>
+                    {hasSlots && (
+                      <span style={{ display: "flex", gap: 1.5 }}>
+                        {statuses.slice(0, 4).map((st, idx) => (
+                          <span key={idx} style={{ width: 4, height: 4, borderRadius: "50%", background: STATUS_META[st].color }} />
+                        ))}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {calActiveDate && (
@@ -485,16 +544,25 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
       )}
 
       <Input size="sm" label="對此發起此次投票的留言" placeholder="例如：19:00 才能到" value={comment} onChange={(e) => setComment(e.target.value)} />
-      <Button variant="dark" fullWidth disabled={!nickname.trim() || isLoading || votingClosed || isLocked} onClick={handleSubmit}>
-        {editingParticipantId ? (
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-            更新我的回覆
-            <RotateCw size={14} />
-          </span>
-        ) : (
-          "送出我的時間"
-        )}
-      </Button>
+      </div>
+      <div
+        style={
+          stickyFooter
+            ? { position: "sticky", bottom: 0, margin: "4px -14px -14px", padding: "10px 14px calc(14px + env(safe-area-inset-bottom))", background: "var(--color-cream)", borderTop: "1px solid var(--color-border)" }
+            : undefined
+        }
+      >
+        <Button variant="primary" fullWidth disabled={!nickname.trim() || isLoading || votingClosed || isLocked} onClick={handleSubmit}>
+          {editingParticipantId ? (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              更新我的回覆
+              <RotateCw size={14} />
+            </span>
+          ) : (
+            "送出我的時間"
+          )}
+        </Button>
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React from "react";
-import { Clock, MapPin, StickyNote } from "lucide-react";
+import { Clock, MapPin, StickyNote, Users } from "lucide-react";
 import { EventLocation } from "../types";
 import { cardStyle } from "./mobileStyles";
 import { formatDeadline, formatRemaining } from "../lib/eventStatus";
@@ -10,18 +10,26 @@ interface EventInfoCardProps {
   location?: EventLocation;
   description?: string;
   responseDeadlineIso?: string;
+  responseCount?: number;
 }
 
-export const EventInfoCard: React.FC<EventInfoCardProps> = ({ title, hostName, location, description, responseDeadlineIso }) => {
+export const EventInfoCard: React.FC<EventInfoCardProps> = ({ title, hostName, location, description, responseDeadlineIso, responseCount }) => {
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
         <div style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {title || "（尚未命名）"}
         </div>
-        {hostName && (
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", flexShrink: 0, whiteSpace: "nowrap" }}>
-            主揪：{hostName}
+        {(hostName || responseCount !== undefined) && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", flexShrink: 0, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4 }}>
+            {hostName && <span>主揪：{hostName}</span>}
+            {hostName && responseCount !== undefined && <span style={{ opacity: 0.5 }}>·</span>}
+            {responseCount !== undefined && (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+                <Users size={11} />
+                {responseCount} 人已回覆
+              </span>
+            )}
           </span>
         )}
       </div>

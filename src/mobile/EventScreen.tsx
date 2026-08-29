@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Users, Share2, History, Plus, Clock, CalendarDays, ChevronLeft } from "lucide-react";
+import { Share2, History, Plus, CalendarDays, ChevronLeft } from "lucide-react";
 import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
-import { getLifecycleStatus, formatRemaining } from "../lib/eventStatus";
+import { getLifecycleStatus } from "../lib/eventStatus";
 import { Badge } from "../design-system/components";
 import { TopBar } from "./TopBar";
 import { VoteTab } from "./VoteTab";
@@ -70,12 +70,6 @@ export const EventScreen: React.FC<EventScreenProps> = ({
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, position: "relative" }}>
       <TopBar
         title={event.title}
-        subtitle={
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <Users size={11} />
-            {event.responses.length} 人已回覆
-          </span>
-        }
         right={
           <>
             <button style={iconBtnStyle} onClick={onNewEvent} title="新增活動"><Plus size={15} /></button>
@@ -85,16 +79,18 @@ export const EventScreen: React.FC<EventScreenProps> = ({
         }
       />
       <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 16px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", flexShrink: 0, overflowX: "auto" }}>
+        {view === "identify_vote" && (
+          <button
+            onClick={() => setView("heatmap")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 2, border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, padding: 0, whiteSpace: "nowrap" }}
+          >
+            <ChevronLeft size={13} />
+            返回統計頁面
+          </button>
+        )}
         <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
         <span style={{ fontSize: 11, fontWeight: 800, color: lifecycle.color, whiteSpace: "nowrap" }}>{lifecycle.label}</span>
-        <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.sublabel}</Badge>
         {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
-        {event.status === "active" && event.responseDeadline && (
-          <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 3, fontSize: 11, fontWeight: 700, color: "var(--color-muted)", flexShrink: 0, whiteSpace: "nowrap" }}>
-            <Clock size={11} color="var(--color-muted)" />
-            {formatRemaining(event.responseDeadline)}
-          </span>
-        )}
       </div>
 
       {event.status === "cancelled" ? (
@@ -113,41 +109,21 @@ export const EventScreen: React.FC<EventScreenProps> = ({
         </div>
       ) : (
         <div style={{ flex: 1, overflowY: "auto" }}>
-          <div style={{ padding: "14px 14px 0" }}>
-            <EventInfoCard
-              title={event.title}
-              hostName={event.hostName}
-              location={event.location}
-              description={event.description}
-              responseDeadlineIso={event.responseDeadline}
-            />
-          </div>
           {view === "identify_vote" && (
-            <div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "12px 14px",
-                  background: "var(--color-primary-subtle)",
-                  borderBottom: "1px solid var(--color-primary-light)",
-                  boxShadow: "0 2px 6px rgba(224,104,40,0.08)",
-                }}
-              >
-                <button
-                  onClick={() => setView("heatmap")}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "var(--radius-md)", border: "1px solid var(--color-primary-light)", background: "#fff", color: "var(--color-primary)", cursor: "pointer", flexShrink: 0 }}
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <span style={{ fontSize: 15, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-primary-dark)" }}>填寫我的時間</span>
-              </div>
-              <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} />
-            </div>
+            <VoteTab event={event} nickname={nickname} setNickname={setNickname} email={email} setEmail={setEmail} onSubmit={onRespond} isLoading={isLoading} onSubmitted={() => setView("heatmap")} />
           )}
           {view === "heatmap" && (
             <>
+              <div style={{ padding: "14px 14px 0" }}>
+                <EventInfoCard
+                  title={event.title}
+                  hostName={event.hostName}
+                  location={event.location}
+                  description={event.description}
+                  responseDeadlineIso={event.responseDeadline}
+                  responseCount={event.responses.length}
+                />
+              </div>
               <HeatmapTab
                 event={event}
                 userNickname={nickname}

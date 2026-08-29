@@ -49,6 +49,7 @@
   --text-on-primary: #FFFFFF;
   --text-on-secondary: var(--color-ink);
   --text-on-hot: #FFFFFF;
+  --text-on-error: #FFFFFF;
   --text-inverse: #FFFFFF;
 
   /* Background roles */

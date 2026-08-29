@@ -190,20 +190,10 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
           </div>
 
           <div style={cardStyle}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-              <SectionLabel
-                title={isDateOnly ? "候選日期" : "候選日期與時段"}
-                hint={isDateOnly ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天` : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
-              />
-              {!isDateOnly && (
-                <button
-                  onClick={() => setMode("date_only")}
-                  style={{ border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, padding: 0, whiteSpace: "nowrap" }}
-                >
-                  ◀ 改回只選日期
-                </button>
-              )}
-            </div>
+            <SectionLabel
+              title={isDateOnly ? "候選日期" : "候選日期與時段"}
+              hint={isDateOnly ? `點選日期新增候選，再點一次可取消；已選 ${selectedDates.length} 天` : `點選日期新增候選，再點一次可切換／取消；已建立 ${slots.length} 個時段`}
+            />
             <MonthCalendar
               selectedDates={selectedDates}
               onChange={handleDatesChange}
@@ -221,41 +211,53 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
               </div>
             )}
 
-            {isDateOnly && selectedDates.length > 0 && (
+            {selectedDates.length > 0 && (
               <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-                <div style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 2 }}>
-                  已選日期（{selectedDates.length}）
-                </div>
-                <div style={{ fontSize: 10, color: "var(--color-muted)", marginBottom: 6 }}>
-                  新增時段會套用到所有已選日期
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {[...selectedDates].sort().map((date) => (
-                    <div
-                      key={date}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isDateOnly ? 6 : 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: "var(--color-muted)" }}>
+                    已選日期（{selectedDates.length}）
+                  </div>
+                  {isDateOnly ? (
+                    <button
+                      onClick={() => {
+                        setMode("time_slots");
+                        if (!activeDate || !selectedDates.includes(activeDate)) {
+                          setActiveDate([...selectedDates].sort()[0]);
+                        }
+                      }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 800, cursor: "pointer", padding: 0, flexShrink: 0 }}
                     >
-                      <span style={{ fontSize: 12, fontWeight: 700 }}>
-                        {date} ({formatChineseWeekday(date)})
-                      </span>
-                      <button
-                        onClick={() => {
-                          setMode("time_slots");
-                          setActiveDate(date);
-                        }}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 800, cursor: "pointer", padding: 0 }}
-                      >
-                        <Plus size={12} />
-                        新增時段
-                      </button>
-                    </div>
-                  ))}
+                      <Plus size={12} />
+                      新增時段
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setMode("date_only")}
+                      style={{ border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, padding: 0, whiteSpace: "nowrap" }}
+                    >
+                      ◀ 改回只選日期
+                    </button>
+                  )}
                 </div>
+                {isDateOnly && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {[...selectedDates].sort().map((date) => (
+                      <div
+                        key={date}
+                        style={{ padding: "8px 10px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}
+                      >
+                        <span style={{ fontSize: 12, fontWeight: 700 }}>
+                          {date} ({formatChineseWeekday(date)})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
             {!isDateOnly && activeDate && selectedDates.length > 0 && (
-              <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
+              <div style={{ marginTop: 12 }}>
                 <div style={{ border: "1.5px dashed var(--color-border-strong)", borderRadius: "var(--radius-md)", padding: 10, marginBottom: 14, background: "var(--color-cream)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 800, color: "var(--color-muted)", marginBottom: 8 }}>
                     <Plus size={12} />
