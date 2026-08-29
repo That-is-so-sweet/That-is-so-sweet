@@ -83,20 +83,20 @@ export const EventView: React.FC<EventViewProps> = ({
             </>
           }
         />
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", overflowX: "auto" }}>
-          {view === "identify_vote" && (
-            <button
-              onClick={() => setView("heatmap")}
-              style={{ display: "inline-flex", alignItems: "center", gap: 2, border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, padding: 0, whiteSpace: "nowrap" }}
-            >
-              <ChevronLeft size={13} />
-              返回統計頁面
-            </button>
-          )}
-          <span style={{ width: 7, height: 7, borderRadius: 999, background: lifecycle.color, flexShrink: 0 }} />
-          <span style={{ fontSize: 11, fontWeight: 800, color: lifecycle.color, whiteSpace: "nowrap" }}>{lifecycle.label}</span>
-          {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
-        </div>
+        {(view === "identify_vote" || isHost) && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "9px 20px", background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", overflowX: "auto" }}>
+            {view === "identify_vote" && (
+              <button
+                onClick={() => setView("heatmap")}
+                style={{ display: "inline-flex", alignItems: "center", gap: 2, border: "none", background: "none", color: "var(--color-primary)", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, padding: 0, whiteSpace: "nowrap" }}
+              >
+                <ChevronLeft size={13} />
+                返回統計頁面
+              </button>
+            )}
+            {isHost && <Badge variant="secondary" size="sm">主揪</Badge>}
+          </div>
+        )}
 
         {event.status === "cancelled" ? (
           <>
@@ -126,7 +126,8 @@ export const EventView: React.FC<EventViewProps> = ({
                     location={event.location}
                     description={event.description}
                     responseDeadlineIso={event.responseDeadline}
-                    responseCount={event.responses.length}
+                    statusLabel={lifecycle.label}
+                    statusColor={lifecycle.color}
                   />
                 </div>
                 <HeatmapTab

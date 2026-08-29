@@ -1,5 +1,5 @@
 import React from "react";
-import { Clock, MapPin, StickyNote, Users } from "lucide-react";
+import { Clock, MapPin, StickyNote } from "lucide-react";
 import { EventLocation } from "../types";
 import { cardStyle } from "./mobileStyles";
 import { formatDeadline, formatRemaining } from "../lib/eventStatus";
@@ -10,26 +10,40 @@ interface EventInfoCardProps {
   location?: EventLocation;
   description?: string;
   responseDeadlineIso?: string;
-  responseCount?: number;
+  statusLabel?: string;
+  statusColor?: string;
 }
 
-export const EventInfoCard: React.FC<EventInfoCardProps> = ({ title, hostName, location, description, responseDeadlineIso, responseCount }) => {
+export const EventInfoCard: React.FC<EventInfoCardProps> = ({ title, hostName, location, description, responseDeadlineIso, statusLabel, statusColor }) => {
   return (
     <div style={cardStyle}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-        <div style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {title || "（尚未命名）"}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+          <span style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {title || "（尚未命名）"}
+          </span>
+          {statusLabel && (
+            <span
+              style={{
+                flexShrink: 0,
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "2px 7px",
+                borderRadius: "var(--radius-pill)",
+                background: statusColor || "var(--color-primary)",
+                color: "#fff",
+                fontSize: 10,
+                fontWeight: 900,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {statusLabel}
+            </span>
+          )}
         </div>
-        {(hostName || responseCount !== undefined) && (
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", flexShrink: 0, whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4 }}>
-            {hostName && <span>主揪：{hostName}</span>}
-            {hostName && responseCount !== undefined && <span style={{ opacity: 0.5 }}>·</span>}
-            {responseCount !== undefined && (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
-                <Users size={11} />
-                {responseCount} 人已回覆
-              </span>
-            )}
+        {hostName && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-muted)", flexShrink: 0, whiteSpace: "nowrap" }}>
+            主揪：{hostName}
           </span>
         )}
       </div>

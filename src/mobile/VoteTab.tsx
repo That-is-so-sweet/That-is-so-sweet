@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Zap, RotateCw, ChevronUp, ChevronDown, List, CalendarDays, AlertTriangle, Info } from "lucide-react";
 import { EventData, AvailabilityStatus, SubmitResponseInput } from "../types";
 import { formatChineseWeekday } from "../lib/calendar";
-import { isVotingOpen, formatDeadline } from "../lib/eventStatus";
+import { isVotingOpen, formatDeadline, getLifecycleStatus } from "../lib/eventStatus";
 import { formatSlotTime } from "../lib/slots";
 import { Button, Input } from "../design-system/components";
 import { cardStyle, MonthNavButton, countInAdjacentMonth, quickBtnStyle, STATUS_META } from "./mobileStyles";
@@ -156,6 +156,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
 
   const isDateOnly = event.mode === "date_only";
   const votingClosed = !isVotingOpen(event);
+  const lifecycle = getLifecycleStatus(event);
 
   const handleChange = (id: string, st: AvailabilityStatus): void => setAvailability((p) => ({ ...p, [id]: st }));
 
@@ -297,7 +298,8 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
         location={event.location}
         description={event.description}
         responseDeadlineIso={event.responseDeadline}
-        responseCount={event.responses.length}
+        statusLabel={lifecycle.label}
+        statusColor={lifecycle.color}
       />
       {votingClosed && (
         <div style={{ display: "flex", alignItems: "flex-start", gap: 6, padding: 10, borderRadius: "var(--radius-md)", background: "var(--color-hot-subtle)", border: "1px solid rgba(214,48,60,0.25)" }}>
@@ -367,6 +369,8 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
         </div>
       )}
 
+      <div style={{ borderTop: "1px solid var(--color-border)" }} />
+
       <div style={{ display: "flex", gap: 2, background: "var(--color-cream)", border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: 3 }}>
         {[{ k: "list" as const, label: "清單檢視", icon: List }, { k: "calendar" as const, label: "行事曆檢視", icon: CalendarDays }].map((m) => (
           <button
@@ -404,7 +408,7 @@ export const VoteTab: React.FC<VoteTabProps> = ({ event, nickname, setNickname, 
           {(Object.entries(grouped) as [string, EventData["slots"]][]).map(([date, list]) => (
             <div key={date} style={{ marginBottom: 3 }}>
               {!isDateOnly && (
-                <div style={{ fontSize: 10, fontWeight: 800, color: "var(--color-muted)", padding: "3px 0 1px" }}>
+                <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", padding: "3px 0 1px" }}>
                   {date} ({formatChineseWeekday(date)})
                 </div>
               )}
