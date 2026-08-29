@@ -20,6 +20,8 @@ interface HeatmapTabProps {
   onCancelEvent?: () => Promise<void>;
   onUpdateEvent?: (input: Omit<UpdateEventInput, "hostToken">) => Promise<void>;
   isLoading?: boolean;
+  /** Desktop has room to show the calendar and its selected-date detail side by side. */
+  layout?: "mobile" | "desktop";
 }
 
 const WEEK = ["日", "一", "二", "三", "四", "五", "六"];
@@ -195,6 +197,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   onCancelEvent,
   onUpdateEvent,
   isLoading,
+  layout = "mobile",
 }) => {
   const [distMode, setDistMode] = useState<"bar" | "calendar">("bar");
   const [calViewDate, setCalViewDate] = useState(new Date());
@@ -270,6 +273,112 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
   const dateSet = new Set(allDates);
   const calPrevCount = countInAdjacentMonth(event.slots, calYear, calMonth, -1);
   const calNextCount = countInAdjacentMonth(event.slots, calYear, calMonth, 1);
+
+  const calendarGrid = (
+    <>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
+        <MonthNavButton direction="prev" onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))} badgeCount={calPrevCount} />
+        <select
+          value={`${calYear}-${calMonth}`}
+          onChange={(e) => {
+            const [y, m] = e.target.value.split("-").map(Number);
+            setCalViewDate(new Date(y, m, 1));
+          }}
+          style={{
+            fontSize: 12,
+            fontWeight: 800,
+            fontFamily: "var(--font-display)",
+            border: "none",
+            background: "transparent",
+            color: "var(--color-ink)",
+            textAlign: "center",
+          }}
+        >
+          {Array.from({ length: 14 }).map((_, i) => {
+            const d = new Date();
+            d.setDate(1);
+            d.setMonth(d.getMonth() - 1 + i);
+            return (
+              <option key={i} value={`${d.getFullYear()}-${d.getMonth()}`}>
+                {d.getFullYear()}年{d.getMonth() + 1}月
+              </option>
+            );
+          })}
+        </select>
+        <MonthNavButton direction="next" onClick={() => setCalViewDate(new Date(calYear, calMonth + 1, 1))} badgeCount={calNextCount} />
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 8 }}>
+        {WEEK.map((w, i) => (
+          <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-weekend)" : "var(--color-muted)" }}>
+            {w}
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+        {calCells.map((d, i) => {
+          if (d === null) return <div key={i} />;
+          const ds = calDateStr(d);
+          const hasSlots = dateSet.has(ds);
+          const dateSlots = hasSlots ? grouped[ds] || [] : [];
+          const avgRatio = hasSlots && total && dateSlots.length
+            ? dateSlots.reduce((sum, s) => sum + s.availableCount / total, 0) / dateSlots.length
+            : 0;
+          const bg = hasSlots ? heatColor(avgRatio) : "transparent";
+          const fg = avgRatio >= 0.75 ? "#fff" : "var(--color-ink)";
+          const isActive = ds === calActiveDate;
+          return (
+            <button
+              key={i}
+              disabled={!hasSlots}
+              onClick={() => setCalActiveDate(ds)}
+              style={{
+                position: "relative",
+                aspectRatio: "1",
+                border: hasSlots ? "1px solid var(--color-border)" : "1px solid transparent",
+                outline: isActive ? "2px solid var(--color-primary)" : "none",
+                outlineOffset: isActive ? 2 : 0,
+                borderRadius: "var(--radius-md)",
+                background: bg,
+                color: hasSlots ? fg : "var(--color-border)",
+                fontSize: 10,
+                fontWeight: hasSlots ? 800 : 400,
+                cursor: hasSlots ? "pointer" : "default",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {d}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+
+  const calendarDetail = calActiveDate && (
+    <>
+      <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 6 }}>
+        {calActiveDate} ({formatChineseWeekday(calActiveDate)})
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {(grouped[calActiveDate] || []).map((s) => (
+          <HeatSlotRow
+            key={s.slot.id}
+            s={s}
+            primaryLabel={isDateOnly ? "本日是否有空" : formatSlotTime(s.slot.time)}
+            total={total}
+            isHost={isHost}
+            isFinalizePick={!!isHost && selectedFinalSlotId === s.slotId}
+            isExpanded={expandedSlotId === s.slotId}
+            onToggleExpand={() => toggleExpand(s.slotId)}
+            onSelectFinalize={() => setSelectedFinalSlotId(s.slotId)}
+            onSelectBreakdown={(status) => setNamesPanel({ slotId: s.slotId, status })}
+          />
+        ))}
+      </div>
+    </>
+  );
 
   return (
     <div style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -402,111 +511,27 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
             )}
 
             {distMode === "calendar" && (
-              <div>
-                <div style={{ maxWidth: 260, margin: "0 auto" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 6 }}>
-                    <MonthNavButton direction="prev" onClick={() => setCalViewDate(new Date(calYear, calMonth - 1, 1))} badgeCount={calPrevCount} />
-                    <select
-                      value={`${calYear}-${calMonth}`}
-                      onChange={(e) => {
-                        const [y, m] = e.target.value.split("-").map(Number);
-                        setCalViewDate(new Date(y, m, 1));
-                      }}
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 800,
-                        fontFamily: "var(--font-display)",
-                        border: "none",
-                        background: "transparent",
-                        color: "var(--color-ink)",
-                        textAlign: "center",
-                      }}
-                    >
-                      {Array.from({ length: 14 }).map((_, i) => {
-                        const d = new Date();
-                        d.setDate(1);
-                        d.setMonth(d.getMonth() - 1 + i);
-                        return (
-                          <option key={i} value={`${d.getFullYear()}-${d.getMonth()}`}>
-                            {d.getFullYear()}年{d.getMonth() + 1}月
-                          </option>
-                        );
-                      })}
-                    </select>
-                    <MonthNavButton direction="next" onClick={() => setCalViewDate(new Date(calYear, calMonth + 1, 1))} badgeCount={calNextCount} />
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 8 }}>
-                    {WEEK.map((w, i) => (
-                      <div key={i} style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: i === 0 || i === 6 ? "var(--color-weekend)" : "var(--color-muted)" }}>
-                        {w}
+              layout === "desktop" ? (
+                <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
+                  <div style={{ width: 260, flexShrink: 0 }}>{calendarGrid}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {calendarDetail || (
+                      <div style={{ fontSize: 12, color: "var(--color-muted)", textAlign: "center", padding: "20px 0" }}>
+                        請點選左側日期查看時段
                       </div>
-                    ))}
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
-                    {calCells.map((d, i) => {
-                      if (d === null) return <div key={i} />;
-                      const ds = calDateStr(d);
-                      const hasSlots = dateSet.has(ds);
-                      const dateSlots = hasSlots ? grouped[ds] || [] : [];
-                      const avgRatio = hasSlots && total && dateSlots.length
-                        ? dateSlots.reduce((sum, s) => sum + s.availableCount / total, 0) / dateSlots.length
-                        : 0;
-                      const bg = hasSlots ? heatColor(avgRatio) : "transparent";
-                      const fg = avgRatio >= 0.75 ? "#fff" : "var(--color-ink)";
-                      const isActive = ds === calActiveDate;
-                      return (
-                        <button
-                          key={i}
-                          disabled={!hasSlots}
-                          onClick={() => setCalActiveDate(ds)}
-                          style={{
-                            position: "relative",
-                            aspectRatio: "1",
-                            border: hasSlots ? "1px solid var(--color-border)" : "1px solid transparent",
-                            outline: isActive ? "2px solid var(--color-primary)" : "none",
-                            outlineOffset: isActive ? 2 : 0,
-                            borderRadius: "var(--radius-md)",
-                            background: bg,
-                            color: hasSlots ? fg : "var(--color-border)",
-                            fontSize: 10,
-                            fontWeight: hasSlots ? 800 : 400,
-                            cursor: hasSlots ? "pointer" : "default",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {d}
-                        </button>
-                      );
-                    })}
+                    )}
                   </div>
                 </div>
-
-                {calActiveDate && (
-                  <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
-                    <div style={{ fontSize: 12, fontWeight: 900, color: "var(--color-ink)", marginBottom: 6 }}>
-                      {calActiveDate} ({formatChineseWeekday(calActiveDate)})
+              ) : (
+                <div>
+                  <div style={{ maxWidth: 260, margin: "0 auto" }}>{calendarGrid}</div>
+                  {calendarDetail && (
+                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--color-border)" }}>
+                      {calendarDetail}
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {(grouped[calActiveDate] || []).map((s) => (
-                        <HeatSlotRow
-                          key={s.slot.id}
-                          s={s}
-                          primaryLabel={isDateOnly ? "本日是否有空" : formatSlotTime(s.slot.time)}
-                          total={total}
-                          isHost={isHost}
-                          isFinalizePick={!!isHost && selectedFinalSlotId === s.slotId}
-                          isExpanded={expandedSlotId === s.slotId}
-                          onToggleExpand={() => toggleExpand(s.slotId)}
-                          onSelectFinalize={() => setSelectedFinalSlotId(s.slotId)}
-                          onSelectBreakdown={(status) => setNamesPanel({ slotId: s.slotId, status })}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )
             )}
 
             <div style={{ borderTop: "1px solid var(--color-border)", margin: "12px 0 10px" }} />

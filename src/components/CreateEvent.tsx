@@ -174,7 +174,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
                 <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>預設為今天起 7 天後，可自行調整日期與時間</div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 12 }}>
                 <Input label="主揪暱稱" placeholder="例如：阿傑、Wally" value={hostName} onChange={(e) => setHostName(e.target.value)} />
                 <Input label="主揪 Email" placeholder="例如：host@example.com" type="email" value={hostEmail} onChange={(e) => setHostEmail(e.target.value)} />
               </div>

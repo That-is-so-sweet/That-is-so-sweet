@@ -140,6 +140,7 @@ export const EventView: React.FC<EventViewProps> = ({
                   onCancelEvent={onCancelEvent}
                   onUpdateEvent={onUpdateEvent}
                   isLoading={isLoading}
+                  layout="desktop"
                 />
                 <div style={{ marginTop: 12, borderTop: "8px solid var(--color-cream)", padding: "20px 20px 20px" }}>
                   <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
