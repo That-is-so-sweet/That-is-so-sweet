@@ -10,3 +10,16 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+/* Mobile tree renders a fixed-height app "card" (see MobileApp.tsx) with its
+   own internal scroll regions. Below this breakpoint (matches useViewport's
+   query) the document itself must never scroll — otherwise Chrome's
+   address-bar show/hide during a scroll gesture recalculates 100dvh mid-drag,
+   which reflows the whole card and makes bottom-pinned buttons jump/resize. */
+@media (max-width: 767px) {
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}

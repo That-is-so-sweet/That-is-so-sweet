@@ -40,7 +40,7 @@ export const HistoryModal: React.FC<HistoryModalProps> = ({ onClose, eventsList,
             <X size={20} />
           </button>
         </div>
-        <div style={{ padding: 16, overflowY: "auto", flex: 1 }}>
+        <div style={{ padding: 16, overflowY: "auto", overscrollBehavior: "contain", flex: 1 }}>
         {eventsList.length === 0 ? (
           <div style={{ textAlign: "center", padding: "24px 0", color: "var(--color-muted)", fontSize: 12 }}>
             目前尚無紀錄，發起活動後會顯示在這裡！

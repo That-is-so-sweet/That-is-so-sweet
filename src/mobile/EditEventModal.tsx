@@ -65,8 +65,8 @@ export const EditEventModal: React.FC<EditEventModalProps> = ({ event, isLoading
   };
 
   return (
-    <div style={{ position: "absolute", inset: 0, background: "rgba(26,18,8,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 200, overflowY: "auto" }}>
-      <div style={{ background: "#fff", borderRadius: "var(--radius-modal)", padding: 18, width: "100%", maxWidth: 380, maxHeight: "90%", overflowY: "auto" }}>
+    <div style={{ position: "absolute", inset: 0, background: "rgba(26,18,8,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 200, overflowY: "auto", overscrollBehavior: "contain" }}>
+      <div style={{ background: "#fff", borderRadius: "var(--radius-modal)", padding: 18, width: "100%", maxWidth: 380, maxHeight: "90%", overflowY: "auto", overscrollBehavior: "contain" }}>
         <div style={{ fontSize: 15, fontWeight: 900, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
           <Pencil size={15} />
           編輯活動資訊

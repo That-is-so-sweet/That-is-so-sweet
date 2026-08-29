@@ -61,13 +61,12 @@ export const MobileApp: React.FC<MobileAppProps> = ({
   const isHost = Boolean(eventData && currentHostToken && currentHostToken === eventData.hostToken);
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", background: "#EAE0CC", fontFamily: "var(--font-body)" }}>
+    <div style={{ height: "100dvh", overflow: "hidden", overscrollBehavior: "none", display: "flex", justifyContent: "center", background: "#EAE0CC", fontFamily: "var(--font-body)" }}>
       <div
         id="app"
         style={{
           width: 390,
-          minHeight: "100dvh",
-          maxHeight: "100dvh",
+          height: "100dvh",
           overflow: "hidden",
           background: "var(--color-cream)",
           display: "flex",
