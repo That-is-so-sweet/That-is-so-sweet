@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { CheckCircle2, MessageCircle, RotateCcw, Archive, Ban } from "lucide-react";
+import { CheckCircle2, MessageCircle, RotateCcw, Archive, Ban, Sparkles } from "lucide-react";
 import { EventData } from "../types";
 import { formatChineseWeekday, generateGoogleCalendarUrl, downloadIcsFile } from "../lib/calendar";
 import { getMeetupEndInfo } from "../lib/eventStatus";
@@ -9,6 +9,7 @@ import { Button } from "../design-system/components";
 import { cardStyle, SectionLabel } from "./mobileStyles";
 import { ReopenModal } from "./ReopenModal";
 import { CancelEventModal } from "./CancelEventModal";
+import { AIRecommendFlow } from "./AIRecommend/AIRecommendFlow";
 
 interface FinalizedViewProps {
   event: EventData;
@@ -22,6 +23,7 @@ interface FinalizedViewProps {
 export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onReopen, onCancelEvent, isLoading, onCopySuccess }) => {
   const [reopening, setReopening] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showAIRecommend, setShowAIRecommend] = useState(false);
   const slot = event.slots.find((s) => s.id === event.finalSlotId) || event.slots[0];
   const attending = event.responses.filter((r) => r.availability[slot.id] === "available").map((r) => r.nickname);
   const isDateOnly = event.mode === "date_only";
@@ -102,6 +104,40 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
         </div>
       </div>
 
+      <div
+        style={{
+          ...cardStyle,
+          background: "linear-gradient(135deg, rgba(224,75,40,0.08), rgba(245,194,0,0.08))",
+          borderColor: "var(--color-primary-subtle)",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "var(--radius-lg)",
+            background: "var(--color-primary)",
+            color: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <Sparkles size={17} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>時間定案了，接下來呢？</div>
+          <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>試試 AI 推薦餐廳、活動或行程（示範功能）</div>
+        </div>
+        <Button variant="primary" size="sm" onClick={() => setShowAIRecommend(true)}>
+          試試看
+        </Button>
+      </div>
+
       <div style={cardStyle}>
         <SectionLabel title={`出席名單 (${attending.length} 人)`} />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -179,6 +215,9 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
             onCancelEvent();
           }}
         />
+      )}
+      {showAIRecommend && (
+        <AIRecommendFlow event={event} onClose={() => setShowAIRecommend(false)} onCopySuccess={onCopySuccess} />
       )}
     </div>
   );
