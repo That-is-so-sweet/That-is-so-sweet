@@ -1,11 +1,22 @@
 import React from "react";
-import { CalendarHeart, PlusCircle, History, Share2 } from "lucide-react";
+import { CalendarHeart, PlusCircle, History, Share2, LogIn } from "lucide-react";
+import { FakeUser } from "../lib/fakeAuth";
+import { UserMenu } from "./UserMenu";
 
 interface HeaderProps {
   onNewEvent: () => void;
-  onOpenHistory: () => void;
+  onCreateEvent: () => void;
+  onOpenMyEvents: () => void;
+  // The "我揪的團" dashboard already shows its own 建立活動 CTA and is
+  // itself "我揪的團", so the header hides both shortcut buttons
+  // specifically while already on that page — every other page (event
+  // view, create form, ...) keeps showing them.
+  isOnDashboardPage?: boolean;
   onOpenShareModal?: () => void;
   activeEventTitle?: string;
+  user: FakeUser | null;
+  onLogin: () => void;
+  onLogout: () => void;
 }
 
 const pillBtnStyle: React.CSSProperties = {
@@ -25,7 +36,17 @@ const pillBtnStyle: React.CSSProperties = {
   transition: "background 150ms ease",
 };
 
-export const Header: React.FC<HeaderProps> = ({ onNewEvent, onOpenHistory, onOpenShareModal, activeEventTitle }) => {
+export const Header: React.FC<HeaderProps> = ({
+  onNewEvent,
+  onCreateEvent,
+  onOpenMyEvents,
+  isOnDashboardPage,
+  onOpenShareModal,
+  activeEventTitle,
+  user,
+  onLogin,
+  onLogout,
+}) => {
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 40, background: "var(--color-primary)", color: "#fff", boxShadow: "var(--shadow-sm)" }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -46,12 +67,7 @@ export const Header: React.FC<HeaderProps> = ({ onNewEvent, onOpenHistory, onOpe
             <CalendarHeart size={19} />
           </div>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 18, lineHeight: 1.1 }}>揪甘心</span>
-              <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: "var(--radius-pill)", background: "var(--color-secondary)", color: "var(--color-ink)" }}>
-                免登入
-              </span>
-            </div>
+            <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 18, lineHeight: 1.1 }}>揪甘心</span>
             <p style={{ fontSize: 11, opacity: 0.85, margin: 0, marginTop: 1 }}>聚會時間協調神器</p>
           </div>
         </div>
@@ -84,17 +100,31 @@ export const Header: React.FC<HeaderProps> = ({ onNewEvent, onOpenHistory, onOpe
               分享
             </button>
           )}
-          <button onClick={onOpenHistory} style={pillBtnStyle} title="查看瀏覽或建立過的活動紀錄">
-            <History size={14} />
-            我的聚會
-          </button>
-          <button
-            onClick={onNewEvent}
-            style={{ ...pillBtnStyle, background: "var(--color-ink)", border: "1.5px solid var(--color-ink)" }}
-          >
-            <PlusCircle size={14} />
-            發起活動
-          </button>
+          {user ? (
+            <>
+              {!isOnDashboardPage && (
+                <>
+                  <button onClick={onOpenMyEvents} style={pillBtnStyle} title="查看我揪的團">
+                    <History size={14} />
+                    我揪的團
+                  </button>
+                  <button
+                    onClick={onCreateEvent}
+                    style={{ ...pillBtnStyle, background: "var(--color-ink)", border: "1.5px solid var(--color-ink)" }}
+                  >
+                    <PlusCircle size={14} />
+                    建立活動
+                  </button>
+                </>
+              )}
+              <UserMenu user={user} onLogout={onLogout} />
+            </>
+          ) : (
+            <button onClick={onLogin} style={pillBtnStyle}>
+              <LogIn size={14} />
+              使用 Google 登入
+            </button>
+          )}
         </div>
       </div>
     </header>

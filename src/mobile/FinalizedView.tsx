@@ -131,7 +131,7 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>時間定案了，接下來呢？</div>
-          <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>試試 AI 推薦餐廳、活動或行程（示範功能）</div>
+          <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>試試 AI 推薦餐廳（示範功能）</div>
         </div>
         <Button variant="primary" size="sm" onClick={() => setShowAIRecommend(true)}>
           試試看

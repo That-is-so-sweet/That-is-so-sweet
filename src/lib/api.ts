@@ -8,6 +8,7 @@ import {
   EventMode,
 } from "../types.js";
 import * as store from "./localEventStore.js";
+import { isOlderThanDays } from "./eventStatus.js";
 
 const LOCAL_HOST_TOKENS_KEY = "gathertime_host_tokens"; // { [eventId]: hostToken }
 const LOCAL_USER_NICKNAME_KEY = "gathertime_user_nickname";
@@ -126,6 +127,7 @@ export function saveUserEmail(email: string) {
 export interface VisitedEventItem {
   id: string;
   title: string;
+  createdAt: string;
   updatedAt: string;
   isHost: boolean;
   mode?: EventMode;
@@ -136,9 +138,9 @@ export interface VisitedEventItem {
 
 // Accepts either a full event snapshot (preferred — lets the history list show
 // an up-to-date status badge) or just an id+title for backward compatibility.
-export function saveVisitedEvent(event: Pick<EventData, "id" | "title" | "mode" | "status" | "responseDeadline" | "slots" | "finalSlotId">) {
+export function saveVisitedEvent(event: Pick<EventData, "id" | "title" | "mode" | "status" | "responseDeadline" | "slots" | "finalSlotId" | "createdAt">) {
   try {
-    const { id, title } = event;
+    const { id, title, createdAt } = event;
     const isHost = Boolean(getHostToken(id));
     const raw = localStorage.getItem(LOCAL_MY_EVENTS_KEY);
     let list: VisitedEventItem[] = raw ? JSON.parse(raw) : [];
@@ -151,6 +153,7 @@ export function saveVisitedEvent(event: Pick<EventData, "id" | "title" | "mode" 
     list.unshift({
       id,
       title,
+      createdAt,
       updatedAt: new Date().toISOString(),
       isHost,
       mode: event.mode,
@@ -164,10 +167,14 @@ export function saveVisitedEvent(event: Pick<EventData, "id" | "title" | "mode" 
   } catch {}
 }
 
+// Hides events created more than 7 days ago from the host's "我揪的團" list
+// (PRD 2.3) — items saved before this field existed have no createdAt and are
+// kept rather than treated as expired.
 export function getVisitedEvents(): VisitedEventItem[] {
   try {
     const raw = localStorage.getItem(LOCAL_MY_EVENTS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const list: VisitedEventItem[] = raw ? JSON.parse(raw) : [];
+    return list.filter((item) => !item.createdAt || !isOlderThanDays(item.createdAt, 7));
   } catch {
     return [];
   }

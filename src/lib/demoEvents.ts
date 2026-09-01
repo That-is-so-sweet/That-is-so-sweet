@@ -14,7 +14,7 @@ export interface DemoEventBadge {
   variant: "success" | "hot" | "muted";
 }
 
-// Mirrors the badge shown in "我的聚會紀錄" (see HistoryModal/MyEventsModal),
+// Mirrors the badge shown in "我揪的團" (see HostDashboard/HostHome/HistoryModal),
 // but reads straight off the seeded demo record so the badge always reflects
 // that demo's actual current lifecycle instead of a hand-written guess.
 export function getDemoEventBadge(id: string): DemoEventBadge | undefined {

@@ -1,79 +1,132 @@
-// Demo-only mock data & helpers for the "AI推薦" (AI recommendation) prototype
-// screens. Everything here is hand-authored fake content — there is no real
-// API call (no Google Places, no LLM). Nothing in this file reads or writes
-// gathertime_events_db; it only reads values already present on the event
-// object passed in (attending count, participant nicknames) so the copy
-// feels grounded in the demo event without touching the real data model.
+// Demo-only mock data & helpers for the "AI 推薦餐廳" (AI restaurant
+// recommendation) prototype screens. Everything here is hand-authored fake
+// content — there is no real API call (no Google Places, no LLM). Nothing in
+// this file reads or writes gathertime_events_db; it only reads values
+// already present on the event object passed in (attending count,
+// participant nicknames) so the copy feels grounded in the demo event
+// without touching the real data model.
+//
+// Scope: restaurant recommendations only (PRD update 2026-09-01) — the
+// earlier "活動推薦"/"行程推薦" tiers have been removed. The flow is also
+// intentionally short: preference form -> results -> host picks one
+// directly. There is no "重述需求" confirmation screen and no participant
+// "共識確認" voting step — the host just picks straight from the results.
 
-export type RecommendTier = "restaurant" | "activity" | "itinerary";
+export const RELATIONSHIP_OPTIONS = ["同事", "朋友", "家人", "社團", "約會"] as const;
+export type RelationshipOption = (typeof RELATIONSHIP_OPTIONS)[number];
+
+export const GEO_RANGE_OPTIONS = ["步行 800m 內（約 15 分鐘）", "捷運沿線", "特定行政區"] as const;
+export type GeoRangeOption = (typeof GEO_RANGE_OPTIONS)[number];
+
+export const BUDGET_OPTIONS = ["200 以下", "200-400", "400-600", "600-800", "800-1000", "1000 以上"] as const;
+export type BudgetOption = (typeof BUDGET_OPTIONS)[number];
+
+export const PARTY_SIZE_OPTIONS = ["2 人", "3-4 人", "5-8 人", "9 人以上（多人）", "20 人以上（團體）"] as const;
+export type PartySizeOption = (typeof PARTY_SIZE_OPTIONS)[number];
+
+export const SITUATIONAL_OPTIONS = ["可久坐", "有插座", "停車位", "親子友善", "無障礙"] as const;
+export type SituationalOption = (typeof SITUATIONAL_OPTIONS)[number];
+
+export const SPICE_OPTIONS = ["不吃辣", "愛吃辣"] as const;
+export type SpiceOption = (typeof SPICE_OPTIONS)[number];
+
+export const CUISINE_OPTIONS = ["美式", "日式", "韓式"] as const;
+export type CuisineOption = (typeof CUISINE_OPTIONS)[number];
 
 export interface PreferenceFormState {
-  relationship: "同事" | "朋友" | "家人" | "其他" | null;
-  hasChildren: boolean | null;
-  cuisine: string | null; // Lv.1 only
-  tone: string | null; // Lv.2 / Lv.3
-  duration: string | null; // Lv.2 / Lv.3
-  needsMeal: boolean | null; // Lv.3 only
-  transport: string | null; // Lv.3 only
+  relationship: RelationshipOption | null;
+  geoRange: GeoRangeOption | null;
+  geoRangeDetail: string; // free text for MRT line / district name
+  budget: BudgetOption | null;
+  partySize: PartySizeOption | null;
+  situational: SituationalOption[]; // multi-select
+  vegetarian: boolean;
+  spice: SpiceOption | null;
+  cuisine: CuisineOption | null;
+  customPrompt: string; // free-text prompt box
 }
 
 export const emptyPreferenceForm: PreferenceFormState = {
   relationship: null,
-  hasChildren: null,
+  geoRange: null,
+  geoRangeDetail: "",
+  budget: null,
+  partySize: null,
+  situational: [],
+  vegetarian: false,
+  spice: null,
   cuisine: null,
-  tone: null,
-  duration: null,
-  needsMeal: null,
-  transport: null,
+  customPrompt: "",
 };
 
 export function isFormFilled(form: PreferenceFormState): boolean {
-  return Object.values(form).some((v) => v !== null);
+  return (
+    form.relationship !== null ||
+    form.geoRange !== null ||
+    form.budget !== null ||
+    form.partySize !== null ||
+    form.situational.length > 0 ||
+    form.vegetarian ||
+    form.spice !== null ||
+    form.cuisine !== null ||
+    form.customPrompt.trim() !== ""
+  );
+}
+
+// Mock "AI 已根據以下需求推薦" copy — stitches the selected tags + free text
+// into a sentence shown as context directly on the results screen (this is
+// the "prompt" the tags/text get turned into; there is no separate
+// confirmation step for it anymore).
+export function buildRestateSummary(form: PreferenceFormState): string {
+  if (!isFormFilled(form)) {
+    return "你目前沒有填寫任何偏好，AI 直接依「當地評價最高」的預設邏輯推薦餐廳。";
+  }
+  const parts: string[] = [];
+  if (form.relationship) parts.push(`這是一場「${form.relationship}」聚餐`);
+  if (form.geoRange) {
+    const detail = form.geoRangeDetail.trim();
+    parts.push(`地點希望在「${form.geoRange}${detail ? `：${detail}` : ""}」範圍內`);
+  }
+  if (form.budget) parts.push(`預算落在「${form.budget}」`);
+  if (form.partySize) parts.push(`用餐人數約「${form.partySize}」`);
+  if (form.situational.length > 0) parts.push(`需要「${form.situational.join("、")}」`);
+  if (form.vegetarian) parts.push("需要素食選項");
+  if (form.spice) parts.push(`飲食偏好「${form.spice}」`);
+  if (form.cuisine) parts.push(`偏好「${form.cuisine}」料理`);
+  if (form.customPrompt.trim()) parts.push(`另外你補充：「${form.customPrompt.trim()}」`);
+  return `AI 已根據以下需求推薦：${parts.join("、")}。`;
 }
 
 interface ReasonCtx {
   count: number;
 }
 
-export interface CandidateMeta {
-  label: string;
-  value: string;
+// A Google Maps "single place" search link — clicking it opens Maps and
+// searches for this name+address. Works even for fictional demo entries
+// since it's just a search query, not a claim that a specific listing
+// exists.
+function mapsSearchUrl(name: string, address: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${address}`)}`;
 }
 
 export interface Candidate {
   id: string;
   emoji: string;
-  name: string;
+  name: string; // 店名
   tagline: string;
   tags: string[];
-  meta: CandidateMeta[];
-  reasonPersonalized: (ctx: ReasonCtx) => string;
-  reasonDefault: (ctx: ReasonCtx) => string;
-}
-
-export interface ItineraryStop {
-  time: string;
-  emoji: string;
-  title: string;
-  note: string;
-  transit?: string;
-}
-
-export interface ItineraryCandidate {
-  id: string;
-  name: string;
-  totalDuration: string;
-  summary: string;
-  stops: ItineraryStop[];
+  rating: number; // 評分
+  priceLevel: string; // 價格，如 $ / $$ / $$$
+  area: string; // 地點（行政區／商圈）
+  address: string; // 地址
+  mapsUrl: string; // Google Maps 網址
+  capacityLabel: string; // 可容納人數
+  distanceLabel: string; // 距離
   reasonPersonalized: (ctx: ReasonCtx) => string;
   reasonDefault: (ctx: ReasonCtx) => string;
 }
 
 export function candidateReason(c: Candidate, form: PreferenceFormState, ctx: ReasonCtx): string {
-  return isFormFilled(form) ? c.reasonPersonalized(ctx) : c.reasonDefault(ctx);
-}
-
-export function itineraryReason(c: ItineraryCandidate, form: PreferenceFormState, ctx: ReasonCtx): string {
   return isFormFilled(form) ? c.reasonPersonalized(ctx) : c.reasonDefault(ctx);
 }
 
@@ -84,11 +137,13 @@ const restaurantCandidates: Candidate[] = [
     name: "職人炭火燒肉",
     tagline: "亞洲料理．獨立包廂",
     tags: ["亞洲料理", "有包廂", "適合聚餐"],
-    meta: [
-      { label: "距離", value: "1.2 km" },
-      { label: "可容納", value: "2-10 人" },
-      { label: "價位", value: "$$" },
-    ],
+    rating: 4.6,
+    priceLevel: "$$",
+    area: "大安區",
+    address: "台北市大安區忠孝東路四段 181 巷 40 弄 5 號",
+    mapsUrl: mapsSearchUrl("職人炭火燒肉", "台北市大安區忠孝東路四段 181 巷 40 弄 5 號"),
+    capacityLabel: "2-10 人",
+    distanceLabel: "1.2 km",
     reasonPersonalized: (ctx) => `適合 ${ctx.count} 人同事聚餐、有獨立包廂，符合亞洲料理偏好`,
     reasonDefault: (ctx) => `這附近評價最高、可容納 ${ctx.count} 人的餐廳`,
   },
@@ -98,13 +153,15 @@ const restaurantCandidates: Candidate[] = [
     name: "好時光義式餐酒館",
     tagline: "西式料理．氣氛輕鬆",
     tags: ["西式料理", "適合朋友聚會"],
-    meta: [
-      { label: "距離", value: "800 m" },
-      { label: "可容納", value: "2-8 人" },
-      { label: "價位", value: "$$$" },
-    ],
+    rating: 4.5,
+    priceLevel: "$$$",
+    area: "中山區",
+    address: "台北市中山區林森北路 107 巷 10 號",
+    mapsUrl: mapsSearchUrl("好時光義式餐酒館", "台北市中山區林森北路 107 巷 10 號"),
+    capacityLabel: "2-8 人",
+    distanceLabel: "800 m",
     reasonPersonalized: (ctx) => `朋友聚會氣氛佳，${ctx.count} 人剛好坐得下`,
-    reasonDefault: (ctx) => `評價 4.6 顆星、適合 ${ctx.count} 人的義式餐廳`,
+    reasonDefault: (ctx) => `評價 4.5 顆星、適合 ${ctx.count} 人的義式餐廳`,
   },
   {
     id: "r3",
@@ -112,11 +169,13 @@ const restaurantCandidates: Candidate[] = [
     name: "山葵日式割烹",
     tagline: "日式料理．安靜舒適",
     tags: ["日式料理", "適合家人聚餐"],
-    meta: [
-      { label: "距離", value: "2.0 km" },
-      { label: "可容納", value: "2-12 人" },
-      { label: "價位", value: "$$$" },
-    ],
+    rating: 4.7,
+    priceLevel: "$$$",
+    area: "信義區",
+    address: "台北市信義區松仁路 58 號 2 樓",
+    mapsUrl: mapsSearchUrl("山葵日式割烹", "台北市信義區松仁路 58 號 2 樓"),
+    capacityLabel: "2-12 人",
+    distanceLabel: "2.0 km",
     reasonPersonalized: (ctx) => `環境安靜，適合家人聚餐，可容納 ${ctx.count} 人`,
     reasonDefault: (ctx) => `當地高評價日式料理，可容納 ${ctx.count} 人`,
   },
@@ -126,11 +185,13 @@ const restaurantCandidates: Candidate[] = [
     name: "花園野餐咖啡",
     tagline: "複合式料理．親子友善",
     tags: ["親子友善", "戶外座位"],
-    meta: [
-      { label: "距離", value: "1.5 km" },
-      { label: "可容納", value: "2-15 人" },
-      { label: "價位", value: "$$" },
-    ],
+    rating: 4.4,
+    priceLevel: "$$",
+    area: "內湖區",
+    address: "台北市內湖區成功路四段 168 號",
+    mapsUrl: mapsSearchUrl("花園野餐咖啡", "台北市內湖區成功路四段 168 號"),
+    capacityLabel: "2-15 人",
+    distanceLabel: "1.5 km",
     reasonPersonalized: (ctx) => `有兒童椅與戶外空間，適合攜帶孩童的 ${ctx.count} 人聚會`,
     reasonDefault: (ctx) => `空間寬敞、適合 ${ctx.count} 人的複合式餐廳`,
   },
@@ -140,156 +201,21 @@ const restaurantCandidates: Candidate[] = [
     name: "深夜熱炒 48 號",
     tagline: "亞洲料理．熱鬧下酒",
     tags: ["亞洲料理", "適合朋友聚會", "價格實惠"],
-    meta: [
-      { label: "距離", value: "600 m" },
-      { label: "可容納", value: "4-20 人" },
-      { label: "價位", value: "$" },
-    ],
+    rating: 4.3,
+    priceLevel: "$",
+    area: "萬華區",
+    address: "台北市萬華區西寧南路 48 號",
+    mapsUrl: mapsSearchUrl("深夜熱炒 48 號", "台北市萬華區西寧南路 48 號"),
+    capacityLabel: "4-20 人",
+    distanceLabel: "600 m",
     reasonPersonalized: (ctx) => `熱鬧下酒菜色多，適合 ${ctx.count} 人朋友聚會`,
     reasonDefault: (ctx) => `CP 值高、可容納 ${ctx.count} 人的熱炒店`,
   },
 ];
 
-const activityCandidates: Candidate[] = [
-  {
-    id: "a1",
-    emoji: "🧭",
-    name: "城市探索定向遊戲",
-    tagline: "動態．戶外．約 2 小時",
-    tags: ["動態", "戶外", "團隊互動"],
-    meta: [
-      { label: "時長", value: "約 2 小時" },
-      { label: "類型", value: "動態／戶外" },
-      { label: "適合人數", value: "4-20 人" },
-    ],
-    reasonPersonalized: (ctx) => `動態戶外活動，適合 ${ctx.count} 人一起邊走邊玩`,
-    reasonDefault: (ctx) => `近期熱門的戶外團體活動，適合 ${ctx.count} 人`,
-  },
-  {
-    id: "a2",
-    emoji: "🏺",
-    name: "手作陶藝體驗",
-    tagline: "靜態．室內．約 1.5 小時",
-    tags: ["靜態", "室內", "適合放鬆"],
-    meta: [
-      { label: "時長", value: "約 1.5 小時" },
-      { label: "類型", value: "靜態／室內" },
-      { label: "適合人數", value: "2-12 人" },
-    ],
-    reasonPersonalized: (ctx) => `靜態放鬆的室內體驗，不擅長運動的朋友也能參加，適合 ${ctx.count} 人`,
-    reasonDefault: (ctx) => `評價很好的室內手作體驗，適合 ${ctx.count} 人`,
-  },
-  {
-    id: "a3",
-    emoji: "🎨",
-    name: "沉浸式展覽：光影詩",
-    tagline: "靜態．室內．約 1 小時",
-    tags: ["靜態", "室內", "展覽"],
-    meta: [
-      { label: "時長", value: "約 1 小時" },
-      { label: "類型", value: "靜態／室內" },
-      { label: "適合人數", value: "不限" },
-    ],
-    reasonPersonalized: (ctx) => `輕鬆的室內展覽，適合帶小孩或想安靜聊天的 ${ctx.count} 人`,
-    reasonDefault: (ctx) => `近期評價很高的展覽，適合 ${ctx.count} 人一起參觀`,
-  },
-  {
-    id: "a4",
-    emoji: "🚴",
-    name: "河濱單車輕旅行",
-    tagline: "動態．戶外．約 2.5 小時",
-    tags: ["動態", "戶外", "運動"],
-    meta: [
-      { label: "時長", value: "約 2.5 小時" },
-      { label: "類型", value: "動態／戶外" },
-      { label: "適合人數", value: "2-15 人" },
-    ],
-    reasonPersonalized: (ctx) => `適合喜歡動態活動的 ${ctx.count} 人，河濱車道平緩好騎`,
-    reasonDefault: (ctx) => `天氣好時很受歡迎的戶外活動，適合 ${ctx.count} 人`,
-  },
-  {
-    id: "a5",
-    emoji: "🎲",
-    name: "桌遊放鬆吧",
-    tagline: "靜態．室內．約 2 小時",
-    tags: ["靜態", "室內", "親子友善"],
-    meta: [
-      { label: "時長", value: "約 2 小時" },
-      { label: "類型", value: "靜態／室內" },
-      { label: "適合人數", value: "4-16 人" },
-    ],
-    reasonPersonalized: (ctx) => `室內空間安全，適合攜帶孩童的 ${ctx.count} 人一起玩桌遊`,
-    reasonDefault: (ctx) => `適合多人同樂的室內場地，可容納 ${ctx.count} 人`,
-  },
-];
-
-const itineraryCandidates: ItineraryCandidate[] = [
-  {
-    id: "i1",
-    name: "文青半日輕旅行",
-    totalDuration: "半天（約 5 小時）",
-    summary: "早午餐 → 藝文展覽 → 河濱散步收尾，步調輕鬆不趕路",
-    stops: [
-      { time: "10:00", emoji: "☕", title: "咖啡廳早午餐", note: "悠閒吃早午餐，順便集合" },
-      { time: "12:30", emoji: "🎨", title: "藝文展覽", note: "步行 8 分鐘可達", transit: "步行 8 分鐘" },
-      { time: "15:00", emoji: "🌳", title: "河濱散步收尾", note: "拍照聊天，行程結束" },
-    ],
-    reasonPersonalized: (ctx) => `步調輕鬆，適合帶小孩或不擅運動的 ${ctx.count} 人`,
-    reasonDefault: (ctx) => `評價很好的半日輕旅行路線，適合 ${ctx.count} 人`,
-  },
-  {
-    id: "i2",
-    name: "熱血一日小旅行",
-    totalDuration: "全天（約 9 小時）",
-    summary: "登山健行 → 在地小吃 → 手作體驗 → 晚餐收尾",
-    stops: [
-      { time: "09:00", emoji: "🥾", title: "登山健行", note: "輕量步道，約 2 小時" },
-      { time: "12:30", emoji: "🍜", title: "在地小吃", note: "開車 10 分鐘可達", transit: "開車 10 分鐘" },
-      { time: "14:30", emoji: "🏺", title: "手作體驗", note: "步行 5 分鐘可達", transit: "步行 5 分鐘" },
-      { time: "18:00", emoji: "🍲", title: "晚餐收尾", note: "圓滿結束一整天行程" },
-    ],
-    reasonPersonalized: (ctx) => `動態行程豐富，適合喜歡戶外活動的 ${ctx.count} 人玩一整天`,
-    reasonDefault: (ctx) => `近期熱門的一日遊路線，適合 ${ctx.count} 人`,
-  },
-];
-
-export function getCandidates(tier: "restaurant" | "activity"): Candidate[] {
-  return tier === "restaurant" ? restaurantCandidates : activityCandidates;
+// PRD 4: 輸出限制 — 最多顯示前 5 名推薦（核心推薦為 3-5 名）。The mock list is
+// already exactly 5 items; .slice(0, 5) keeps that rule true even if the
+// list grows later.
+export function getCandidates(): Candidate[] {
+  return restaurantCandidates.slice(0, 5);
 }
-
-export function getItineraryCandidates(): ItineraryCandidate[] {
-  return itineraryCandidates;
-}
-
-function hashStr(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
-}
-
-// Deterministic (not truly random) split of participant nicknames into
-// "accepted" / "rejected" per candidate, so re-rendering doesn't shuffle the
-// numbers under the demo presenter. Biased ~70% toward acceptance.
-export function mockConsensus(candidateId: string, nicknames: string[]): { accepted: string[]; rejected: string[] } {
-  const accepted: string[] = [];
-  const rejected: string[] = [];
-  nicknames.forEach((name) => {
-    const bucket = hashStr(`${candidateId}::${name}`) % 10;
-    if (bucket < 7) accepted.push(name);
-    else rejected.push(name);
-  });
-  return { accepted, rejected };
-}
-
-export const RELATIONSHIP_OPTIONS = ["同事", "朋友", "家人", "其他"] as const;
-export const CUISINE_OPTIONS = ["亞洲料理", "西式料理", "日式料理", "其他特色料理"] as const;
-export const TONE_OPTIONS = ["靜態放鬆", "動態活力"] as const;
-export const DURATION_OPTIONS_LV2 = ["1 小時內", "半天內"] as const;
-export const DURATION_OPTIONS_LV3 = ["半天", "全天"] as const;
-export const TRANSPORT_OPTIONS = ["步行", "大眾運輸", "開車"] as const;
-
-export const TIER_META: Record<RecommendTier, { label: string; icon: string; outputLabel: string }> = {
-  restaurant: { label: "Lv.1 選餐廳", icon: "🍽️", outputLabel: "候選餐廳" },
-  activity: { label: "Lv.2 活動推薦", icon: "🎯", outputLabel: "候選活動" },
-  itinerary: { label: "Lv.3 行程推薦", icon: "🗺️", outputLabel: "候選行程" },
-};

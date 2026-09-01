@@ -1,27 +1,29 @@
 import React from "react";
-import { Tag, Button } from "../../design-system/components";
+import { Tag, Button, Input } from "../../design-system/components";
 import { cardStyle, SectionLabel } from "../mobileStyles";
 import {
   PreferenceFormState,
-  RecommendTier,
   RELATIONSHIP_OPTIONS,
+  GEO_RANGE_OPTIONS,
+  BUDGET_OPTIONS,
+  PARTY_SIZE_OPTIONS,
+  SITUATIONAL_OPTIONS,
+  SPICE_OPTIONS,
   CUISINE_OPTIONS,
-  TONE_OPTIONS,
-  DURATION_OPTIONS_LV2,
-  DURATION_OPTIONS_LV3,
-  TRANSPORT_OPTIONS,
 } from "../../lib/aiRecommendDemo";
 
 interface PreferenceFormStepProps {
-  tier: RecommendTier;
   form: PreferenceFormState;
   onChange: (patch: Partial<PreferenceFormState>) => void;
   onSkip: () => void;
   onNext: () => void;
 }
 
-export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ tier, form, onChange, onSkip, onNext }) => {
-  const durationOptions = tier === "itinerary" ? DURATION_OPTIONS_LV3 : DURATION_OPTIONS_LV2;
+export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, onChange, onSkip, onNext }) => {
+  const toggleSituational = (opt: (typeof SITUATIONAL_OPTIONS)[number]) => {
+    const next = form.situational.includes(opt) ? form.situational.filter((s) => s !== opt) : [...form.situational, opt];
+    onChange({ situational: next });
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -30,7 +32,28 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ tier, fo
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="與會關係" hint="影響場地調性（例如家人聚會偏安靜、朋友聚會可以熱鬧）" />
+        <SectionLabel title="地理範圍" hint="解決「不要離車站太遠」的痛點" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {GEO_RANGE_OPTIONS.map((g) => (
+            <Tag key={g} variant="orange" active={form.geoRange === g} onClick={() => onChange({ geoRange: form.geoRange === g ? null : g })}>
+              {g}
+            </Tag>
+          ))}
+        </div>
+        {(form.geoRange === "捷運沿線" || form.geoRange === "特定行政區") && (
+          <div style={{ marginTop: 8 }}>
+            <Input
+              size="sm"
+              placeholder={form.geoRange === "捷運沿線" ? "例如：板南線" : "例如：大安區"}
+              value={form.geoRangeDetail}
+              onChange={(e) => onChange({ geoRangeDetail: e.target.value })}
+            />
+          </div>
+        )}
+      </div>
+
+      <div style={cardStyle}>
+        <SectionLabel title="與會關係" hint="影響 AI 推薦的氛圍與桌型配置" />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {RELATIONSHIP_OPTIONS.map((r) => (
             <Tag key={r} variant="orange" active={form.relationship === r} onClick={() => onChange({ relationship: form.relationship === r ? null : r })}>
@@ -41,81 +64,79 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ tier, fo
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="是否有攜帶孩童" hint="影響親子友善程度與活動安全性" />
-        <div style={{ display: "flex", gap: 8 }}>
-          <Tag variant="orange" active={form.hasChildren === true} onClick={() => onChange({ hasChildren: form.hasChildren === true ? null : true })}>
-            是
-          </Tag>
-          <Tag variant="orange" active={form.hasChildren === false} onClick={() => onChange({ hasChildren: form.hasChildren === false ? null : false })}>
-            否
-          </Tag>
+        <SectionLabel title="預算區間" hint="每人平均消費" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {BUDGET_OPTIONS.map((b) => (
+            <Tag key={b} variant="yellow" active={form.budget === b} onClick={() => onChange({ budget: form.budget === b ? null : b })}>
+              {b}
+            </Tag>
+          ))}
         </div>
       </div>
 
-      {tier === "restaurant" && (
-        <div style={cardStyle}>
-          <SectionLabel title="料理大分類" hint="給 AI 一個起點方向，細節之後可再補充" />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {CUISINE_OPTIONS.map((c) => (
-              <Tag key={c} variant="yellow" active={form.cuisine === c} onClick={() => onChange({ cuisine: form.cuisine === c ? null : c })}>
-                {c}
-              </Tag>
-            ))}
-          </div>
+      <div style={cardStyle}>
+        <SectionLabel title="人數規格" hint="篩選具備對應容納量或包廂的餐廳" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {PARTY_SIZE_OPTIONS.map((p) => (
+            <Tag key={p} variant="default" active={form.partySize === p} onClick={() => onChange({ partySize: form.partySize === p ? null : p })}>
+              {p}
+            </Tag>
+          ))}
         </div>
-      )}
+      </div>
 
-      {tier !== "restaurant" && (
-        <div style={cardStyle}>
-          <SectionLabel title="活動調性" hint="靜態放鬆或動態活力" />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {TONE_OPTIONS.map((t) => (
-              <Tag key={t} variant="yellow" active={form.tone === t} onClick={() => onChange({ tone: form.tone === t ? null : t })}>
-                {t}
-              </Tag>
-            ))}
-          </div>
+      <div style={cardStyle}>
+        <SectionLabel title="硬體與情境" hint="可複選" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {SITUATIONAL_OPTIONS.map((s) => (
+            <Tag key={s} variant="default" active={form.situational.includes(s)} onClick={() => toggleSituational(s)}>
+              {s}
+            </Tag>
+          ))}
         </div>
-      )}
+      </div>
 
-      {tier !== "restaurant" && (
-        <div style={cardStyle}>
-          <SectionLabel title={tier === "itinerary" ? "整體時長" : "時長偏好"} />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {durationOptions.map((d) => (
-              <Tag key={d} variant="default" active={form.duration === d} onClick={() => onChange({ duration: form.duration === d ? null : d })}>
-                {d}
-              </Tag>
-            ))}
-          </div>
+      <div style={cardStyle}>
+        <SectionLabel title="飲食偏好" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+          <Tag variant="orange" active={form.vegetarian} onClick={() => onChange({ vegetarian: !form.vegetarian })}>
+            素食
+          </Tag>
+          {SPICE_OPTIONS.map((s) => (
+            <Tag key={s} variant="orange" active={form.spice === s} onClick={() => onChange({ spice: form.spice === s ? null : s })}>
+              {s}
+            </Tag>
+          ))}
         </div>
-      )}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {CUISINE_OPTIONS.map((c) => (
+            <Tag key={c} variant="yellow" active={form.cuisine === c} onClick={() => onChange({ cuisine: form.cuisine === c ? null : c })}>
+              {c}
+            </Tag>
+          ))}
+        </div>
+      </div>
 
-      {tier === "itinerary" && (
-        <>
-          <div style={cardStyle}>
-            <SectionLabel title="是否需要含餐飲" />
-            <div style={{ display: "flex", gap: 8 }}>
-              <Tag variant="orange" active={form.needsMeal === true} onClick={() => onChange({ needsMeal: form.needsMeal === true ? null : true })}>
-                是
-              </Tag>
-              <Tag variant="orange" active={form.needsMeal === false} onClick={() => onChange({ needsMeal: form.needsMeal === false ? null : false })}>
-                否
-              </Tag>
-            </div>
-          </div>
-          <div style={cardStyle}>
-            <SectionLabel title="交通方式偏好" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {TRANSPORT_OPTIONS.map((t) => (
-                <Tag key={t} variant="default" active={form.transport === t} onClick={() => onChange({ transport: form.transport === t ? null : t })}>
-                  {t}
-                </Tag>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+      <div style={cardStyle}>
+        <SectionLabel title="其他需求" hint="自由輸入，補充標籤無法表達的細節" />
+        <textarea
+          value={form.customPrompt}
+          onChange={(e) => onChange({ customPrompt: e.target.value })}
+          placeholder="例如：想找有現場 live band 的餐廳"
+          rows={3}
+          style={{
+            width: "100%",
+            resize: "vertical",
+            padding: 10,
+            borderRadius: "var(--radius-md)",
+            border: "1px solid var(--color-border)",
+            fontFamily: "var(--font-body)",
+            fontSize: 13,
+            color: "var(--color-ink)",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
 
       <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
         <Button variant="muted" fullWidth onClick={onSkip}>
