@@ -26,12 +26,8 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, on
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ fontSize: 12, color: "var(--color-muted)", lineHeight: 1.6 }}>
-        以下每個選項都是選填。填了可以幫 AI 縮小推薦範圍；略過的話，會直接用「當地最適合」的預設邏輯推薦。
-      </div>
-
       <div style={cardStyle}>
-        <SectionLabel title="地點（選填）" hint="輸入捷運站名稱（例如：中山站）或概略地區（例如：北車附近）" />
+        <SectionLabel title="地點（選填）" />
         <Input
           size="sm"
           placeholder="例如：中山站、北車附近"
@@ -74,17 +70,6 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, on
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="硬體與情境（選填）" hint="可複選" />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {SITUATIONAL_OPTIONS.map((s) => (
-            <Tag key={s} variant="default" active={form.situational.includes(s)} onClick={() => toggleSituational(s)}>
-              {s}
-            </Tag>
-          ))}
-        </div>
-      </div>
-
-      <div style={cardStyle}>
         <SectionLabel title="飲食偏好（選填）" />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
           <Tag variant="orange" active={form.vegetarian} onClick={() => onChange({ vegetarian: !form.vegetarian })}>
@@ -100,6 +85,17 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, on
           {CUISINE_OPTIONS.map((c) => (
             <Tag key={c} variant="yellow" active={form.cuisine === c} onClick={() => onChange({ cuisine: form.cuisine === c ? null : c })}>
               {c}
+            </Tag>
+          ))}
+        </div>
+      </div>
+
+      <div style={cardStyle}>
+        <SectionLabel title="硬體與情境（選填）" hint="可複選" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {SITUATIONAL_OPTIONS.map((s) => (
+            <Tag key={s} variant="default" active={form.situational.includes(s)} onClick={() => toggleSituational(s)}>
+              {s}
             </Tag>
           ))}
         </div>

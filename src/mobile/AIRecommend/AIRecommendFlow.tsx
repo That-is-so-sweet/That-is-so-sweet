@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { X, ChevronLeft } from "lucide-react";
-import { EventData } from "../../types";
+import { X, ChevronLeft, Info } from "lucide-react";
+import { EventData, AiSelectedRestaurant } from "../../types";
 import { useViewport } from "../../lib/useViewport";
-import { PreferenceFormState, emptyPreferenceForm, getCandidates, Candidate } from "../../lib/aiRecommendDemo";
+import { PreferenceFormState, emptyPreferenceForm, getCandidates, Candidate, candidateReason, partySizeForCount } from "../../lib/aiRecommendDemo";
 import { buildFinalizedBroadcast } from "../../lib/shareText";
 import { getMonthlyAiUsage, hasReachedMonthlyAiLimit, recordAiUsage } from "../../lib/aiUsage";
 import { PreferenceFormStep } from "./PreferenceFormStep";
@@ -14,15 +14,11 @@ interface AIRecommendFlowProps {
   event: EventData;
   onClose: () => void;
   onCopySuccess: () => void;
+  onSelectAiRestaurant: (restaurant: AiSelectedRestaurant) => void;
 }
 
-export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose, onCopySuccess }) => {
+export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose, onCopySuccess, onSelectAiRestaurant }) => {
   const { isMobile } = useViewport();
-  const [step, setStep] = useState<Step>("preference");
-  const [form, setForm] = useState<PreferenceFormState>(emptyPreferenceForm);
-  const [candidates, setCandidates] = useState<Candidate[]>(() => getCandidates());
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [usage, setUsage] = useState(() => getMonthlyAiUsage());
 
   const finalSlot = event.slots.find((s) => s.id === event.finalSlotId);
   const attendingNicknames = useMemo(() => {
@@ -32,13 +28,48 @@ export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose
     return names.length > 0 ? names : ["小明", "Lily", "陳大華"];
   }, [event, finalSlot]);
 
+  // Pre-fills 人數規格 from the event's actual attending count — still just a
+  // starting point, the host can change the tag like any other.
+  const buildInitialForm = (): PreferenceFormState => ({
+    ...emptyPreferenceForm,
+    partySize: partySizeForCount(attendingNicknames.length),
+  });
+
+  const [step, setStep] = useState<Step>("preference");
+  const [form, setForm] = useState<PreferenceFormState>(buildInitialForm);
+  const [candidates, setCandidates] = useState<Candidate[]>(() => getCandidates());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [usage, setUsage] = useState(() => getMonthlyAiUsage());
+  const [showInfo, setShowInfo] = useState(false);
+
   const eventBroadcast = useMemo(() => buildFinalizedBroadcast(event), [event]);
+
+  const chosen = candidates.find((c) => c.id === selectedId) || null;
 
   const goRestart = () => {
     setStep("preference");
-    setForm(emptyPreferenceForm);
+    setForm(buildInitialForm());
     setCandidates(getCandidates());
     setSelectedId(null);
+  };
+
+  // Any way of leaving the flow while a restaurant is selected counts as
+  // confirming it — there's no separate "confirm" step anymore (merged into
+  // the results screen), so this is the one place the choice gets persisted.
+  const handleClose = () => {
+    if (chosen) {
+      onSelectAiRestaurant({
+        emoji: chosen.emoji,
+        name: chosen.name,
+        rating: chosen.rating,
+        priceLevel: chosen.priceLevel,
+        address: chosen.address,
+        mapsUrl: chosen.mapsUrl,
+        reason: candidateReason(chosen, form, { count: Math.max(attendingNicknames.length, 1) }),
+        selectedAt: new Date().toISOString(),
+      });
+    }
+    onClose();
   };
 
   const generateResults = (shuffle: boolean) => {
@@ -51,11 +82,6 @@ export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose
   };
 
   const limitReached = usage.count >= usage.limit;
-
-  const stepTitles: Record<Step, string> = {
-    preference: "基本偏好（選填）",
-    results: "AI 候選餐廳",
-  };
 
   const canGoBack = step === "results";
   const handleBack = () => {
@@ -74,7 +100,7 @@ export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose
     <div style={overlayStyle}>
       <div style={cardOuterStyle}>
         {/* Header */}
-        <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface)", flexShrink: 0, borderRadius: isMobile ? 0 : "var(--radius-modal) var(--radius-modal) 0 0" }}>
+        <div style={{ position: "relative", padding: "14px 16px", borderBottom: "1px solid var(--color-border)", background: "var(--color-surface)", flexShrink: 0, borderRadius: isMobile ? 0 : "var(--radius-modal) var(--radius-modal) 0 0" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
               {canGoBack && (
@@ -82,19 +108,53 @@ export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose
                   <ChevronLeft size={18} />
                 </button>
               )}
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)" }}>
-                  🍽️ AI 推薦餐廳（示範功能）· 本月已用 {usage.count}/{usage.limit} 次
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {stepTitles[step]}
-                </div>
+              <div style={{ minWidth: 0, display: "flex", alignItems: "baseline", gap: 6, whiteSpace: "nowrap", overflow: "hidden" }}>
+                <span style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)", flexShrink: 0 }}>
+                  AI 推薦餐廳
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  本月已用 {usage.count}/{usage.limit} 次
+                </span>
+                {step === "preference" && (
+                  <button
+                    onClick={() => setShowInfo((v) => !v)}
+                    style={{ border: "none", background: "none", padding: 0, display: "flex", alignItems: "center", color: "var(--color-muted)", cursor: "pointer", flexShrink: 0 }}
+                  >
+                    <Info size={13} />
+                  </button>
+                )}
               </div>
             </div>
-            <button onClick={onClose} style={{ border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", flexShrink: 0 }}>
+            <button onClick={handleClose} style={{ border: "none", background: "none", color: "var(--color-muted)", cursor: "pointer", display: "flex", flexShrink: 0 }}>
               <X size={20} />
             </button>
           </div>
+
+          {showInfo && (
+            <>
+              <div style={{ position: "fixed", inset: 0, zIndex: 310 }} onClick={() => setShowInfo(false)} />
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 16,
+                  right: 16,
+                  marginTop: 6,
+                  background: "#fff",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-md)",
+                  boxShadow: "var(--shadow-md)",
+                  padding: 10,
+                  fontSize: 11,
+                  lineHeight: 1.6,
+                  color: "var(--color-ink)",
+                  zIndex: 320,
+                }}
+              >
+                以下每個選項都是選填。填了可以幫 AI 縮小推薦範圍；略過的話，會直接用「當地最適合」的預設邏輯推薦。
+              </div>
+            </>
+          )}
         </div>
 
         {/* Body */}
@@ -124,7 +184,7 @@ export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose
               eventBroadcast={eventBroadcast}
               onCopySuccess={onCopySuccess}
               onRestart={goRestart}
-              onClose={onClose}
+              onClose={handleClose}
             />
           )}
         </div>

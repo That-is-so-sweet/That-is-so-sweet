@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { CheckCircle2, MessageCircle, RotateCcw, Archive, Ban, Sparkles } from "lucide-react";
-import { EventData } from "../types";
+import { CheckCircle2, MessageCircle, RotateCcw, Archive, Ban, Sparkles, Star, RefreshCw } from "lucide-react";
+import { EventData, AiSelectedRestaurant } from "../types";
 import { formatChineseWeekday, generateGoogleCalendarUrl, downloadIcsFile } from "../lib/calendar";
 import { getMeetupEndInfo } from "../lib/eventStatus";
 import { formatSlotTime } from "../lib/slots";
@@ -16,11 +16,12 @@ interface FinalizedViewProps {
   isHost?: boolean;
   onReopen?: (newDeadline?: string) => Promise<void>;
   onCancelEvent?: () => Promise<void>;
+  onSelectAiRestaurant: (restaurant: AiSelectedRestaurant) => void;
   isLoading?: boolean;
   onCopySuccess: () => void;
 }
 
-export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onReopen, onCancelEvent, isLoading, onCopySuccess }) => {
+export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onReopen, onCancelEvent, onSelectAiRestaurant, isLoading, onCopySuccess }) => {
   const [reopening, setReopening] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showAIRecommend, setShowAIRecommend] = useState(false);
@@ -29,8 +30,9 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
   const isDateOnly = event.mode === "date_only";
   const hasEnded = !!getMeetupEndInfo(event)?.hasEnded;
   const locationDescriptionFallback = [event.location?.text, event.description].filter(Boolean).join("\n");
+  const aiSelectedRestaurant = event.aiSelectedRestaurant;
 
-  const broadcast = buildFinalizedBroadcast(event);
+  const broadcast = buildFinalizedBroadcast(event, aiSelectedRestaurant);
 
   const handleCopy = async () => {
     try {
@@ -104,39 +106,70 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
         </div>
       </div>
 
-      <div
-        style={{
-          ...cardStyle,
-          background: "linear-gradient(135deg, rgba(224,75,40,0.08), rgba(245,194,0,0.08))",
-          borderColor: "var(--color-primary-subtle)",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-        }}
-      >
+      {/* AI 選餐廳 is host-only (see PRD FR-12): a non-host viewer (participant,
+          or a host who is currently logged out) never sees the "試試看" /
+          "重新選擇" trigger. If a restaurant has already been chosen, everyone
+          still sees that read-only result — only the ability to launch/redo
+          the AI flow is gated. If nothing has been chosen yet and the viewer
+          isn't the (logged-in) host, this whole card is hidden — there's
+          nothing for them to see or do here. */}
+      {(isHost || aiSelectedRestaurant) && (
         <div
           style={{
-            width: 36,
-            height: 36,
-            borderRadius: "var(--radius-lg)",
-            background: "var(--color-primary)",
-            color: "#fff",
+            ...cardStyle,
+            background: "linear-gradient(135deg, rgba(224,75,40,0.08), rgba(245,194,0,0.08))",
+            borderColor: "var(--color-primary-subtle)",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
+            gap: 10,
           }}
         >
-          <Sparkles size={17} />
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "var(--radius-lg)",
+              background: "var(--color-primary)",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              fontSize: aiSelectedRestaurant ? 18 : undefined,
+            }}
+          >
+            {aiSelectedRestaurant ? aiSelectedRestaurant.emoji : <Sparkles size={17} />}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {aiSelectedRestaurant ? (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  AI 推薦餐廳：{aiSelectedRestaurant.name}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <Star size={11} fill="var(--color-secondary)" color="var(--color-secondary)" style={{ flexShrink: 0 }} />
+                  {aiSelectedRestaurant.rating.toFixed(1)} · {aiSelectedRestaurant.priceLevel} · {aiSelectedRestaurant.address}
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 13, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>時間定案了，接下來呢？</div>
+                <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>試試 AI 推薦餐廳</div>
+              </>
+            )}
+          </div>
+          {isHost &&
+            (aiSelectedRestaurant ? (
+              <Button variant="muted" size="sm" icon={<RefreshCw size={12} />} onClick={() => setShowAIRecommend(true)}>
+                重新選擇
+              </Button>
+            ) : (
+              <Button variant="primary" size="sm" onClick={() => setShowAIRecommend(true)}>
+                試試看
+              </Button>
+            ))}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>時間定案了，接下來呢？</div>
-          <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>試試 AI 推薦餐廳（示範功能）</div>
-        </div>
-        <Button variant="primary" size="sm" onClick={() => setShowAIRecommend(true)}>
-          試試看
-        </Button>
-      </div>
+      )}
 
       <div style={cardStyle}>
         <SectionLabel title={`出席名單 (${attending.length} 人)`} />
@@ -216,8 +249,13 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
           }}
         />
       )}
-      {showAIRecommend && (
-        <AIRecommendFlow event={event} onClose={() => setShowAIRecommend(false)} onCopySuccess={onCopySuccess} />
+      {isHost && showAIRecommend && (
+        <AIRecommendFlow
+          event={event}
+          onClose={() => setShowAIRecommend(false)}
+          onCopySuccess={onCopySuccess}
+          onSelectAiRestaurant={onSelectAiRestaurant}
+        />
       )}
     </div>
   );

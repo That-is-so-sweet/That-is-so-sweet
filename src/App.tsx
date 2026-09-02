@@ -16,6 +16,7 @@ import {
   SubmitResponseInput,
   SubmitCommentInput,
   UpdateEventInput,
+  AiSelectedRestaurant,
   ToastMessage,
 } from "./types";
 import {
@@ -26,6 +27,7 @@ import {
   reopenEvent,
   cancelEvent,
   updateEvent,
+  saveAiSelectedRestaurant,
   submitComment,
   getHostToken,
   getVisitedEvents,
@@ -250,6 +252,16 @@ export default function App() {
     }
   };
 
+  const handleSelectAiRestaurant = async (restaurant: AiSelectedRestaurant) => {
+    if (!currentEventId) return;
+    try {
+      const updated = await saveAiSelectedRestaurant(currentEventId, restaurant);
+      setEventData(updated);
+    } catch (err: any) {
+      addToast("error", err.message || "儲存推薦餐廳失敗");
+    }
+  };
+
   const handleGoHome = (view: "dashboard" | "create" = "dashboard") => {
     window.location.hash = "";
     setPageError(null);
@@ -279,6 +291,7 @@ export default function App() {
         onCancelEvent={handleCancelEvent}
         onUpdateEvent={handleUpdateEvent}
         onSubmitComment={handleSubmitComment}
+        onSelectAiRestaurant={handleSelectAiRestaurant}
         isShareModalOpen={isShareModalOpen}
         setIsShareModalOpen={setIsShareModalOpen}
         isHistoryOpen={isHistoryOpen}
@@ -368,6 +381,7 @@ export default function App() {
             onCancelEvent={handleCancelEvent}
             onUpdateEvent={handleUpdateEvent}
             onSubmitComment={handleSubmitComment}
+        onSelectAiRestaurant={handleSelectAiRestaurant}
             onCopySuccess={() => addToast("success", "已成功複製到剪貼簿！")}
             isLoading={isLoading}
           />

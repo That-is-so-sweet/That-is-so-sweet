@@ -1,4 +1,4 @@
-import { EventData } from "../types";
+import { EventData, AiSelectedRestaurant } from "../types";
 import { formatChineseWeekday } from "./calendar";
 import { formatSlotTime } from "./slots";
 import { formatDeadline, isVotingOpen } from "./eventStatus";
@@ -17,16 +17,27 @@ export interface ShareContent {
 
 // Shared with FinalizedView's "一鍵複製聚會敲定通知" button so the two
 // surfaces never drift into announcing the finalized time differently.
-export function buildFinalizedBroadcast(event: Pick<EventData, "title" | "hostName" | "finalSlotId" | "slots" | "finalNote" | "mode" | "responses">): string {
+//
+// `restaurant` is optional — when the host has confirmed one via the AI
+// recommend flow, the headline switches to announce that too, and a
+// restaurant block is inserted between the event details and the
+// attendee list (see FinalizedView.tsx's own copy panel).
+export function buildFinalizedBroadcast(
+  event: Pick<EventData, "title" | "hostName" | "finalSlotId" | "slots" | "finalNote" | "mode" | "responses">,
+  restaurant?: AiSelectedRestaurant
+): string {
   const slot = event.slots.find((s) => s.id === event.finalSlotId) || event.slots[0];
   const isDateOnly = event.mode === "date_only";
   const attending = slot ? event.responses.filter((r) => r.availability[slot.id] === "available").map((r) => r.nickname) : [];
-  return `🎉【聚會時間正式敲定囉！】
+  const headline = restaurant ? `🎉【${event.title}｜推薦餐廳結果已確認！】` : `🎉【聚會時間正式敲定囉！】`;
+  const restaurantBlock = restaurant
+    ? `\n${restaurant.emoji} ${restaurant.name}（⭐${restaurant.rating.toFixed(1)} · ${restaurant.priceLevel}）\n📍 ${restaurant.address}\n🔗 ${restaurant.mapsUrl}\n${restaurant.reason}\n— 由主揪${event.hostName ? ` ${event.hostName}` : ""}拍板\n`
+    : "";
+  return `${headline}
 活動名稱：${event.title}
 主揪：${event.hostName || "熱心主揪"}
 📅 日期：${slot.date} (${formatChineseWeekday(slot.date)})
-${isDateOnly ? "" : `⏰ 時間：${formatSlotTime(slot.time)}\n`}${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}
-👥 出席 (${attending.length}人)：${attending.join("、") || "歡迎大家參與！"}`;
+${isDateOnly ? "" : `⏰ 時間：${formatSlotTime(slot.time)}\n`}${event.finalNote ? `💬 備註：${event.finalNote}\n` : ""}${restaurantBlock}👥 出席 (${attending.length}人)：${attending.join("、") || "歡迎大家參與！"}`;
 }
 
 // One link for the whole lifecycle — no "&tab=vote" — so it keeps working

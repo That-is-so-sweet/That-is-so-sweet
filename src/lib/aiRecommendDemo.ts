@@ -21,6 +21,17 @@ export type BudgetOption = (typeof BUDGET_OPTIONS)[number];
 export const PARTY_SIZE_OPTIONS = ["2 人", "3-4 人", "5-8 人", "9 人以上（多人）", "20 人以上（團體）"] as const;
 export type PartySizeOption = (typeof PARTY_SIZE_OPTIONS)[number];
 
+// Pre-selects the 人數規格 tag from the event's actual attending count, so the
+// host doesn't have to re-enter a number the app already knows — still just
+// a starting point, the host can change it like any other tag.
+export function partySizeForCount(count: number): PartySizeOption {
+  if (count <= 2) return "2 人";
+  if (count <= 4) return "3-4 人";
+  if (count <= 8) return "5-8 人";
+  if (count <= 19) return "9 人以上（多人）";
+  return "20 人以上（團體）";
+}
+
 export const SITUATIONAL_OPTIONS = ["可久坐", "有插座", "停車位", "親子友善", "無障礙"] as const;
 export type SituationalOption = (typeof SITUATIONAL_OPTIONS)[number];
 

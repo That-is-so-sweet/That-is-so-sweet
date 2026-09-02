@@ -6,6 +6,7 @@ import {
   SubmitCommentInput,
   UpdateEventInput,
   EventMode,
+  AiSelectedRestaurant,
 } from "../types.js";
 import * as store from "./localEventStore.js";
 import { isOlderThanDays } from "./eventStatus.js";
@@ -68,6 +69,12 @@ export async function reopenEvent(eventId: string, hostToken: string, responseDe
 
 export async function updateEvent(eventId: string, input: UpdateEventInput): Promise<EventData> {
   const event = store.updateEvent(eventId, input);
+  saveVisitedEvent(event);
+  return event;
+}
+
+export async function saveAiSelectedRestaurant(eventId: string, restaurant: AiSelectedRestaurant): Promise<EventData> {
+  const event = store.setAiSelectedRestaurant(eventId, restaurant);
   saveVisitedEvent(event);
   return event;
 }

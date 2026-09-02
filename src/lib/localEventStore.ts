@@ -14,6 +14,7 @@ import {
   ParticipantResponse,
   EventComment,
   TimeSlot,
+  AiSelectedRestaurant,
 } from "../types.js";
 import { isVotingOpen, isLinkExpired, canComment } from "./eventStatus.js";
 
@@ -553,6 +554,22 @@ export function updateEvent(id: string, input: UpdateEventInput): EventData {
   if (responseDeadline !== undefined) {
     event.responseDeadline = new Date(responseDeadline).toISOString();
   }
+  event.updatedAt = new Date().toISOString();
+
+  events.set(id, event);
+  persist(events);
+  return event;
+}
+
+// Not gated by hostToken — the AI-recommend flow (and this call) isn't
+// currently host-restricted in the UI either, see FinalizedView.tsx.
+export function setAiSelectedRestaurant(id: string, restaurant: AiSelectedRestaurant): EventData {
+  const events = loadEvents();
+  const event = events.get(id);
+  if (!event) {
+    throw new Error("找不到此活動");
+  }
+  event.aiSelectedRestaurant = restaurant;
   event.updatedAt = new Date().toISOString();
 
   events.set(id, event);

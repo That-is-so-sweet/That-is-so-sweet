@@ -1,5 +1,5 @@
 import React from "react";
-import { EventData, CreateEventInput, SubmitResponseInput, SubmitCommentInput, UpdateEventInput, ToastMessage } from "../types";
+import { EventData, CreateEventInput, SubmitResponseInput, SubmitCommentInput, UpdateEventInput, AiSelectedRestaurant, ToastMessage } from "../types";
 import { VisitedEventItem } from "../lib/api";
 import { CreateWizard } from "./CreateWizard";
 import { EventScreen } from "./EventScreen";
@@ -26,6 +26,7 @@ interface MobileAppProps {
   onCancelEvent: () => Promise<void>;
   onUpdateEvent?: (input: Omit<UpdateEventInput, "hostToken">) => Promise<void>;
   onSubmitComment: (input: SubmitCommentInput) => Promise<void>;
+  onSelectAiRestaurant: (restaurant: AiSelectedRestaurant) => void;
   isShareModalOpen: boolean;
   setIsShareModalOpen: (open: boolean) => void;
   isHistoryOpen: boolean;
@@ -58,6 +59,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
   onCancelEvent,
   onUpdateEvent,
   onSubmitComment,
+  onSelectAiRestaurant,
   isShareModalOpen,
   setIsShareModalOpen,
   isHistoryOpen,
@@ -141,6 +143,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
             onCancelEvent={onCancelEvent}
             onUpdateEvent={onUpdateEvent}
             onSubmitComment={onSubmitComment}
+            onSelectAiRestaurant={onSelectAiRestaurant}
             onNewEvent={onGoHome}
             onOpenShare={() => setIsShareModalOpen(true)}
             onOpenHistory={() => setIsHistoryOpen(true)}
