@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Share2, History, Plus, CalendarDays, ChevronLeft } from "lucide-react";
-import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput } from "../types";
+import { Share2, History, Home, CalendarDays, ChevronLeft } from "lucide-react";
+import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput, AiSelectedRestaurant } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
 import { getLifecycleStatus } from "../lib/eventStatus";
 import { Badge } from "../design-system/components";
@@ -23,6 +23,7 @@ interface EventScreenProps {
   onCancelEvent: () => Promise<void>;
   onUpdateEvent?: (input: Omit<UpdateEventInput, "hostToken">) => Promise<void>;
   onSubmitComment: (input: SubmitCommentInput) => Promise<void>;
+  onSelectAiRestaurant: (restaurant: AiSelectedRestaurant) => void;
   onNewEvent: () => void;
   onOpenShare: () => void;
   onOpenHistory: () => void;
@@ -40,6 +41,7 @@ export const EventScreen: React.FC<EventScreenProps> = ({
   onCancelEvent,
   onUpdateEvent,
   onSubmitComment,
+  onSelectAiRestaurant,
   onNewEvent,
   onOpenShare,
   onOpenHistory,
@@ -74,7 +76,7 @@ export const EventScreen: React.FC<EventScreenProps> = ({
           <>
             <button style={iconBtnStyle} onClick={onOpenShare}><Share2 size={15} /></button>
             <button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>
-            <button style={iconBtnStyle} onClick={onNewEvent} title="新增活動"><Plus size={15} /></button>
+            <button style={iconBtnStyle} onClick={onNewEvent} title="回到我的活動"><Home size={15} /></button>
           </>
         }
       />
@@ -102,7 +104,7 @@ export const EventScreen: React.FC<EventScreenProps> = ({
         </div>
       ) : event.status === "finalized" ? (
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", overscrollBehavior: "contain" }}>
-          <FinalizedView event={event} isHost={isHost} onReopen={onReopen} onCancelEvent={isHost ? onCancelEvent : undefined} isLoading={isLoading} onCopySuccess={onCopySuccess} />
+          <FinalizedView event={event} isHost={isHost} onReopen={onReopen} onCancelEvent={isHost ? onCancelEvent : undefined} onSelectAiRestaurant={onSelectAiRestaurant} isLoading={isLoading} onCopySuccess={onCopySuccess} />
           <div style={{ marginTop: 10, borderTop: "8px solid var(--color-cream)", padding: "16px 14px 14px" }}>
             <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
           </div>

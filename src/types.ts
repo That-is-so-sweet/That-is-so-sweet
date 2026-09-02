@@ -31,6 +31,17 @@ export interface EventLocation {
   url?: string;   // Google Maps 連結（若使用者貼的是連結）
 }
 
+export interface AiSelectedRestaurant {
+  emoji: string;
+  name: string;
+  rating: number;
+  priceLevel: string;
+  address: string;
+  mapsUrl: string;
+  reason: string;
+  selectedAt: string;
+}
+
 export interface EventData {
   id: string;
   hostToken: string; // Secret key generated for creator
@@ -48,6 +59,7 @@ export interface EventData {
   finalSlotId?: string;
   finalNote?: string;
   cancelledAt?: string;
+  aiSelectedRestaurant?: AiSelectedRestaurant;
   createdAt: string;
   updatedAt: string;
 }

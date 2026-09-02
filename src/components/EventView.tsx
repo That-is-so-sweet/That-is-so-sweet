@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { CalendarDays, ChevronLeft } from "lucide-react";
-import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput } from "../types";
+import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput, AiSelectedRestaurant } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
 import { getLifecycleStatus } from "../lib/eventStatus";
 import { Badge } from "../design-system/components";
@@ -21,6 +21,7 @@ interface EventViewProps {
   onCancelEvent: () => Promise<void>;
   onUpdateEvent?: (input: Omit<UpdateEventInput, "hostToken">) => Promise<void>;
   onSubmitComment: (input: SubmitCommentInput) => Promise<void>;
+  onSelectAiRestaurant: (restaurant: AiSelectedRestaurant) => void;
   onCopySuccess: () => void;
   isLoading: boolean;
 }
@@ -35,6 +36,7 @@ export const EventView: React.FC<EventViewProps> = ({
   onCancelEvent,
   onUpdateEvent,
   onSubmitComment,
+  onSelectAiRestaurant,
   onCopySuccess,
   isLoading,
 }) => {
@@ -89,7 +91,7 @@ export const EventView: React.FC<EventViewProps> = ({
           </>
         ) : event.status === "finalized" ? (
           <>
-            <FinalizedView event={event} isHost={isHost} onReopen={onReopen} onCancelEvent={isHost ? onCancelEvent : undefined} isLoading={isLoading} onCopySuccess={onCopySuccess} />
+            <FinalizedView event={event} isHost={isHost} onReopen={onReopen} onCancelEvent={isHost ? onCancelEvent : undefined} onSelectAiRestaurant={onSelectAiRestaurant} isLoading={isLoading} onCopySuccess={onCopySuccess} />
             <div style={{ marginTop: 12, borderTop: "8px solid var(--color-cream)", padding: "20px 20px 20px" }}>
               <CommentBoard event={event} nickname={nickname} setNickname={setNickname} onSubmit={onSubmitComment} isLoading={isLoading} />
             </div>

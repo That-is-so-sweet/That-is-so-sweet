@@ -4,6 +4,13 @@ import { to12Hour } from "./slots";
 const DAY_MS = 86400000;
 const EXPIRE_AFTER_DAYS = 7;
 
+// Elapsed-time check (not calendar-day) — used for the host's "我揪的團" list,
+// which hides based on when an event was *created*, unlike isLinkExpired()
+// below which hides based on days since the finalized meetup *ended*.
+export function isOlderThanDays(iso: string, days: number): boolean {
+  return Date.now() - new Date(iso).getTime() > days * DAY_MS;
+}
+
 // Local YYYY-MM-DDTHH:mm string (in the browser's local timezone) suitable for
 // <input type="datetime-local">, defaulting to "now + 7 days" at 23:59.
 export function getDefaultDeadlineLocalValue(): string {
@@ -70,6 +77,18 @@ export function isLinkExpired(event: Pick<EventData, "status" | "finalSlotId" | 
 }
 
 export type LifecycleKey = "collecting" | "voting_closed" | "finalized_upcoming" | "finalized_ended" | "cancelled";
+
+// Groups the finer-grained LifecycleKey into the 3 tabs shown on the host's
+// "我揪的團" list (HostDashboard / HostHome) — collecting/voting_closed are
+// both "still coordinating a time", the two finalized_* variants are both
+// "a time was picked".
+export type HostListTab = "active" | "finalized" | "cancelled";
+
+export function categorizeForHostTabs(key: LifecycleKey): HostListTab {
+  if (key === "cancelled") return "cancelled";
+  if (key === "finalized_upcoming" || key === "finalized_ended") return "finalized";
+  return "active";
+}
 
 export interface LifecycleStatus {
   key: LifecycleKey;

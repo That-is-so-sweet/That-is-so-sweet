@@ -3,16 +3,20 @@ import { Header } from "./components/Header";
 import { CreateEvent } from "./components/CreateEvent";
 import { EventView } from "./components/EventView";
 import { ShareModal } from "./components/ShareModal";
-import { MyEventsModal } from "./components/MyEventsModal";
+import { LoginScreen } from "./components/LoginScreen";
+import { HostDashboard } from "./components/HostDashboard";
+import { GoogleLoginOverlay } from "./components/GoogleLoginOverlay";
 import { Toast } from "./components/Toast";
 import { MobileApp } from "./mobile/MobileApp";
 import { useViewport } from "./lib/useViewport";
+import { useFakeAuth } from "./lib/fakeAuth";
 import {
   EventData,
   CreateEventInput,
   SubmitResponseInput,
   SubmitCommentInput,
   UpdateEventInput,
+  AiSelectedRestaurant,
   ToastMessage,
 } from "./types";
 import {
@@ -23,6 +27,7 @@ import {
   reopenEvent,
   cancelEvent,
   updateEvent,
+  saveAiSelectedRestaurant,
   submitComment,
   getHostToken,
   getVisitedEvents,
@@ -45,6 +50,13 @@ export default function App() {
   const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [historyList, setHistoryList] = useState<VisitedEventItem[]>([]);
+  const { user, isAuthenticating, login, logout } = useFakeAuth();
+  const [homeView, setHomeView] = useState<"dashboard" | "create">("dashboard");
+  // Host identity is only honored while "logged in" — logging out strips
+  // host-only UI everywhere immediately, even on an event page already open,
+  // without touching the stored per-event hostToken (logging back in
+  // restores it).
+  const effectiveHostToken = user ? currentHostToken : null;
 
   // Tracks an eventId whose data was just set directly in state (e.g. right
   // after creation), so the hashchange this triggers doesn't re-fetch it.
@@ -123,12 +135,14 @@ export default function App() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  // Update history list whenever modal opens
+  // Refresh the visited-events list whenever the "我的聚會" modal opens, or
+  // whenever we land on the logged-in host home (no event in the hash) —
+  // HostDashboard/HostHome need this list without the user opening the modal.
   useEffect(() => {
-    if (isHistoryOpen) {
+    if (isHistoryOpen || (!currentEventId && user)) {
       setHistoryList(getVisitedEvents());
     }
-  }, [isHistoryOpen]);
+  }, [isHistoryOpen, currentEventId, user]);
 
   // Handlers
   const handleCreateEvent = async (input: CreateEventInput) => {
@@ -238,11 +252,22 @@ export default function App() {
     }
   };
 
-  const handleGoHome = () => {
+  const handleSelectAiRestaurant = async (restaurant: AiSelectedRestaurant) => {
+    if (!currentEventId) return;
+    try {
+      const updated = await saveAiSelectedRestaurant(currentEventId, restaurant);
+      setEventData(updated);
+    } catch (err: any) {
+      addToast("error", err.message || "儲存推薦餐廳失敗");
+    }
+  };
+
+  const handleGoHome = (view: "dashboard" | "create" = "dashboard") => {
     window.location.hash = "";
     setPageError(null);
     setCurrentEventId(null);
     setEventData(null);
+    setHomeView(view);
   };
 
   const handleLoadDemo = (id: string = "demo-gathering", hostToken?: string) => {
@@ -266,6 +291,7 @@ export default function App() {
         onCancelEvent={handleCancelEvent}
         onUpdateEvent={handleUpdateEvent}
         onSubmitComment={handleSubmitComment}
+        onSelectAiRestaurant={handleSelectAiRestaurant}
         isShareModalOpen={isShareModalOpen}
         setIsShareModalOpen={setIsShareModalOpen}
         isHistoryOpen={isHistoryOpen}
@@ -277,6 +303,12 @@ export default function App() {
         onLoadDemo={handleLoadDemo}
         onCopySuccess={() => addToast("success", "已成功複製到剪貼簿！")}
         toasts={toasts}
+        user={user}
+        isAuthenticating={isAuthenticating}
+        onLogin={login}
+        onLogout={logout}
+        homeView={homeView}
+        onOpenCreate={() => setHomeView("create")}
       />
     );
   }
@@ -285,10 +317,15 @@ export default function App() {
     <div style={{ minHeight: "100vh", background: "var(--color-cream)", color: "var(--color-ink)", fontFamily: "var(--font-body)", display: "flex", flexDirection: "column" }}>
       {/* Top Header */}
       <Header
-        onNewEvent={handleGoHome}
-        onOpenHistory={() => setIsHistoryOpen(true)}
+        onNewEvent={() => handleGoHome()}
+        onCreateEvent={() => handleGoHome("create")}
+        onOpenMyEvents={() => handleGoHome()}
+        isOnDashboardPage={!currentEventId && homeView === "dashboard"}
         onOpenShareModal={eventData ? () => setIsShareModalOpen(true) : undefined}
         activeEventTitle={eventData?.title}
+        user={user}
+        onLogin={login}
+        onLogout={logout}
       />
 
       {/* Main Content Area */}
@@ -308,7 +345,7 @@ export default function App() {
             <h3 style={{ fontWeight: 900, fontFamily: "var(--font-display)", fontSize: 17, color: "var(--color-ink)", marginBottom: 6 }}>讀取失敗</h3>
             <p style={{ fontSize: 12, color: "var(--color-muted)", marginBottom: 16 }}>{pageError}</p>
             <button
-              onClick={handleGoHome}
+              onClick={() => handleGoHome()}
               style={{ padding: "10px 20px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-ink)", color: "#fff", fontWeight: 800, fontSize: 12, cursor: "pointer" }}
             >
               返回建立新活動
@@ -317,13 +354,26 @@ export default function App() {
         )}
 
         {!isLoading && !pageError && !currentEventId && (
-          <CreateEvent onSubmit={handleCreateEvent} isLoading={isLoading} />
+          !user ? (
+            <LoginScreen onLogin={login} />
+          ) : homeView === "create" ? (
+            <CreateEvent onSubmit={handleCreateEvent} isLoading={isLoading} />
+          ) : (
+            <HostDashboard
+              events={historyList}
+              onCreateEvent={() => setHomeView("create")}
+              onSelectEvent={(id) => {
+                window.location.hash = `event=${id}`;
+              }}
+              onLoadDemo={handleLoadDemo}
+            />
+          )
         )}
 
         {!pageError && currentEventId && eventData && (
           <EventView
             event={eventData}
-            hostToken={currentHostToken || undefined}
+            hostToken={effectiveHostToken || undefined}
             initialTab={initialTab || undefined}
             onRespond={handleRespond}
             onFinalize={handleFinalize}
@@ -331,6 +381,7 @@ export default function App() {
             onCancelEvent={handleCancelEvent}
             onUpdateEvent={handleUpdateEvent}
             onSubmitComment={handleSubmitComment}
+        onSelectAiRestaurant={handleSelectAiRestaurant}
             onCopySuccess={() => addToast("success", "已成功複製到剪貼簿！")}
             isLoading={isLoading}
           />
@@ -350,24 +401,16 @@ export default function App() {
           isOpen={isShareModalOpen}
           onClose={() => setIsShareModalOpen(false)}
           event={eventData}
-          hostToken={currentHostToken || undefined}
+          hostToken={effectiveHostToken || undefined}
           onCopySuccess={() => addToast("success", "已成功複製連結！")}
         />
       )}
 
-      {/* My Events Modal */}
-      <MyEventsModal
-        isOpen={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
-        eventsList={historyList}
-        onSelectEvent={(id) => {
-          window.location.hash = `event=${id}`;
-        }}
-        onLoadDemo={handleLoadDemo}
-      />
-
       {/* Floating Toast Notification Container */}
       <Toast toasts={toasts} onDismiss={removeToast} />
+
+      {/* Fake Google OAuth redirect/popup simulation */}
+      {isAuthenticating && <GoogleLoginOverlay />}
     </div>
   );
 }

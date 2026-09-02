@@ -1,11 +1,15 @@
 import React from "react";
-import { EventData, CreateEventInput, SubmitResponseInput, SubmitCommentInput, UpdateEventInput, ToastMessage } from "../types";
+import { EventData, CreateEventInput, SubmitResponseInput, SubmitCommentInput, UpdateEventInput, AiSelectedRestaurant, ToastMessage } from "../types";
 import { VisitedEventItem } from "../lib/api";
 import { CreateWizard } from "./CreateWizard";
 import { EventScreen } from "./EventScreen";
 import { ShareModal } from "./ShareModal";
 import { HistoryModal } from "./HistoryModal";
 import { Toast } from "./Toast";
+import { LoginScreen } from "./LoginScreen";
+import { HostHome } from "./HostHome";
+import { GoogleLoginOverlay } from "./GoogleLoginOverlay";
+import { FakeUser } from "../lib/fakeAuth";
 
 interface MobileAppProps {
   currentEventId: string | null;
@@ -22,6 +26,7 @@ interface MobileAppProps {
   onCancelEvent: () => Promise<void>;
   onUpdateEvent?: (input: Omit<UpdateEventInput, "hostToken">) => Promise<void>;
   onSubmitComment: (input: SubmitCommentInput) => Promise<void>;
+  onSelectAiRestaurant: (restaurant: AiSelectedRestaurant) => void;
   isShareModalOpen: boolean;
   setIsShareModalOpen: (open: boolean) => void;
   isHistoryOpen: boolean;
@@ -31,6 +36,12 @@ interface MobileAppProps {
   onLoadDemo: (id: string, hostToken?: string) => void;
   onCopySuccess: () => void;
   toasts: ToastMessage[];
+  user: FakeUser | null;
+  isAuthenticating: boolean;
+  onLogin: () => void;
+  onLogout: () => void;
+  homeView: "dashboard" | "create";
+  onOpenCreate: () => void;
 }
 
 export const MobileApp: React.FC<MobileAppProps> = ({
@@ -48,6 +59,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
   onCancelEvent,
   onUpdateEvent,
   onSubmitComment,
+  onSelectAiRestaurant,
   isShareModalOpen,
   setIsShareModalOpen,
   isHistoryOpen,
@@ -57,8 +69,18 @@ export const MobileApp: React.FC<MobileAppProps> = ({
   onLoadDemo,
   onCopySuccess,
   toasts,
+  user,
+  isAuthenticating,
+  onLogin,
+  onLogout,
+  homeView,
+  onOpenCreate,
 }) => {
-  const isHost = Boolean(eventData && currentHostToken && currentHostToken === eventData.hostToken);
+  // Host identity is only honored while "logged in" — logging out strips
+  // host-only UI immediately even on an event page already open, without
+  // touching the stored per-event hostToken (logging back in restores it).
+  const effectiveHostToken = user ? currentHostToken : null;
+  const isHost = Boolean(eventData && effectiveHostToken && effectiveHostToken === eventData.hostToken);
 
   return (
     <div style={{ height: "100dvh", overflow: "hidden", overscrollBehavior: "none", display: "flex", justifyContent: "center", background: "#EAE0CC", fontFamily: "var(--font-body)" }}>
@@ -94,7 +116,20 @@ export const MobileApp: React.FC<MobileAppProps> = ({
         )}
 
         {!isLoading && !pageError && !currentEventId && (
-          <CreateWizard onSubmit={onCreateEvent} isLoading={isLoading} onOpenHistory={() => setIsHistoryOpen(true)} />
+          !user ? (
+            <LoginScreen onLogin={onLogin} />
+          ) : homeView === "create" ? (
+            <CreateWizard onSubmit={onCreateEvent} isLoading={isLoading} onOpenHistory={() => setIsHistoryOpen(true)} />
+          ) : (
+            <HostHome
+              user={user}
+              onLogout={onLogout}
+              events={historyList}
+              onCreateEvent={onOpenCreate}
+              onSelectEvent={onSelectEvent}
+              onLoadDemo={onLoadDemo}
+            />
+          )
         )}
 
         {!pageError && currentEventId && eventData && (
@@ -108,6 +143,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
             onCancelEvent={onCancelEvent}
             onUpdateEvent={onUpdateEvent}
             onSubmitComment={onSubmitComment}
+            onSelectAiRestaurant={onSelectAiRestaurant}
             onNewEvent={onGoHome}
             onOpenShare={() => setIsShareModalOpen(true)}
             onOpenHistory={() => setIsHistoryOpen(true)}
@@ -117,7 +153,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
         )}
 
         {isShareModalOpen && eventData && (
-          <ShareModal event={eventData} hostToken={currentHostToken || undefined} onClose={() => setIsShareModalOpen(false)} onCopySuccess={onCopySuccess} />
+          <ShareModal event={eventData} hostToken={effectiveHostToken || undefined} onClose={() => setIsShareModalOpen(false)} onCopySuccess={onCopySuccess} />
         )}
 
         {isHistoryOpen && (
@@ -125,6 +161,8 @@ export const MobileApp: React.FC<MobileAppProps> = ({
         )}
 
         <Toast items={toasts} />
+
+        {isAuthenticating && <GoogleLoginOverlay />}
       </div>
     </div>
   );
