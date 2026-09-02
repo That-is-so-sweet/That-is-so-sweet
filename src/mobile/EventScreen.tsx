@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Share2, History, Plus, CalendarDays, ChevronLeft } from "lucide-react";
+import { Share2, History, Home, CalendarDays, ChevronLeft } from "lucide-react";
 import { EventData, SubmitResponseInput, SubmitCommentInput, UpdateEventInput } from "../types";
 import { getUserNickname, getUserEmail } from "../lib/api";
 import { getLifecycleStatus } from "../lib/eventStatus";
@@ -74,7 +74,7 @@ export const EventScreen: React.FC<EventScreenProps> = ({
           <>
             <button style={iconBtnStyle} onClick={onOpenShare}><Share2 size={15} /></button>
             <button style={iconBtnStyle} onClick={onOpenHistory}><History size={15} /></button>
-            <button style={iconBtnStyle} onClick={onNewEvent} title="新增活動"><Plus size={15} /></button>
+            <button style={iconBtnStyle} onClick={onNewEvent} title="回到我的活動"><Home size={15} /></button>
           </>
         }
       />

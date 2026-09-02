@@ -20,17 +20,20 @@ interface HostHomeProps {
 
 type TabKey = "demo" | HostListTab | "all";
 
+// "已取消" is deliberately not a filterable tab here — PRD 2026-09-02: a
+// real host should never see a cancelled activity in "我揪的團" under any
+// circumstance. The only place a cancelled example is still shown is the
+// dashed 示範活動 tab below, which is demo data, not the host's own events.
 const TABS: { key: TabKey; label: string }[] = [
   { key: "demo", label: "示範活動" },
   { key: "all", label: "全部" },
   { key: "active", label: "進行中" },
   { key: "finalized", label: "已敲定" },
-  { key: "cancelled", label: "已取消" },
 ];
 
 export const HostHome: React.FC<HostHomeProps> = ({ user, onLogout, events, onCreateEvent, onSelectEvent, onLoadDemo }) => {
   const [tab, setTab] = useState<TabKey>("all");
-  const hostedEvents = events.filter((e) => e.isHost);
+  const hostedEvents = events.filter((e) => e.isHost && categorizeForHostTabs(getLifecycleStatusFromSnapshot(e).key) !== "cancelled");
   const visibleEvents =
     tab === "all" || tab === "demo" ? hostedEvents : hostedEvents.filter((h) => categorizeForHostTabs(getLifecycleStatusFromSnapshot(h).key) === tab);
 
@@ -128,7 +131,7 @@ export const HostHome: React.FC<HostHomeProps> = ({ user, onLogout, events, onCr
                     <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 13, fontWeight: 800, color: "var(--color-ink)" }}>{h.title}</span>
                       <Badge variant="secondary" size="sm">主揪</Badge>
-                      <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : lifecycle.sublabel === "已取消" ? "hot" : "muted"} size="sm">{lifecycle.label}</Badge>
+                      <Badge variant={lifecycle.sublabel === "尚未投完" ? "success" : "muted"} size="sm">{lifecycle.label}</Badge>
                     </div>
                     <div style={{ fontSize: 10, color: "var(--color-muted)", marginTop: 4 }}>
                       上次查看：{new Date(h.updatedAt).toLocaleString("zh-TW", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}

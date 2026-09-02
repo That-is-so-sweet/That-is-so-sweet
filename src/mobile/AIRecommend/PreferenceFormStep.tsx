@@ -4,7 +4,6 @@ import { cardStyle, SectionLabel } from "../mobileStyles";
 import {
   PreferenceFormState,
   RELATIONSHIP_OPTIONS,
-  GEO_RANGE_OPTIONS,
   BUDGET_OPTIONS,
   PARTY_SIZE_OPTIONS,
   SITUATIONAL_OPTIONS,
@@ -28,32 +27,21 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, on
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ fontSize: 12, color: "var(--color-muted)", lineHeight: 1.6 }}>
-        這份表單全部選填。填了可以幫 AI 縮小推薦範圍；略過的話，會直接用「當地最適合」的預設邏輯推薦。
+        以下每個選項都是選填。填了可以幫 AI 縮小推薦範圍；略過的話，會直接用「當地最適合」的預設邏輯推薦。
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="地理範圍" hint="解決「不要離車站太遠」的痛點" />
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {GEO_RANGE_OPTIONS.map((g) => (
-            <Tag key={g} variant="orange" active={form.geoRange === g} onClick={() => onChange({ geoRange: form.geoRange === g ? null : g })}>
-              {g}
-            </Tag>
-          ))}
-        </div>
-        {(form.geoRange === "捷運沿線" || form.geoRange === "特定行政區") && (
-          <div style={{ marginTop: 8 }}>
-            <Input
-              size="sm"
-              placeholder={form.geoRange === "捷運沿線" ? "例如：板南線" : "例如：大安區"}
-              value={form.geoRangeDetail}
-              onChange={(e) => onChange({ geoRangeDetail: e.target.value })}
-            />
-          </div>
-        )}
+        <SectionLabel title="地點（選填）" hint="輸入捷運站名稱（例如：中山站）或概略地區（例如：北車附近）" />
+        <Input
+          size="sm"
+          placeholder="例如：中山站、北車附近"
+          value={form.location}
+          onChange={(e) => onChange({ location: e.target.value })}
+        />
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="與會關係" hint="影響 AI 推薦的氛圍與桌型配置" />
+        <SectionLabel title="與會關係（選填）" hint="影響 AI 推薦的氛圍與桌型配置" />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {RELATIONSHIP_OPTIONS.map((r) => (
             <Tag key={r} variant="orange" active={form.relationship === r} onClick={() => onChange({ relationship: form.relationship === r ? null : r })}>
@@ -64,7 +52,7 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, on
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="預算區間" hint="每人平均消費" />
+        <SectionLabel title="預算區間（選填）" hint="每人平均消費" />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {BUDGET_OPTIONS.map((b) => (
             <Tag key={b} variant="yellow" active={form.budget === b} onClick={() => onChange({ budget: form.budget === b ? null : b })}>
@@ -75,7 +63,7 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, on
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="人數規格" hint="篩選具備對應容納量或包廂的餐廳" />
+        <SectionLabel title="人數規格（選填）" hint="篩選具備對應容納量或包廂的餐廳" />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {PARTY_SIZE_OPTIONS.map((p) => (
             <Tag key={p} variant="default" active={form.partySize === p} onClick={() => onChange({ partySize: form.partySize === p ? null : p })}>
@@ -86,7 +74,7 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, on
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="硬體與情境" hint="可複選" />
+        <SectionLabel title="硬體與情境（選填）" hint="可複選" />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {SITUATIONAL_OPTIONS.map((s) => (
             <Tag key={s} variant="default" active={form.situational.includes(s)} onClick={() => toggleSituational(s)}>
@@ -97,7 +85,7 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, on
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="飲食偏好" />
+        <SectionLabel title="飲食偏好（選填）" />
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
           <Tag variant="orange" active={form.vegetarian} onClick={() => onChange({ vegetarian: !form.vegetarian })}>
             素食
@@ -118,7 +106,7 @@ export const PreferenceFormStep: React.FC<PreferenceFormStepProps> = ({ form, on
       </div>
 
       <div style={cardStyle}>
-        <SectionLabel title="其他需求" hint="自由輸入，補充標籤無法表達的細節" />
+        <SectionLabel title="其他需求（選填）" hint="自由輸入，補充標籤無法表達的細節" />
         <textarea
           value={form.customPrompt}
           onChange={(e) => onChange({ customPrompt: e.target.value })}

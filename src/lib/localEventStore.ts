@@ -32,6 +32,31 @@ function generateId(prefix: string = ""): string {
   return prefix ? `${prefix}_${timeStr}${randomStr}` : `${timeStr}${randomStr}`;
 }
 
+const ROOM_ID_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+function randomChars(length: number): string {
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += ROOM_ID_CHARS[Math.floor(Math.random() * ROOM_ID_CHARS.length)];
+  }
+  return out;
+}
+
+// The public room id (#event=<id>) — deliberately NOT derived from Date.now()
+// like generateId() above, so it carries no guessable creation-order pattern.
+// 16 chars keeps the shared link short enough to wrap within ~2 lines in the
+// share UI (PRD 2026-09-02: 網址格式與長度).
+function generateRoomId(): string {
+  return randomChars(16);
+}
+
+// Secret host credential — same "no time-based pattern" reasoning as
+// generateRoomId(), but longer since it's a security-sensitive proof of
+// host identity rather than a link meant to be displayed/typed.
+function generateHostToken(): string {
+  return randomChars(32);
+}
+
 function loadEvents(): Map<string, EventData> {
   const map = new Map<string, EventData>();
   try {
@@ -277,8 +302,8 @@ export function createEvent(input: CreateEventInput): { event: EventData; hostTo
   }
 
   const events = loadEvents();
-  const id = generateId("event");
-  const hostToken = generateId("token");
+  const id = generateRoomId();
+  const hostToken = generateHostToken();
 
   const formattedSlots: TimeSlot[] = slots.map((s, idx) => ({
     id: `slot_${idx + 1}_${Math.random().toString(36).substring(2, 6)}`,

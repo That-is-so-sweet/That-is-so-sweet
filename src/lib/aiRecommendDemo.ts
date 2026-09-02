@@ -15,9 +15,6 @@
 export const RELATIONSHIP_OPTIONS = ["同事", "朋友", "家人", "社團", "約會"] as const;
 export type RelationshipOption = (typeof RELATIONSHIP_OPTIONS)[number];
 
-export const GEO_RANGE_OPTIONS = ["步行 800m 內（約 15 分鐘）", "捷運沿線", "特定行政區"] as const;
-export type GeoRangeOption = (typeof GEO_RANGE_OPTIONS)[number];
-
 export const BUDGET_OPTIONS = ["200 以下", "200-400", "400-600", "600-800", "800-1000", "1000 以上"] as const;
 export type BudgetOption = (typeof BUDGET_OPTIONS)[number];
 
@@ -35,8 +32,7 @@ export type CuisineOption = (typeof CUISINE_OPTIONS)[number];
 
 export interface PreferenceFormState {
   relationship: RelationshipOption | null;
-  geoRange: GeoRangeOption | null;
-  geoRangeDetail: string; // free text for MRT line / district name
+  location: string; // free text, e.g. MRT station name or a rough area
   budget: BudgetOption | null;
   partySize: PartySizeOption | null;
   situational: SituationalOption[]; // multi-select
@@ -48,8 +44,7 @@ export interface PreferenceFormState {
 
 export const emptyPreferenceForm: PreferenceFormState = {
   relationship: null,
-  geoRange: null,
-  geoRangeDetail: "",
+  location: "",
   budget: null,
   partySize: null,
   situational: [],
@@ -62,7 +57,7 @@ export const emptyPreferenceForm: PreferenceFormState = {
 export function isFormFilled(form: PreferenceFormState): boolean {
   return (
     form.relationship !== null ||
-    form.geoRange !== null ||
+    form.location.trim() !== "" ||
     form.budget !== null ||
     form.partySize !== null ||
     form.situational.length > 0 ||
@@ -83,10 +78,7 @@ export function buildRestateSummary(form: PreferenceFormState): string {
   }
   const parts: string[] = [];
   if (form.relationship) parts.push(`這是一場「${form.relationship}」聚餐`);
-  if (form.geoRange) {
-    const detail = form.geoRangeDetail.trim();
-    parts.push(`地點希望在「${form.geoRange}${detail ? `：${detail}` : ""}」範圍內`);
-  }
+  if (form.location.trim()) parts.push(`地點希望在「${form.location.trim()}」附近`);
   if (form.budget) parts.push(`預算落在「${form.budget}」`);
   if (form.partySize) parts.push(`用餐人數約「${form.partySize}」`);
   if (form.situational.length > 0) parts.push(`需要「${form.situational.join("、")}」`);
@@ -216,6 +208,18 @@ const restaurantCandidates: Candidate[] = [
 // PRD 4: 輸出限制 — 最多顯示前 5 名推薦（核心推薦為 3-5 名）。The mock list is
 // already exactly 5 items; .slice(0, 5) keeps that rule true even if the
 // list grows later.
-export function getCandidates(): Candidate[] {
-  return restaurantCandidates.slice(0, 5);
+//
+// `shuffle` is purely cosmetic: since this is hand-authored mock data (no
+// real API call), a "重新整理" click can't actually fetch a different set —
+// shuffling the display order is what makes that click visibly do
+// *something* in the demo, without pretending a new search happened.
+export function getCandidates(shuffle = false): Candidate[] {
+  const list = restaurantCandidates.slice(0, 5);
+  if (!shuffle) return list;
+  const shuffled = [...list];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }

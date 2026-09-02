@@ -2,12 +2,13 @@ import React, { useMemo, useState } from "react";
 import { X, ChevronLeft } from "lucide-react";
 import { EventData } from "../../types";
 import { useViewport } from "../../lib/useViewport";
-import { PreferenceFormState, emptyPreferenceForm, getCandidates, candidateReason } from "../../lib/aiRecommendDemo";
+import { PreferenceFormState, emptyPreferenceForm, getCandidates, Candidate } from "../../lib/aiRecommendDemo";
+import { buildFinalizedBroadcast } from "../../lib/shareText";
+import { getMonthlyAiUsage, hasReachedMonthlyAiLimit, recordAiUsage } from "../../lib/aiUsage";
 import { PreferenceFormStep } from "./PreferenceFormStep";
 import { RecommendResultsStep } from "./RecommendResultsStep";
-import { ConfirmedStep } from "./ConfirmedStep";
 
-type Step = "preference" | "results" | "confirmed";
+type Step = "preference" | "results";
 
 interface AIRecommendFlowProps {
   event: EventData;
@@ -19,7 +20,9 @@ export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose
   const { isMobile } = useViewport();
   const [step, setStep] = useState<Step>("preference");
   const [form, setForm] = useState<PreferenceFormState>(emptyPreferenceForm);
-  const [finalChoiceId, setFinalChoiceId] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<Candidate[]>(() => getCandidates());
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [usage, setUsage] = useState(() => getMonthlyAiUsage());
 
   const finalSlot = event.slots.find((s) => s.id === event.finalSlotId);
   const attendingNicknames = useMemo(() => {
@@ -29,28 +32,29 @@ export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose
     return names.length > 0 ? names : ["小明", "Lily", "陳大華"];
   }, [event, finalSlot]);
 
-  const candidates = useMemo(() => getCandidates(), []);
+  const eventBroadcast = useMemo(() => buildFinalizedBroadcast(event), [event]);
 
   const goRestart = () => {
     setStep("preference");
     setForm(emptyPreferenceForm);
-    setFinalChoiceId(null);
+    setCandidates(getCandidates());
+    setSelectedId(null);
   };
 
-  const ctx = { count: Math.max(attendingNicknames.length, 1) };
+  const generateResults = (shuffle: boolean) => {
+    if (hasReachedMonthlyAiLimit()) return;
+    recordAiUsage();
+    setUsage(getMonthlyAiUsage());
+    setCandidates(getCandidates(shuffle));
+    setSelectedId(null);
+    setStep("results");
+  };
 
-  const chosen = useMemo(() => {
-    if (!finalChoiceId) return null;
-    const c = candidates.find((cc) => cc.id === finalChoiceId);
-    if (!c) return null;
-    return { emoji: c.emoji, name: c.name, rating: c.rating, priceLevel: c.priceLevel, address: c.address, mapsUrl: c.mapsUrl, reason: candidateReason(c, form, ctx) };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finalChoiceId, candidates, form]);
+  const limitReached = usage.count >= usage.limit;
 
   const stepTitles: Record<Step, string> = {
     preference: "基本偏好（選填）",
     results: "AI 候選餐廳",
-    confirmed: "確認結果",
   };
 
   const canGoBack = step === "results";
@@ -79,7 +83,9 @@ export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose
                 </button>
               )}
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)" }}>🍽️ AI 推薦餐廳（示範功能）</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-muted)" }}>
+                  🍽️ AI 推薦餐廳（示範功能）· 本月已用 {usage.count}/{usage.limit} 次
+                </div>
                 <div style={{ fontSize: 14, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {stepTitles[step]}
                 </div>
@@ -93,36 +99,29 @@ export const AIRecommendFlow: React.FC<AIRecommendFlowProps> = ({ event, onClose
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
-          {step === "preference" && (
-            <PreferenceFormStep
-              form={form}
-              onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-              onSkip={() => setStep("results")}
-              onNext={() => setStep("results")}
-            />
-          )}
+          {step === "preference" &&
+            (limitReached ? (
+              <div style={{ padding: 20, textAlign: "center", color: "var(--color-muted)", fontSize: 13, lineHeight: 1.7 }}>
+                本月 AI 選餐廳使用次數已達上限（{usage.limit} 次），請下個月再試。
+              </div>
+            ) : (
+              <PreferenceFormStep
+                form={form}
+                onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+                onSkip={() => generateResults(false)}
+                onNext={() => generateResults(false)}
+              />
+            ))}
           {step === "results" && (
             <RecommendResultsStep
               candidates={candidates}
               form={form}
               participantCount={attendingNicknames.length}
-              onChoose={(id) => {
-                setFinalChoiceId(id);
-                setStep("confirmed");
-              }}
-            />
-          )}
-          {step === "confirmed" && chosen && (
-            <ConfirmedStep
-              eventTitle={event.title}
-              hostName={event.hostName}
-              chosenEmoji={chosen.emoji}
-              chosenName={chosen.name}
-              rating={chosen.rating}
-              priceLevel={chosen.priceLevel}
-              address={chosen.address}
-              mapsUrl={chosen.mapsUrl}
-              reasonText={chosen.reason}
+              selectedId={selectedId}
+              onSelect={(id) => setSelectedId(id)}
+              onRefresh={() => generateResults(true)}
+              refreshDisabled={limitReached}
+              eventBroadcast={eventBroadcast}
               onCopySuccess={onCopySuccess}
               onRestart={goRestart}
               onClose={onClose}
