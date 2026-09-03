@@ -1,8 +1,9 @@
 import React from "react";
-import { Sparkles, Star, MapPin, ExternalLink, RefreshCw, PartyPopper } from "lucide-react";
+import { Sparkles, Star, MapPin, ExternalLink, RefreshCw, PartyPopper, Share2 } from "lucide-react";
 import { Button, Tag } from "../../design-system/components";
 import { cardStyle } from "../mobileStyles";
 import { Candidate, PreferenceFormState, candidateReason, buildRestateSummary } from "../../lib/aiRecommendDemo";
+import { canShare, shareText } from "../../lib/share";
 
 interface RecommendResultsStepProps {
   candidates: Candidate[];
@@ -47,15 +48,17 @@ export const RecommendResultsStep: React.FC<RecommendResultsStepProps> = ({
 }) => {
   const ctx = { count: Math.max(participantCount, 1) };
   const chosen = candidates.find((c) => c.id === selectedId) || null;
+  const chosenBroadcast = chosen
+    ? `${eventBroadcast}\n\n🍽️ 推薦餐廳：${chosen.name}（⭐${chosen.rating.toFixed(1)} · ${chosen.priceLevel}）\n📍 ${chosen.address}\n🔗 ${chosen.mapsUrl}`
+    : "";
 
   const handleCopy = async () => {
     if (!chosen) return;
-    const broadcast = `${eventBroadcast}\n\n🍽️ 推薦餐廳：${chosen.name}（⭐${chosen.rating.toFixed(1)} · ${chosen.priceLevel}）\n📍 ${chosen.address}\n🔗 ${chosen.mapsUrl}`;
     try {
-      await navigator.clipboard.writeText(broadcast);
+      await navigator.clipboard.writeText(chosenBroadcast);
       onCopySuccess();
     } catch {
-      window.prompt("複製通知：", broadcast);
+      window.prompt("複製通知：", chosenBroadcast);
     }
   };
 
@@ -181,11 +184,18 @@ export const RecommendResultsStep: React.FC<RecommendResultsStepProps> = ({
         <div style={{ ...cardStyle, background: "rgba(90,158,90,0.06)", borderColor: "rgba(90,158,90,0.3)" }}>
           <div style={{ fontSize: 12, fontWeight: 800, marginBottom: 8 }}>一鍵複製確認通知</div>
           <div style={{ background: "#fff", borderRadius: "var(--radius-md)", padding: 10, fontSize: 11, whiteSpace: "pre-line", overflowWrap: "anywhere", lineHeight: 1.6, color: "var(--color-ink)", marginBottom: 8 }}>
-            {`${eventBroadcast}\n\n🍽️ 推薦餐廳：${chosen.name}（⭐${chosen.rating.toFixed(1)} · ${chosen.priceLevel}）\n📍 ${chosen.address}\n🔗 ${chosen.mapsUrl}`}
+            {chosenBroadcast}
           </div>
-          <Button variant="dark" fullWidth onClick={handleCopy}>
-            一鍵複製通知
-          </Button>
+          <div style={{ display: "flex", gap: 8 }}>
+            {canShare && (
+              <Button variant="secondary" fullWidth icon={<Share2 size={16} />} onClick={() => shareText({ title: "推薦餐廳確認通知", text: chosenBroadcast })}>
+                分享
+              </Button>
+            )}
+            <Button variant="dark" fullWidth onClick={handleCopy}>
+              一鍵複製通知
+            </Button>
+          </div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <Button variant="muted" fullWidth onClick={onRestart}>
               重新選一次

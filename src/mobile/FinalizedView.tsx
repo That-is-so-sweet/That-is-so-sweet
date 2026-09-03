@@ -1,12 +1,13 @@
 import React, { useState } from "react";
-import { CheckCircle2, MessageCircle, RotateCcw, Archive, Ban, Sparkles, Star, RefreshCw } from "lucide-react";
+import { CheckCircle2, MessageCircle, RotateCcw, Archive, Ban, Sparkles, Star, RefreshCw, Share2 } from "lucide-react";
 import { EventData, AiSelectedRestaurant } from "../types";
 import { formatChineseWeekday, generateGoogleCalendarUrl, downloadIcsFile } from "../lib/calendar";
 import { getMeetupEndInfo } from "../lib/eventStatus";
 import { formatSlotTime } from "../lib/slots";
 import { buildFinalizedBroadcast } from "../lib/shareText";
+import { canShare, shareText } from "../lib/share";
 import { Button } from "../design-system/components";
-import { cardStyle, SectionLabel } from "./mobileStyles";
+import { cardStyle, EmailIndicator, SectionLabel } from "./mobileStyles";
 import { ReopenModal } from "./ReopenModal";
 import { CancelEventModal } from "./CancelEventModal";
 import { AIRecommendFlow } from "./AIRecommend/AIRecommendFlow";
@@ -26,7 +27,7 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
   const [cancelling, setCancelling] = useState(false);
   const [showAIRecommend, setShowAIRecommend] = useState(false);
   const slot = event.slots.find((s) => s.id === event.finalSlotId) || event.slots[0];
-  const attending = event.responses.filter((r) => r.availability[slot.id] === "available").map((r) => r.nickname);
+  const attending = event.responses.filter((r) => r.availability[slot.id] === "available");
   const isDateOnly = event.mode === "date_only";
   const hasEnded = !!getMeetupEndInfo(event)?.hasEnded;
   const locationDescriptionFallback = [event.location?.text, event.description].filter(Boolean).join("\n");
@@ -177,9 +178,9 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
           {attending.length === 0 ? (
             <span style={{ fontSize: 12, color: "var(--color-muted)" }}>尚無標示為確定出席的名單</span>
           ) : (
-            attending.map((n, i) => (
+            attending.map((r) => (
               <span
-                key={i}
+                key={r.id}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -193,7 +194,8 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
                 }}
               >
                 <span style={{ width: 6, height: 6, borderRadius: 999, background: "var(--color-success)" }} />
-                {n}
+                {r.nickname}
+                <EmailIndicator hasEmail={!!r.email} />
               </span>
             ))
           )}
@@ -205,7 +207,14 @@ export const FinalizedView: React.FC<FinalizedViewProps> = ({ event, isHost, onR
         <div style={{ background: "#fff", borderRadius: "var(--radius-md)", padding: 10, fontSize: 11, whiteSpace: "pre-line", lineHeight: 1.6, color: "var(--color-ink)", marginBottom: 8 }}>
           {broadcast}
         </div>
-        <Button variant="dark" fullWidth onClick={handleCopy}>一鍵複製定案通知</Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {canShare && (
+            <Button variant="secondary" fullWidth icon={<Share2 size={16} />} onClick={() => shareText({ title: "聚會敲定通知", text: broadcast })}>
+              分享
+            </Button>
+          )}
+          <Button variant="dark" fullWidth onClick={handleCopy}>一鍵複製定案通知</Button>
+        </div>
       </div>
 
       {isHost && (onReopen || onCancelEvent) && (

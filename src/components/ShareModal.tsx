@@ -1,7 +1,8 @@
 import React from "react";
-import { X, Check, Clock, PartyPopper, Ban, Crown } from "lucide-react";
+import { X, Check, Clock, PartyPopper, Ban, Crown, Share2 } from "lucide-react";
 import { EventData } from "../types";
 import { getEventShareUrl, getShareContent, ShareKind } from "../lib/shareText";
+import { canShare, shareText } from "../lib/share";
 import { Button } from "../design-system/components";
 
 interface ShareModalProps {
@@ -64,11 +65,23 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, event, 
           <div style={{ fontSize: 19, fontWeight: 900, fontFamily: "var(--font-display)", color: "var(--color-ink)" }}>{content.headline}</div>
           <div style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 4 }}>{event.title}</div>
         </div>
-        <Button variant="primary" fullWidth onClick={() => copy(content.copyText, `${content.copyButtonLabel}：`)}>{content.copyButtonLabel}</Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {canShare && (
+            <Button variant="secondary" fullWidth icon={<Share2 size={16} />} onClick={() => shareText({ title: content.headline, text: content.copyText })}>
+              分享
+            </Button>
+          )}
+          <Button variant="primary" fullWidth onClick={() => copy(content.copyText, `${content.copyButtonLabel}：`)}>{content.copyButtonLabel}</Button>
+        </div>
         <div style={{ background: "var(--color-cream)", borderRadius: "var(--radius-md)", padding: 14, marginTop: 14 }}>
           <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "var(--color-ink)" }}>本活動專屬連結</div>
           <div style={{ display: "flex", gap: 8 }}>
             <input readOnly value={shareUrl} style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: "var(--radius-input)", border: "1px solid var(--color-border)", fontSize: 12, background: "#fff", color: "var(--color-ink)" }} />
+            {canShare && (
+              <Button variant="secondary" size="sm" icon={<Share2 size={14} />} onClick={() => shareText({ title: event.title, text: shareUrl })}>
+                分享
+              </Button>
+            )}
             <Button variant="dark" size="sm" onClick={() => copy(shareUrl, "複製活動連結：")}>複製</Button>
           </div>
           <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 8, lineHeight: 1.5 }}>
