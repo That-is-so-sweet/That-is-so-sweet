@@ -20,12 +20,20 @@ import { isVotingOpen, isLinkExpired, canComment } from "./eventStatus.js";
 
 const STORAGE_KEY = "gathertime_events_db";
 
-// Demo events (fixed "demo-*" ids) are only written once, the first time a
-// browser has an empty store. Bump this whenever seedDemoEvents()'s content
-// changes so browsers that already seeded an older version pick up the fix —
-// otherwise the stale localStorage copy would silently outlive any source edit.
+// Demo events (fixed "demo-*" ids) are reseeded the first time a browser has
+// an empty store, whenever DEMO_SEED_VERSION changes (bump this whenever
+// seedDemoEvents()'s content changes, so browsers that already seeded an
+// older version pick up the fix), AND once per calendar day — every seeded
+// event's dates are computed relative to Date.now() (see addDays/addDaysIso
+// below), so without this daily refresh they'd be frozen at whatever "now"
+// was on first seed and silently drift into "expired" as real time passes.
 const DEMO_SEED_VERSION_KEY = "gathertime_demo_seed_version";
-const DEMO_SEED_VERSION = "2";
+const DEMO_SEED_DATE_KEY = "gathertime_demo_seed_date";
+const DEMO_SEED_VERSION = "3";
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function generateId(prefix: string = ""): string {
   const randomStr = Math.random().toString(36).substring(2, 10);
@@ -71,9 +79,11 @@ function loadEvents(): Map<string, EventData> {
   }
 
   const seededVersion = localStorage.getItem(DEMO_SEED_VERSION_KEY);
-  if (map.size === 0 || seededVersion !== DEMO_SEED_VERSION) {
+  const seededDate = localStorage.getItem(DEMO_SEED_DATE_KEY);
+  if (map.size === 0 || seededVersion !== DEMO_SEED_VERSION || seededDate !== todayKey()) {
     seedDemoEvents(map);
     localStorage.setItem(DEMO_SEED_VERSION_KEY, DEMO_SEED_VERSION);
+    localStorage.setItem(DEMO_SEED_DATE_KEY, todayKey());
     persist(map);
   }
 

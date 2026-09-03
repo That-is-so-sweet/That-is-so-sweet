@@ -357,7 +357,7 @@ export default function App() {
           !user ? (
             <LoginScreen onLogin={login} />
           ) : homeView === "create" ? (
-            <CreateEvent onSubmit={handleCreateEvent} isLoading={isLoading} />
+            <CreateEvent onSubmit={handleCreateEvent} isLoading={isLoading} hostEmail={user.email} />
           ) : (
             <HostDashboard
               events={historyList}

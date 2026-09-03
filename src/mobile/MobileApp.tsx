@@ -119,7 +119,7 @@ export const MobileApp: React.FC<MobileAppProps> = ({
           !user ? (
             <LoginScreen onLogin={onLogin} />
           ) : homeView === "create" ? (
-            <CreateWizard onSubmit={onCreateEvent} isLoading={isLoading} onOpenHistory={() => setIsHistoryOpen(true)} />
+            <CreateWizard onSubmit={onCreateEvent} isLoading={isLoading} onOpenHistory={() => setIsHistoryOpen(true)} hostEmail={user.email} />
           ) : (
             <HostHome
               user={user}

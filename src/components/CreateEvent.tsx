@@ -9,11 +9,12 @@ import { Button, Input } from "../design-system/components";
 import { MonthCalendar } from "../mobile/MonthCalendar";
 import { MiniMonthPicker } from "../mobile/MiniMonthPicker";
 import { cardStyle, SectionLabel } from "../mobile/mobileStyles";
-import { getRecentSlotPresets, saveRecentSlotPresets } from "../lib/api";
+import { getRecentSlotPresets, saveRecentSlotPresets, getUserNickname } from "../lib/api";
 
 interface CreateEventProps {
   onSubmit: (input: CreateEventInput) => Promise<void>;
   isLoading: boolean;
+  hostEmail: string;
 }
 
 const SAT = getNextWeekdayDate(6);
@@ -26,11 +27,10 @@ const DEFAULT_SLOTS: Omit<TimeSlot, "id">[] = [
   { date: SUN, time: "14:00", label: "下午討論" },
 ];
 
-export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading }) => {
+export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading, hostEmail }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const [title, setTitle] = useState("");
-  const [hostName, setHostName] = useState("");
-  const [hostEmail, setHostEmail] = useState("");
+  const [hostName, setHostName] = useState(() => getUserNickname());
   const [description, setDescription] = useState("");
   const [mode, setMode] = useState<EventMode>("date_only");
   const [responseDeadline, setResponseDeadline] = useState(() => getDefaultDeadlineLocalValue());
@@ -177,7 +177,7 @@ export const CreateEvent: React.FC<CreateEventProps> = ({ onSubmit, isLoading })
 
               <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 12 }}>
                 <Input label="主揪暱稱" placeholder="例如：阿傑、Wally" value={hostName} onChange={(e) => setHostName(e.target.value)} />
-                <Input label="主揪 Email" placeholder="例如：host@example.com" type="email" value={hostEmail} onChange={(e) => setHostEmail(e.target.value)} />
+                <Input label="主揪 Email" type="email" value={hostEmail} disabled hint="使用登入的 Google 帳號，不可修改" />
               </div>
               <Input
                 label="地點"

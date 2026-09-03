@@ -5,7 +5,7 @@ import { formatChineseWeekday } from "../lib/calendar";
 import { computeSlotStats, formatSlotTime } from "../lib/slots";
 import { getLifecycleStatus, formatDeadline } from "../lib/eventStatus";
 import { Avatar, Badge, Button, Input } from "../design-system/components";
-import { cardStyle, countInAdjacentMonth, MonthNavButton, SectionLabel, STATUS_META } from "./mobileStyles";
+import { cardStyle, countInAdjacentMonth, EmailIndicator, MonthNavButton, SectionLabel, STATUS_META } from "./mobileStyles";
 import { ReopenModal } from "./ReopenModal";
 import { CancelEventModal } from "./CancelEventModal";
 import { EditEventModal } from "./EditEventModal";
@@ -602,6 +602,7 @@ export const HeatmapTab: React.FC<HeatmapTabProps> = ({
                         )}
                       </div>
                       <Badge variant="success" size="sm">{availCount}/{event.slots.length}</Badge>
+                      <EmailIndicator hasEmail={!!r.email} />
                     </div>
                   );
                 })}

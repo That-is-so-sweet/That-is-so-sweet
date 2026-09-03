@@ -1,5 +1,5 @@
 import React from "react";
-import { Circle, Triangle, X, LucideIcon } from "lucide-react";
+import { Circle, Triangle, X, LucideIcon, MailCheck, MailX } from "lucide-react";
 
 export const cardStyle: React.CSSProperties = {
   background: "var(--color-surface)",
@@ -7,6 +7,29 @@ export const cardStyle: React.CSSProperties = {
   padding: 14,
   border: "1px solid var(--color-border)",
 };
+
+// Marks whether a participant left an Email, so the host can see at a glance
+// how much of the roster is covered by automatic notifications (and who needs
+// a manual forward). Visible to everyone viewing the roster/attendance list —
+// it never reveals the address itself, only whether one was given.
+export const EmailIndicator: React.FC<{ hasEmail: boolean }> = ({ hasEmail }) => (
+  <span
+    title={hasEmail ? "有填寫通知mail" : "未填寫通知mail"}
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      width: 20,
+      height: 20,
+      borderRadius: "var(--radius-pill)",
+      background: hasEmail ? "var(--color-success)" : "var(--color-muted)",
+      color: "#fff",
+      flexShrink: 0,
+    }}
+  >
+    {hasEmail ? <MailCheck size={12} strokeWidth={2.5} /> : <MailX size={12} strokeWidth={2.5} />}
+  </span>
+);
 
 export const iconBtnStyle: React.CSSProperties = {
   width: 32,

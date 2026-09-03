@@ -11,12 +11,13 @@ import { MonthCalendar } from "./MonthCalendar";
 import { MiniMonthPicker } from "./MiniMonthPicker";
 import { EventInfoCard } from "./EventInfoCard";
 import { cardStyle, iconBtnStyle } from "./mobileStyles";
-import { getRecentSlotPresets, saveRecentSlotPresets } from "../lib/api";
+import { getRecentSlotPresets, saveRecentSlotPresets, getUserNickname } from "../lib/api";
 
 interface CreateWizardProps {
   onSubmit: (input: CreateEventInput) => Promise<void>;
   isLoading: boolean;
   onOpenHistory: () => void;
+  hostEmail: string;
 }
 
 const SAT = getNextWeekdayDate(6);
@@ -31,12 +32,11 @@ const DEFAULT_SLOTS: Omit<TimeSlot, "id">[] = [
 
 const STEP_LABELS = ["基本資訊", "候選日期與時段", "活動投票預覽"];
 
-export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading, onOpenHistory }) => {
+export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading, onOpenHistory, hostEmail }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const [step, setStep] = useState(0);
   const [title, setTitle] = useState("");
-  const [hostName, setHostName] = useState("");
-  const [hostEmail, setHostEmail] = useState("");
+  const [hostName, setHostName] = useState(() => getUserNickname());
   const [description, setDescription] = useState("");
   const [mode, setMode] = useState<EventMode>("date_only");
   const [responseDeadline, setResponseDeadline] = useState(() => getDefaultDeadlineLocalValue());
@@ -268,11 +268,10 @@ export const CreateWizard: React.FC<CreateWizardProps> = ({ onSubmit, isLoading,
               />
               <Input
                 label={infoLabel("主揪 Email", "hostEmail")}
-                placeholder="例如：host@example.com"
                 type="email"
                 value={hostEmail}
-                onChange={(e) => setHostEmail(e.target.value)}
-                hint={openInfo === "hostEmail" ? "後續如果有相對應的內容更新，會從這個 email 來做登入，並且會寄信通知" : undefined}
+                disabled
+                hint={openInfo === "hostEmail" ? "使用登入的 Google 帳號，不可修改；後續如果有相對應的內容更新，會寄信通知這個 email" : "使用登入的 Google 帳號，不可修改"}
               />
               <Input
                 label="地點"

@@ -30,6 +30,7 @@ export async function fetchEvent(id: string, hostToken?: string): Promise<EventD
 export async function createEvent(input: CreateEventInput): Promise<{ event: EventData; hostToken: string }> {
   const data = store.createEvent(input);
   saveHostToken(data.event.id, data.hostToken);
+  if (input.hostName) saveUserNickname(input.hostName);
   saveVisitedEvent(data.event);
   return data;
 }
